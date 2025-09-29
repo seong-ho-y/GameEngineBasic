@@ -1,3 +1,10 @@
+# 언리얼 콘텐츠 파일 (공유하고 싶은 건 Share 폴더에다 넣기)
+Content/*
+!Content/Share/
+
+# (git 추적을 위한 임시파일)
+Content/Share/.gitkeep
+
 # Visual Studio 2015 user specific files
 .vs/
 
