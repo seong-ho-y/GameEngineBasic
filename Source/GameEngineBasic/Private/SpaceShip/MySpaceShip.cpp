@@ -1,31 +1,34 @@
-
+ï»¿
 #include "SpaceShip/MySpaceShip.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "EnhancedInputComponent.h"
-#include "Engine/LocalPlayer.h"
 
-// ±âº» »ı¼ºÀÚ
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "Engine/LocalPlayer.h"
+#include "GameFramework/PlayerController.h"
+
+// ê¸°ë³¸ ìƒì„±ì
 AMySpaceShip::AMySpaceShip()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	ShipMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShipMesh"));
-	RootComponent = ShipMesh; // ·çÆ® ÄÄÆ÷³ÍÆ®·Î ¼³Á¤
+	RootComponent = ShipMesh; // ë£¨íŠ¸ ì»´í¬ë„ŒíŠ¸ë¡œ ì„¤ì •
 
 	ShipMesh->SetSimulatePhysics(true);
 	ShipMesh->BodyInstance.bEnableGravity = false;
 	ShipMesh->SetEnableGravity(false);
 	
-	// ¼±Çü °¨¼è (Á÷¼± ¿òÁ÷ÀÓ ÀúÇ×)
-	// °ªÀÌ ³ôÀ»¼ö·Ï ´õ »¡¸® ¸ØÃä´Ï´Ù. ¿ìÁÖ¼±Ã³·³ ¹Ì²ô·¯Áö´Â ´À³¦À» ÁÖ·Á¸é ³·Àº °ªÀ» »ç¿ëÇÏ¼¼¿ä.
-	ShipMesh->SetLinearDamping(0.5f);
+	// ì„ í˜• ê°ì‡  (ì§ì„  ì›€ì§ì„ ì €í•­)
+	// ê°’ì´ ë†’ì„ìˆ˜ë¡ ë” ë¹¨ë¦¬ ë©ˆì¶¥ë‹ˆë‹¤. ìš°ì£¼ì„ ì²˜ëŸ¼ ë¯¸ë„ëŸ¬ì§€ëŠ” ëŠë‚Œì„ ì£¼ë ¤ë©´ ë‚®ì€ ê°’ì„ ì‚¬ìš©í•˜ì„¸ìš”.
+	ShipMesh->SetLinearDamping(0.3f);
 	
-	// °¢¼Óµµ °¨¼è (È¸Àü ¿òÁ÷ÀÓ ÀúÇ×)
-	// °ªÀÌ ³ôÀ»¼ö·Ï È¸ÀüÀÌ ´õ »¡¸® ¸ØÃä´Ï´Ù.
-	ShipMesh->SetAngularDamping(4.0f);
+	// ê°ì†ë„ ê°ì‡  (íšŒì „ ì›€ì§ì„ ì €í•­)
+	// ê°’ì´ ë†’ì„ìˆ˜ë¡ íšŒì „ì´ ë” ë¹¨ë¦¬ ë©ˆì¶¥ë‹ˆë‹¤.
+	ShipMesh->SetAngularDamping(1.2f);
 
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -33,12 +36,12 @@ AMySpaceShip::AMySpaceShip()
 	SpringArm->TargetArmLength = 800.f;
 	SpringArm->bUsePawnControlRotation = false;
 
-	// --- ¾Æ·¡ Ä«¸Ş¶ó Áö¿¬ ¿É¼Ç È°¼ºÈ­ ---
-	SpringArm->bEnableCameraLag = true;         // À§Ä¡ Áö¿¬ È°¼ºÈ­
-	SpringArm->CameraLagSpeed = 5.0f;           // À§Ä¡ Áö¿¬ ¼Óµµ
+	// ì¹´ë©”ë¼ ì§€ì—°(ê³¼í•˜ì§€ ì•Šê²Œ)
+	SpringArm->bEnableCameraLag = true;
+	SpringArm->CameraLagSpeed = 8.0f;
 
-	SpringArm->bEnableCameraRotationLag = true; // È¸Àü Áö¿¬ È°¼ºÈ­
-	SpringArm->CameraRotationLagSpeed = 5.0f;   // È¸Àü Áö¿¬ ¼Óµµ
+	SpringArm->bEnableCameraRotationLag = true;
+	SpringArm->CameraRotationLagSpeed = 8.0f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -46,43 +49,34 @@ AMySpaceShip::AMySpaceShip()
 	
 }
 
-// °ÔÀÓ ½ÃÀÛ ½Ã È£ÃâµÇ´Â ÇÔ¼ö
+// ê²Œì„ ì‹œì‘ ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 void AMySpaceShip::BeginPlay()
 {
 	Super::BeginPlay();
-
+	InitialYaw = GetActorRotation().Yaw; // ì‹œì‘ í—¤ë”© ê¸°ì–µ
 }
 
-// ¸Å ÇÁ·¹ÀÓ¸¶´Ù È£ÃâµÇ´Â ÇÔ¼ö
+// ë§¤ í”„ë ˆì„ë§ˆë‹¤ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 void AMySpaceShip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 1. ÇöÀç ¿ìÁÖ¼±ÀÇ È¸Àü °ªÀ» °¡Á®¿É´Ï´Ù. (¹°¸® ¿£Áø¿¡ ÀÇÇØ °è»êµÈ °ª)
-	const FRotator CurrentRotation = GetActorRotation();
-
-	// 2. ¸ñÇ¥ ±â¿ï±â °¢µµ¸¦ °è»êÇÕ´Ï´Ù. (¸¶¿ì½º X ÀÔ·Â¿¡ ºñ·Ê)
-	const float TargetRollAngle = CurrentLookInput.X * MaxRollAngle;
-
-	// 3. ÇöÀç ±â¿ï±â °¢µµ¿¡¼­ ¸ñÇ¥ °¢µµ·Î ºÎµå·´°Ô º¸°£(Interpolation)ÇÕ´Ï´Ù.
-	const float NewRollAngle = FMath::FInterpTo(CurrentRotation.Roll, TargetRollAngle, DeltaTime, RollSpeed);
-
-	// 4. ¹°¸® ¿£ÁøÀÌ °è»êÇÑ Pitch, Yaw °ªÀº À¯ÁöÇÏ°í, Roll °ª¸¸ »õ·Î °è»êÇÑ °ªÀ¸·Î º¯°æÇÏ¿© »õ·Î¿î È¸Àü °ªÀ» ¸¸µì´Ï´Ù.
-	const FRotator NewRotation = FRotator(CurrentRotation.Pitch, CurrentRotation.Yaw, NewRollAngle);
-
-	// 5. ÃÖÁ¾ È¸Àü °ªÀ» ¿ìÁÖ¼±¿¡ Àû¿ëÇÕ´Ï´Ù.
-	SetActorRotation(NewRotation);
+	ApplyUpright(DeltaTime);
+	ApplyBankControl(DeltaTime);
+	ClampSpeeds();
 }
 
-// ÇÃ·¹ÀÌ¾î ÀÔ·Â Ã³¸®
+// í”Œë ˆì´ì–´ ì…ë ¥ ì²˜ë¦¬
 void AMySpaceShip::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInput->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &AMySpaceShip::MoveForward);
-		EnhancedInput->BindAction(IA_MoveUpDown, ETriggerEvent::Triggered, this, &AMySpaceShip::MoveUpDown);
+
 		EnhancedInput->BindAction(IA_Boost, ETriggerEvent::Triggered, this, &AMySpaceShip::Boost);
+
 		EnhancedInput->BindAction(IA_Look, ETriggerEvent::Triggered, this, &AMySpaceShip::Look);
+		EnhancedInput->BindAction(IA_Look, ETriggerEvent::Completed, this, &AMySpaceShip::LookEnded);
 	}
 
 	else {
@@ -92,47 +86,134 @@ void AMySpaceShip::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void AMySpaceShip::MoveForward(const FInputActionValue& Value)
 {
-	float InputValue = Value.Get<float>();
-	float CurrentThrust = ThrustForce;
+	const float Axis = Value.Get<float>();
+	if (FMath::IsNearlyZero(Axis))
+	{
+		return;
+	}
 
-	// ºÎ½ºÆ® »óÅÂ¶ó¸é Ãß·ÂÀ» Áõ°¡½ÃÅµ´Ï´Ù.
+	float CurrentThrust = ThrustForce * Axis;
 	if (bIsBoosting)
 	{
 		CurrentThrust *= BoostMultiplier;
 	}
 
-	// ¿ìÁÖ¼±ÀÇ ¾Õ ¹æÇâÀ¸·Î ÈûÀ» °¡ÇÕ´Ï´Ù.
-	// AddForceÀÇ ¸¶Áö¸· ÀÎÀÚ(bAccelChange)¸¦ true·Î ÇÏ¸é Áú·®¿¡ »ó°ü¾øÀÌ ÀÏÁ¤ÇÑ °¡¼Óµµ¸¦ ³À´Ï´Ù.
-	ShipMesh->AddForce(GetActorForwardVector() * InputValue * CurrentThrust, NAME_None, true);
-
-}
-
-void AMySpaceShip::MoveUpDown(const FInputActionValue& Value)
-{
-	float InputValue = Value.Get<float>();
-
-	// ¿ìÁÖ¼±ÀÇ À§ÂÊ ¹æÇâÀ¸·Î ÈûÀ» °¡ÇÕ´Ï´Ù.
-	ShipMesh->AddForce(GetActorUpVector() * InputValue * UpDownForce, NAME_None, true);
-
+	// ì§ˆëŸ‰ ë¬´ì‹œí•˜ê³  ê°€ì†ìœ¼ë¡œ(ê°€ë²¼ìš´ ì¡°ì‘ê°)
+	ShipMesh->AddForce(GetActorForwardVector() * CurrentThrust, NAME_None, /*bAccelChange=*/true);
 }
 
 void AMySpaceShip::Look(const FInputActionValue& Value)
 {
-	// ÀÔ·Â °ªÀ» FVector2D·Î ÀĞ¾î¿É´Ï´Ù.
+	// 2D ì¶•(-Y = ìœ„)
 	CurrentLookInput = Value.Get<FVector2D>();
 
-	// Pitch (»óÇÏ È¸Àü) ÅäÅ©: ¸¶¿ì½º Y ÀÔ·Â * ¿ìÁÖ¼± ¿À¸¥ÂÊ º¤ÅÍ
-	// ¸¶¿ì½º Y´Â º¸Åë À§·Î ¿Ã¸®¸é -°ªÀÌ¹Ç·Î, -¸¦ °öÇØ ¹æÇâÀ» ¸ÂÃçÁİ´Ï´Ù.
-	FVector PitchTorque = GetActorRightVector() * -CurrentLookInput.Y * TurnTorque;
+	// í”¼ì¹˜/ìš”ëŠ” ì¦‰ì‹œ í† í¬ë¡œ ë°˜ì˜
+	const FVector PitchTorque = GetActorRightVector() * (-CurrentLookInput.Y * TurnTorque);
+	const FVector YawTorque = GetActorUpVector() * (CurrentLookInput.X * TurnTorque);
 
-	// Yaw (ÁÂ¿ì È¸Àü) ÅäÅ©: ¸¶¿ì½º X ÀÔ·Â * ¿ìÁÖ¼± À§ÂÊ º¤ÅÍ
-	FVector YawTorque = GetActorUpVector() * CurrentLookInput.X * TurnTorque;
+	ShipMesh->AddTorqueInDegrees(PitchTorque + YawTorque, NAME_None, /*bAccelChange=*/true);
+}
 
-	// µÎ ÅäÅ©¸¦ ÇÕÃÄ¼­ Àû¿ëÇÕ´Ï´Ù.
-	ShipMesh->AddTorqueInDegrees(PitchTorque + YawTorque, NAME_None, true);
+void AMySpaceShip::LookEnded(const FInputActionValue& /*Value*/)
+{
+	CurrentLookInput = FVector2D::ZeroVector; // ì…ë ¥ ëë‚¬ì„ ë•Œ ìì—°ê° ë³µê·€
 }
 
 void AMySpaceShip::Boost()
 {
 	bIsBoosting = !bIsBoosting;
+}
+
+void AMySpaceShip::ApplyBankControl(float DeltaTime)
+{
+	// ë§ˆìš°ìŠ¤ Xì— ë¹„ë¡€í•œ ëª©í‘œ ë¡¤ ê°ë„(ë„)
+	const float TargetRoll = FMath::Clamp(CurrentLookInput.X, -1.0f, 1.0f) * MaxRollAngle;
+
+	// í˜„ì¬ ë¡¤ ê°(ë„)
+	const float CurrentRoll = GetActorRotation().Roll;
+
+	// ì˜¤ì°¨
+	const float Error = FMath::FindDeltaAngleDegrees(CurrentRoll, TargetRoll);
+
+	// í˜„ì¬ ê°ì†ë„(ë„/ì´ˆ)ì—ì„œ "ë¡¤ ì¶• ì„±ë¶„"ë§Œ ì¶”ì¶œ (ë¡¤ ì¶•=í¬ì›Œë“œ ë²¡í„°)
+	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
+	const FVector Fwd = GetActorForwardVector();
+	const float RollRate = FVector::DotProduct(AngVelDeg, Fwd); // ë„/ì´ˆ
+
+	// ê°„ë‹¨í•œ PD ì œì–´: Torque = Kp * error - Kd * rate
+	const float Control = (BankKp * Error) - (BankKd * RollRate);
+
+	// ë¡¤ ì¶• í† í¬ ì ìš©(ë„ ë‹¨ìœ„)
+	const FVector RollTorque = Fwd * Control;
+	ShipMesh->AddTorqueInDegrees(RollTorque, NAME_None, /*bAccelChange=*/true);
+}
+
+void AMySpaceShip::ClampSpeeds() const
+{
+	// ì„ ì† ì œí•œ
+	const FVector V = ShipMesh->GetPhysicsLinearVelocity();
+	const float Speed = V.Length();
+	if (Speed > MaxLinearSpeed)
+	{
+		const FVector Clamped = V.GetSafeNormal() * MaxLinearSpeed;
+		ShipMesh->SetPhysicsLinearVelocity(Clamped);
+	}
+
+	// ê°ì† ì œí•œ(ë„/ì´ˆ)
+	const FVector AV = ShipMesh->GetPhysicsAngularVelocityInDegrees();
+	const float AVMag = AV.Length();
+	if (AVMag > MaxAngularSpeed)
+	{
+		const FVector ClampedAV = AV.GetSafeNormal() * MaxAngularSpeed;
+		ShipMesh->SetPhysicsAngularVelocityInDegrees(ClampedAV);
+	}
+}
+
+void AMySpaceShip::ApplyUpright(float DeltaTime)
+{
+    // ì›í•˜ëŠ” Up = ì›”ë“œ Up(0,0,1)
+    const FVector DesiredUp = FVector::UpVector;
+    const FVector CurrUp    = GetActorUpVector();
+
+    // ìµœë‹¨ íšŒì „ì¶•(ë°©í–¥)ê³¼ ê°ë„ êµ¬í•˜ê¸°
+    // ì¶• = CurrUp x DesiredUp (ì˜¤ë¥¸ì†ë²•ì¹™), í¬ê¸° = sin(theta)
+    FVector  Axis = FVector::CrossProduct(CurrUp, DesiredUp);
+    const float SinTheta = Axis.Length();
+    const float CosTheta = FVector::DotProduct(CurrUp, DesiredUp);
+
+    // ì´ë¯¸ ê±°ì˜ ìˆ˜ì§ì´ë©´ ìŠ¤í‚µ
+    if (SinTheta < 1e-3f && CosTheta > 0.999f)
+        return;
+
+    Axis = Axis.GetSafeNormal();
+
+    // ê°ë„(ë„) = atan2(sin, cos) -> ë¼ë””ì•ˆ->ë„ ë³€í™˜
+    const float AngleDeg = FMath::RadiansToDegrees(FMath::Atan2(SinTheta, CosTheta));
+
+    // í˜„ì¬ ê°ì†ë„(ë„/ì´ˆ)ì—ì„œ "êµì •ì¶•" ì„±ë¶„ë§Œ ì¶”ì¶œí•´ Dí•­ì— ì‚¬ìš©
+    const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
+    const float   RateAlongAxis = FVector::DotProduct(AngVelDeg, Axis);
+
+    // PD ì œì–´: ì¶• ë°©í–¥ í† í¬ (ë„ ë‹¨ìœ„ í† í¬ ì‚¬ìš©)
+    const float Control = (UprightKp * AngleDeg) - (UprightKd * RateAlongAxis);
+    const FVector UprightTorque = Axis * Control;
+    ShipMesh->AddTorqueInDegrees(UprightTorque, NAME_None, /*bAccelChange=*/true);
+
+    // --- (ì˜µì…˜) ì‹œì‘ í—¤ë”©ìœ¼ë¡œ ì²œì²œíˆ ë³µê·€ ---
+    if (bRestoreYawToInitial)
+    {
+        // ìˆ˜í‰ë©´ì—ì„œì˜ ì§„í–‰ë°©í–¥ìœ¼ë¡œë§Œ ë¹„êµ(ë¡¤/í”¼ì¹˜ ì˜í–¥ ì œê±°)
+        const FRotator Rot = GetActorRotation();
+
+        const float CurrYaw = Rot.Yaw;
+        const float YawErr  = FMath::FindDeltaAngleDegrees(CurrYaw, InitialYaw);
+
+        // í˜„ì¬ ê°ì†ë„ì—ì„œ 'Up ì¶•' ì„±ë¶„ë§Œ ì¶”ì¶œ(= ìš” ë ˆì´íŠ¸)
+        const float YawRate = FVector::DotProduct(AngVelDeg, FVector::UpVector);
+
+        const float YawControl = (YawKp * YawErr) - (YawKd * YawRate);
+        const FVector YawTorque = FVector::UpVector * YawControl;
+
+        ShipMesh->AddTorqueInDegrees(YawTorque, NAME_None, /*bAccelChange=*/true);
+    }
 }
