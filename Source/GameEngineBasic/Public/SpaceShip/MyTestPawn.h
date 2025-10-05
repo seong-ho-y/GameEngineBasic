@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
@@ -6,7 +6,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "MyTestPawn.generated.h"
 
-// Àü¹æ ¼±¾ğ
+// ì „ë°© ì„ ì–¸
 class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
@@ -39,60 +39,60 @@ protected:
 	UInputAction* IA_Boost;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	UInputAction* IA_Look; // ¸¶¿ì½º ÀÔ·ÂÀ» À§ÇÑ 2D ¾×¼Ç
+	UInputAction* IA_Look;
 
 protected:
-	// °ÔÀÓ ½ÃÀÛ ½Ã È£ÃâµÇ´Â ÇÔ¼ö
+	// ê²Œì„ ì‹œì‘ ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 	virtual void BeginPlay() override;
 
 public:
-	// ¸Å ÇÁ·¹ÀÓ¸¶´Ù È£ÃâµÇ´Â ÇÔ¼ö
+	// ë§¤ í”„ë ˆì„ë§ˆë‹¤ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 	virtual void Tick(float DeltaTime) override;
 
-	// ÀÔ·Â¿¡ µû¶ó ÀÌµ¿ Ã³¸®
+	// ì…ë ¥ì— ë”°ë¼ ì´ë™ ì²˜ë¦¬
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-	// Èû°ú ÅäÅ©ÀÇ ¼¼±â¸¦ Á¶ÀıÇÏ´Â º¯¼öµé
+	// í˜ê³¼ í† í¬ì˜ ì„¸ê¸°ë¥¼ ì¡°ì ˆí•˜ëŠ” ë³€ìˆ˜ë“¤
 	UPROPERTY(EditAnywhere, Category = "Physics");
-	float ThrustForce = 1000.0f; // ÀüÁø Ãß·Â
+	float ThrustForce = 1000.0f; // ì „ì§„ ì¶”ë ¥
 
 	UPROPERTY(EditAnywhere, Category = "Physics");
-	float TurnTorque = 300.0f; // È¸Àü ÅäÅ©
+	float TurnTorque = 300.0f; // íšŒì „ í† í¬
 
 	UPROPERTY(EditAnywhere, Category = "Physics");
-	float BoostMultiplier = 2.0f; // ºÎ½ºÆ® ½Ã Ãß·Â ¹èÀ²
+	float BoostMultiplier = 2.0f; // ë¶€ìŠ¤íŠ¸ ì‹œ ì¶”ë ¥ ë°°ìœ¨
 
 	UPROPERTY(EditAnywhere, Category = "Physics")
-	float RollSpeed = 5.0f; // ±â¿ï±â°¡ ¾ó¸¶³ª »¡¸® Àû¿ëµÉÁö
+	float RollSpeed = 5.0f; // ê¸°ìš¸ê¸°ê°€ ì–¼ë§ˆë‚˜ ë¹¨ë¦¬ ì ìš©ë ì§€
 
-	// Àº±ÙÇÑ È¸Àü ¾ÈÁ¤È­¸¦ À§ÇÑ PD Á¦¾î(¹ğÅ·)
+	// ì€ê·¼í•œ íšŒì „ ì•ˆì •í™”ë¥¼ ìœ„í•œ PD ì œì–´(ë±…í‚¹)
 	UPROPERTY(EditAnywhere, Category = "Physics|Bank", meta = (ClampMin = "0"))
-	float BankKp = 6.0f;                 // ¸ñÇ¥ ·Ñ °¢µµ¿¡ ´ëÇÑ ºñ·Ê ÀÌµæ
+	float BankKp = 6.0f;                 // ëª©í‘œ ë¡¤ ê°ë„ì— ëŒ€í•œ ë¹„ë¡€ ì´ë“
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Bank", meta = (ClampMin = "0"))
-	float BankKd = 1.5f;                 // ·Ñ °¢¼Óµµ °¨¼è ÀÌµæ
+	float BankKd = 1.5f;                 // ë¡¤ ê°ì†ë„ ê°ì‡  ì´ë“
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Bank", meta = (ClampMin = "0", ClampMax = "89"))
-	float MaxRollAngle = 30.0f;          // ÃÖ´ë ·Ñ(±â¿ï±â) °¢µµ(µµ)
+	float MaxRollAngle = 30.0f;          // ìµœëŒ€ ë¡¤(ê¸°ìš¸ê¸°) ê°ë„(ë„)
 
-	// »óÇÑ°ª(³Ê¹« Æ¢´Â °Í ¹æÁö)
+	// ìƒí•œê°’(ë„ˆë¬´ íŠ€ëŠ” ê²ƒ ë°©ì§€)
 	UPROPERTY(EditAnywhere, Category = "Limits", meta = (ClampMin = "0"))
-	float MaxLinearSpeed = 6000.0f;      // ÃÖ´ë ¼±¼Ó(uu/s)
+	float MaxLinearSpeed = 6000.0f;      // ìµœëŒ€ ì„ ì†(uu/s)
 
 	UPROPERTY(EditAnywhere, Category = "Limits", meta = (ClampMin = "0"))
-	float MaxAngularSpeed = 120.0f;      // ÃÖ´ë °¢¼Ó(µµ/ÃÊ)
+	float MaxAngularSpeed = 120.0f;      // ìµœëŒ€ ê°ì†(ë„/ì´ˆ)
 
-	// ÀÚµ¿ Á¤·ÄÀ» À§ÇÑ PD Á¦¾î
+	// ìë™ ì •ë ¬ì„ ìœ„í•œ PD ì œì–´
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (ClampMin = "0"))
-	float UprightKp = 8.0f;       // Up Á¤·Ä ºñ·Ê ÀÌµæ
+	float UprightKp = 25.0f;       // Up ì •ë ¬ ë¹„ë¡€ ì´ë“
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (ClampMin = "0"))
-	float UprightKd = 2.5f;       // Up Á¤·Ä °¢¼Ó °¨¼è ÀÌµæ
+	float UprightKd = 2.5f;       // Up ì •ë ¬ ê°ì† ê°ì‡  ì´ë“
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright")
-	bool bRestoreYawToInitial = false; // true¸é ½ÃÀÛ ÇìµùÀ¸·Îµµ ÃµÃµÈ÷ º¹±Í
+	bool bRestoreYawToInitial = false; // trueë©´ ì‹œì‘ í—¤ë”©ìœ¼ë¡œë„ ì²œì²œíˆ ë³µê·€
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (EditCondition = "bRestoreYawToInitial", ClampMin = "0"))
 	float YawKp = 2.0f;
@@ -100,41 +100,41 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (EditCondition = "bRestoreYawToInitial", ClampMin = "0"))
 	float YawKd = 0.8f;
 
-	// === Upright ºí·»µù ¼³Á¤ ===
+	// === Upright ë¸”ë Œë”© ì„¤ì • ===
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (ClampMin = "0", ClampMax = "1"))
-	float UprightMaxStrength = 1.0f;     // Upright ÃÖ´ë °­µµ ¹èÀ²
+	float UprightMaxStrength = 1.0f;     // Upright ìµœëŒ€ ê°•ë„ ë°°ìœ¨
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (ClampMin = "0"))
-	float UprightBlendInSpeed = 10.0f;    // ÀÔ·ÂÀÌ »ç¶óÁ³À» ¶§ °­µµ¡è ¼Óµµ
+	float UprightBlendInSpeed = 30.0f;    // ì…ë ¥ì´ ì‚¬ë¼ì¡Œì„ ë•Œ ê°•ë„â†‘ ì†ë„
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (ClampMin = "0"))
-	float UprightBlendOutSpeed = 2.0f;   // ÀÔ·ÂÀÌ ÀÖÀ» ¶§ °­µµ¡é ¼Óµµ
+	float UprightBlendOutSpeed = 2.0f;   // ì…ë ¥ì´ ìˆì„ ë•Œ ê°•ë„â†“ ì†ë„
 
 	UPROPERTY(EditAnywhere, Category = "Physics|Upright", meta = (ClampMin = "0", ClampMax = "1"))
-	float LookDeadzone = 0.08f;          // ÀÌ °ª ÀÌÇÏ ÀÔ·ÂÀº '¾øÀ½'À¸·Î °£ÁÖ
+	float LookDeadzone = 0.08f;          // ì´ ê°’ ì´í•˜ ì…ë ¥ì€ 'ì—†ìŒ'ìœ¼ë¡œ ê°„ì£¼
 
 private:
 
-	float UprightAlpha = 1.0f; // ÇöÀç Upright °­µµ(0~1)
+	float UprightAlpha = 1.0f; // í˜„ì¬ Upright ê°•ë„(0~1)
 
-	float InitialYaw = 0.f; // ½ÃÀÛ Çìµù ÀúÀå
+	float InitialYaw = 0.f; // ì‹œì‘ í—¤ë”© ì €ì¥
 
-	bool bIsBoosting = false; // ºÎ½ºÆ® ¿©ºÎ
+	bool bIsBoosting = false; // ë¶€ìŠ¤íŠ¸ ì—¬ë¶€
 
-	// ÇöÀç ¸¶¿ì½º ÀÔ·ÂÀ» ÀúÀåÇÒ º¯¼ö
+	// í˜„ì¬ ë§ˆìš°ìŠ¤ ì…ë ¥ì„ ì €ì¥í•  ë³€ìˆ˜
 	FVector2D CurrentLookInput;
 
-	// ÀÔ·Â Ã³¸® ÇÔ¼öµé
+	// ì…ë ¥ ì²˜ë¦¬ í•¨ìˆ˜ë“¤
 	void MoveForward(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
-	void LookEnded(const FInputActionValue& Value); // ÀÔ·Â ³¡³µÀ» ¶§
+	void LookEnded(const FInputActionValue& Value); // ì…ë ¥ ëë‚¬ì„ ë•Œ
 	void Boost();
 
 
-	// ¿À¶Ñ±â º¹¿ø
+	// ì˜¤ëšœê¸° ë³µì›
 	void ApplyUpright(float DeltaTime, float Strength);
 
-	// ³»ºÎ ÇïÆÛ
-	void ApplyBankControl(float DeltaTime);  // ·Ñ(PD) Á¦¾î
-	void ClampSpeeds() const;                // ¼Óµµ/°¢¼Óµµ Å¬·¥ÇÁ
+	// ë‚´ë¶€ í—¬í¼
+	void ApplyBankControl(float DeltaTime);  // ë¡¤(PD) ì œì–´
+	void ClampSpeeds() const;                // ì†ë„/ê°ì†ë„ í´ë¨í”„
 };

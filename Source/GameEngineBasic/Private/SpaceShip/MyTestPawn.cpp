@@ -1,4 +1,4 @@
-
+ï»¿
 #include "SpaceShip/MyTestPawn.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -10,24 +10,24 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
 
-// ±âº» »ı¼ºÀÚ
+// ê¸°ë³¸ ìƒì„±ì
 AMyTestPawn::AMyTestPawn()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	ShipMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShipMesh"));
-	RootComponent = ShipMesh; // ·çÆ® ÄÄÆ÷³ÍÆ®·Î ¼³Á¤
+	RootComponent = ShipMesh; // ë£¨íŠ¸ ì»´í¬ë„ŒíŠ¸ë¡œ ì„¤ì •
 
 	ShipMesh->SetSimulatePhysics(true);
 	ShipMesh->BodyInstance.bEnableGravity = false;
 	ShipMesh->SetEnableGravity(false);
 
-	// ¼±Çü °¨¼è (Á÷¼± ¿òÁ÷ÀÓ ÀúÇ×)
-	// °ªÀÌ ³ôÀ»¼ö·Ï ´õ »¡¸® ¸ØÃä´Ï´Ù. ¿ìÁÖ¼±Ã³·³ ¹Ì²ô·¯Áö´Â ´À³¦À» ÁÖ·Á¸é ³·Àº °ªÀ» »ç¿ëÇÏ¼¼¿ä.
+	// ì„ í˜• ê°ì‡  (ì§ì„  ì›€ì§ì„ ì €í•­)
+	// ê°’ì´ ë†’ì„ìˆ˜ë¡ ë” ë¹¨ë¦¬ ë©ˆì¶¥ë‹ˆë‹¤. ìš°ì£¼ì„ ì²˜ëŸ¼ ë¯¸ë„ëŸ¬ì§€ëŠ” ëŠë‚Œì„ ì£¼ë ¤ë©´ ë‚®ì€ ê°’ì„ ì‚¬ìš©í•˜ì„¸ìš”.
 	ShipMesh->SetLinearDamping(0.3f);
 
-	// °¢¼Óµµ °¨¼è (È¸Àü ¿òÁ÷ÀÓ ÀúÇ×)
-	// °ªÀÌ ³ôÀ»¼ö·Ï È¸ÀüÀÌ ´õ »¡¸® ¸ØÃä´Ï´Ù.
+	// ê°ì†ë„ ê°ì‡  (íšŒì „ ì›€ì§ì„ ì €í•­)
+	// ê°’ì´ ë†’ì„ìˆ˜ë¡ íšŒì „ì´ ë” ë¹¨ë¦¬ ë©ˆì¶¥ë‹ˆë‹¤.
 	ShipMesh->SetAngularDamping(1.2f);
 
 
@@ -36,11 +36,11 @@ AMyTestPawn::AMyTestPawn()
 	SpringArm->TargetArmLength = 800.f;
 	SpringArm->bUsePawnControlRotation = false;
 
-	// Ä«¸Ş¶ó Áö¿¬(°úÇÏÁö ¾Ê°Ô)
+	// ì¹´ë©”ë¼ ì§€ì—°(ê³¼í•˜ì§€ ì•Šê²Œ)
 	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 8.0f;
+	SpringArm->CameraLagSpeed = 30.0f;
 
-	SpringArm->bEnableCameraRotationLag = true;
+	SpringArm->bEnableCameraRotationLag = false;
 	SpringArm->CameraRotationLagSpeed = 8.0f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
@@ -49,41 +49,41 @@ AMyTestPawn::AMyTestPawn()
 
 }
 
-// °ÔÀÓ ½ÃÀÛ ½Ã È£ÃâµÇ´Â ÇÔ¼ö
+// ê²Œì„ ì‹œì‘ ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 void AMyTestPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	InitialYaw = GetActorRotation().Yaw; // ½ÃÀÛ Çìµù ±â¾ï
+	InitialYaw = GetActorRotation().Yaw; // ì‹œì‘ í—¤ë”© ê¸°ì–µ
 }
 
-// ¸Å ÇÁ·¹ÀÓ¸¶´Ù È£ÃâµÇ´Â ÇÔ¼ö
+// ë§¤ í”„ë ˆì„ë§ˆë‹¤ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 void AMyTestPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// ÇöÀç ¸¶¿ì½º ÀÔ·ÂÀÇ Å©±â(0~1 °¡Á¤)
-	const float LookMag = CurrentLookInput.Length();
+	// í˜„ì¬ ë§ˆìš°ìŠ¤ ì…ë ¥ì˜ í¬ê¸°(0~1 ê°€ì •) 
+	const float LookMag = CurrentLookInput.Length(); 
 
-	// DeadzoneÀ» ³Ñ¾î°¡¸é 'ÀÔ·Â ÀÖÀ½' ÆÇ´Ü
+	// Deadzoneì„ ë„˜ì–´ê°€ë©´ 'ì…ë ¥ ìˆìŒ' íŒë‹¨ 
 	const bool bHasLook = LookMag > LookDeadzone;
 
-	// ÀÔ·ÂÀÌ ÀÖÀ¸¸é Upright ¾àÇÏ°Ô(0), ¾øÀ¸¸é °­ÇÏ°Ô(1)
+	// ì…ë ¥ì´ ìˆìœ¼ë©´ Upright ì•½í•˜ê²Œ(0), ì—†ìœ¼ë©´ ê°•í•˜ê²Œ(1)
 	const float TargetAlpha = bHasLook ? 0.0f : 1.0f;
 
-	// °¢°¢ ´Ù¸£°Ô º¸°£ ¼Óµµ Àû¿ë
+	// ê°ê° ë‹¤ë¥´ê²Œ ë³´ê°„ ì†ë„ ì ìš©
 	const float BlendSpeed = bHasLook ? UprightBlendOutSpeed : UprightBlendInSpeed;
 
 	UprightAlpha = FMath::FInterpTo(UprightAlpha, TargetAlpha, DeltaTime, BlendSpeed);
 
-	// Upright Àû¿ë(ÃÖ´ë °­µµ ¹èÀ² Æ÷ÇÔ)
+	// Upright ì ìš©(ìµœëŒ€ ê°•ë„ ë°°ìœ¨ í¬í•¨)
 	ApplyUpright(DeltaTime, UprightAlpha * UprightMaxStrength);
 
-	// ·Ñ PD Á¦¾î¿Í ¼Óµµ Å¬·¥ÇÁ´Â ±âÁ¸´ë·Î
+	// ë¡¤ PD ì œì–´ì™€ ì†ë„ í´ë¨í”„ëŠ” ê¸°ì¡´ëŒ€ë¡œ
 	ApplyBankControl(DeltaTime);
 	ClampSpeeds();
 }
 
-// ÇÃ·¹ÀÌ¾î ÀÔ·Â Ã³¸®
+// í”Œë ˆì´ì–´ ì…ë ¥ ì²˜ë¦¬
 void AMyTestPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -115,25 +115,23 @@ void AMyTestPawn::MoveForward(const FInputActionValue& Value)
 		CurrentThrust *= BoostMultiplier;
 	}
 
-	// Áú·® ¹«½ÃÇÏ°í °¡¼ÓÀ¸·Î(°¡º­¿î Á¶ÀÛ°¨)
+	// ì§ˆëŸ‰ ë¬´ì‹œí•˜ê³  ê°€ì†ìœ¼ë¡œ(ê°€ë²¼ìš´ ì¡°ì‘ê°)
 	ShipMesh->AddForce(GetActorForwardVector() * CurrentThrust, NAME_None, /*bAccelChange=*/true);
 }
 
 void AMyTestPawn::Look(const FInputActionValue& Value)
 {
-	// 2D Ãà(-Y = À§)
 	CurrentLookInput = Value.Get<FVector2D>();
 
-	// ÇÇÄ¡/¿ä´Â Áï½Ã ÅäÅ©·Î ¹İ¿µ
 	const FVector PitchTorque = GetActorRightVector() * (-CurrentLookInput.Y * TurnTorque);
 	const FVector YawTorque = GetActorUpVector() * (CurrentLookInput.X * TurnTorque);
-
+	
 	ShipMesh->AddTorqueInDegrees(PitchTorque + YawTorque, NAME_None, /*bAccelChange=*/true);
 }
 
 void AMyTestPawn::LookEnded(const FInputActionValue& /*Value*/)
 {
-	CurrentLookInput = FVector2D::ZeroVector; // ÀÔ·Â ³¡³µÀ» ¶§ ÀÚ¿¬°¨ º¹±Í
+	CurrentLookInput = FVector2D::ZeroVector; // ì…ë ¥ ëë‚¬ì„ ë•Œ ìì—°ê° ë³µê·€
 }
 
 void AMyTestPawn::Boost()
@@ -143,31 +141,31 @@ void AMyTestPawn::Boost()
 
 void AMyTestPawn::ApplyBankControl(float DeltaTime)
 {
-	// ¸¶¿ì½º X¿¡ ºñ·ÊÇÑ ¸ñÇ¥ ·Ñ °¢µµ(µµ)
+	// ë§ˆìš°ìŠ¤ Xì— ë¹„ë¡€í•œ ëª©í‘œ ë¡¤ ê°ë„(ë„)
 	const float TargetRoll = FMath::Clamp(CurrentLookInput.X, -1.0f, 1.0f) * MaxRollAngle;
 
-	// ÇöÀç ·Ñ °¢(µµ)
+	// í˜„ì¬ ë¡¤ ê°(ë„)
 	const float CurrentRoll = GetActorRotation().Roll;
 
-	// ¿ÀÂ÷
+	// ì˜¤ì°¨
 	const float Error = FMath::FindDeltaAngleDegrees(CurrentRoll, TargetRoll);
 
-	// ÇöÀç °¢¼Óµµ(µµ/ÃÊ)¿¡¼­ "·Ñ Ãà ¼ººĞ"¸¸ ÃßÃâ (·Ñ Ãà=Æ÷¿öµå º¤ÅÍ)
+	// í˜„ì¬ ê°ì†ë„(ë„/ì´ˆ)ì—ì„œ "ë¡¤ ì¶• ì„±ë¶„"ë§Œ ì¶”ì¶œ (ë¡¤ ì¶•=í¬ì›Œë“œ ë²¡í„°)
 	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
 	const FVector Fwd = GetActorForwardVector();
-	const float RollRate = FVector::DotProduct(AngVelDeg, Fwd); // µµ/ÃÊ
+	const float RollRate = FVector::DotProduct(AngVelDeg, Fwd); // ë„/ì´ˆ
 
-	// °£´ÜÇÑ PD Á¦¾î: Torque = Kp * error - Kd * rate
+	// ê°„ë‹¨í•œ PD ì œì–´: Torque = Kp * error - Kd * rate
 	const float Control = (BankKp * Error) - (BankKd * RollRate);
 
-	// ·Ñ Ãà ÅäÅ© Àû¿ë(µµ ´ÜÀ§)
+	// ë¡¤ ì¶• í† í¬ ì ìš©(ë„ ë‹¨ìœ„)
 	const FVector RollTorque = Fwd * Control;
 	ShipMesh->AddTorqueInDegrees(RollTorque, NAME_None, /*bAccelChange=*/true);
 }
 
 void AMyTestPawn::ClampSpeeds() const
 {
-	// ¼±¼Ó Á¦ÇÑ
+	// ì„ ì† ì œí•œ
 	const FVector V = ShipMesh->GetPhysicsLinearVelocity();
 	const float Speed = V.Length();
 	if (Speed > MaxLinearSpeed)
@@ -176,7 +174,7 @@ void AMyTestPawn::ClampSpeeds() const
 		ShipMesh->SetPhysicsLinearVelocity(Clamped);
 	}
 
-	// °¢¼Ó Á¦ÇÑ(µµ/ÃÊ)
+	// ê°ì† ì œí•œ(ë„/ì´ˆ)
 	const FVector AV = ShipMesh->GetPhysicsAngularVelocityInDegrees();
 	const float AVMag = AV.Length();
 	if (AVMag > MaxAngularSpeed)
@@ -188,45 +186,50 @@ void AMyTestPawn::ClampSpeeds() const
 
 void AMyTestPawn::ApplyUpright(float DeltaTime, float Strength)
 {
-	if (Strength <= KINDA_SMALL_NUMBER)
-		return;
+	if (Strength <= KINDA_SMALL_NUMBER || !ShipMesh) return;
 
-	// ¿øÇÏ´Â Up = ¿ùµå Up
-	const FVector DesiredUp = FVector::UpVector;
+	const FVector WorldUp = FVector::UpVector;
+	const FVector Fwd = GetActorForwardVector();
+
+	// 1) ì›”ë“œ Upì„ Fwdì— ì§êµí•œ í‰ë©´ìœ¼ë¡œ íˆ¬ì˜ â†’ í”¼ì¹˜ ë³´ì¡´, ë¡¤ë§Œ êµì •
+	FVector DesiredUp = WorldUp - FVector::DotProduct(WorldUp, Fwd) * Fwd;
+	const float Len = DesiredUp.Size();
+	if (Len < 1e-3f)
+	{
+		// ì•/ë’¤ë¡œ ê±°ì˜ ìˆ˜ì§(â€œê·¹â€)ì„ ë³´ê³  ìˆì„ ë•ŒëŠ” ì•ˆì •ì„±ì„ ìœ„í•´ ìŠ¤í‚µ
+		return;
+	}
+	DesiredUp /= Len;
+
+	// 2) í˜„ì¬ Upê³¼ì˜ ì°¨ì´ë¥¼ ì¶•/ê°ë„ë¡œ ê³„ì‚°
 	const FVector CurrUp = GetActorUpVector();
-
-	// È¸ÀüÃà/°¢µµ
 	FVector Axis = FVector::CrossProduct(CurrUp, DesiredUp);
-	const float SinTheta = Axis.Length();
+	const float SinTheta = Axis.Size();
 	const float CosTheta = FVector::DotProduct(CurrUp, DesiredUp);
-
-	if (SinTheta < 1e-3f && CosTheta > 0.999f)
-		return;
-
-	Axis.Normalize();
+	if (SinTheta < 1e-3f && CosTheta > 0.999f) return;
+	Axis /= (SinTheta + KINDA_SMALL_NUMBER);
 
 	const float AngleDeg = FMath::RadiansToDegrees(FMath::Atan2(SinTheta, CosTheta));
 
-	// ÇöÀç °¢¼Óµµ¿¡¼­ ±³Á¤Ãà ¼ººĞ¸¸
+	// 3) í˜„ì¬ ê°ì†ë„ì˜ êµì •ì¶• ì„±ë¶„ë§Œ ê°ì‡ ì— ì‚¬ìš©
 	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
-	const float   RateAlongAxis = FVector::DotProduct(AngVelDeg, Axis);
+	const float RateAlongAxis = FVector::DotProduct(AngVelDeg, Axis);
 
-	// PD + °­µµ ½ºÄÉÀÏ
-	const float Control = Strength * ((UprightKp * AngleDeg) - (UprightKd * RateAlongAxis));
-	const FVector UprightTorque = Axis * Control;
-	ShipMesh->AddTorqueInDegrees(UprightTorque, NAME_None, /*bAccelChange=*/true);
+	// 4) â€œê·¹â€ ê·¼ì²˜ì—ì„œëŠ” í˜ì„ ìì—°ìŠ¤ëŸ½ê²Œ ì•½í™” (ìˆ˜ì§ì„ ë³´ë©° íšŒì „ í­ì£¼ ë°©ì§€)
+	const float PoleScale = 1.f - FMath::Abs(FVector::DotProduct(Fwd, WorldUp)); // ìˆ˜í‰ì¼ ë•Œ 1, ìˆ˜ì§ì¼ ë•Œ 0
 
-	// (¿É¼Ç) ½ÃÀÛ Yaw·Î º¹±Íµµ µ¿ÀÏ ½ºÄÉÀÏ Àû¿ë
-	if (bRestoreYawToInitial)
+	// 5) PD ì œì–´ + ë¸”ë Œë“œ ê°•ë„
+	const float Control = Strength * PoleScale * ((UprightKp * AngleDeg) - (UprightKd * RateAlongAxis));
+	ShipMesh->AddTorqueInDegrees(Axis * Control, NAME_None, /*bAccelChange=*/true);
+
+	// (ì˜µì…˜) Yaw ë³µì›ë„ ê°™ì€ ìŠ¤ì¼€ì¼ ì ìš© (ì›í•˜ë©´ ìœ ì§€)
+	if (bRestoreYawToInitial && PoleScale > 0.1f)
 	{
 		const float CurrYaw = GetActorRotation().Yaw;
 		const float YawErr = FMath::FindDeltaAngleDegrees(CurrYaw, InitialYaw);
+		const float YawRate = FVector::DotProduct(AngVelDeg, WorldUp);
 
-		const float YawRate = FVector::DotProduct(AngVelDeg, FVector::UpVector);
-
-		const float YawControl = Strength * ((YawKp * YawErr) - (YawKd * YawRate));
-		const FVector YawTorque = FVector::UpVector * YawControl;
-
-		ShipMesh->AddTorqueInDegrees(YawTorque, NAME_None, /*bAccelChange=*/true);
+		const float YawControl = Strength * PoleScale * ((YawKp * YawErr) - (YawKd * YawRate));
+		ShipMesh->AddTorqueInDegrees(WorldUp * YawControl, NAME_None, /*bAccelChange=*/true);
 	}
 }
