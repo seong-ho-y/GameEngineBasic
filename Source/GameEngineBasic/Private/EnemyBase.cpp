@@ -3,12 +3,16 @@
 
 #include "GameEngineBasic/Public/EnemyBase.h"
 
+#include "ShooterComp.h"
+#include "GameEngineBasic/Public/HealthComp.h"
+
 // Sets default values
 AEnemyBase::AEnemyBase()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	HealthComp = CreateDefaultSubobject<UHealthComp>("HealthComp");
+	ShooterComp = CreateDefaultSubobject<UShooterComp>("ShooterComp");
 }
 
 // Called when the game starts or when spawned

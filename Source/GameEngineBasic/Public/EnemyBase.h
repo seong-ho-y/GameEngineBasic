@@ -5,8 +5,11 @@
 #include "CoreMinimal.h"
 #include "Attack.h"
 #include "Damageable.h"
+#include "ShooterComp.h"
 #include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
+
+class UHealthComp;
 
 UCLASS()
 class GAMEENGINEBASIC_API AEnemyBase : public ACharacter, public IDamageable, public IAttack
@@ -16,6 +19,11 @@ class GAMEENGINEBASIC_API AEnemyBase : public ACharacter, public IDamageable, pu
 public:
 	// Sets default values for this character's properties
 	AEnemyBase();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UHealthComp* HealthComp;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	UShooterComp* ShooterComp;
 
 protected:
 	// Called when the game starts or when spawned
