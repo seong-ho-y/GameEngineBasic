@@ -1,9 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// It's a component defines weapon. It has a Logic for Fire. Also, you can assign a projectile class.
+// Enemy and Player(Actor that has shoot weapon) should have this component
+// You can override CanFire() and Fire() in BluePrint.
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "NiagaraSystem.h"
+#include "Projectile.h"
 #include "ShooterComp.generated.h"
 
 
@@ -15,6 +18,32 @@ class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UShooterComp();
+	
+	// 발사할 프로젝타일 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	TSubclassOf<AProjectile> ProjectileClass;
+    
+	// 발사 속도 (초당 발사 횟수의 역수, 예: 0.1f = 초당 10발)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	float FireRate = 0.1f;
+
+	// 탄약
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	int32 MaxAmmo;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	int32 CurrentAmmo;
+
+	// 총구 소켓 이름
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	FName MuzzleSocketName = "Muzzle";
+
+	// 총구 발사 이펙트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Effects")
+	UNiagaraSystem* MuzzleFlashEffect;
+
+	// 발사 사운드
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Effects")
+	USoundBase* FireSound;
 
 protected:
 	// Called when the game starts
@@ -24,12 +53,22 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
 	bool TryFire();
 
-	void Fire();
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	bool CanFire() const;
 
-	/*
-	 *구현할거 : VFX
-	 *무기 스왑 시 그에 따른 다른 공격이 나가야하는데 컴포넌트 접근해서 사용해야하나
-	 */
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
+	void Fire();
+	
+private:
+	// 연사 속도 제어를 위한 타이머 핸들
+	FTimerHandle FireRateTimerHandle;
+
+	// 현재 발사 가능한 상태인지 나타내는 플래그
+	bool bIsReadyToFire = true;
+
+	// 쿨다운이 끝나면 bIsReadyToFire를 true로 되돌리는 함수
+	void ResetFireReady();
 };
