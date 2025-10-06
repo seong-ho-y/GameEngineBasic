@@ -2,8 +2,6 @@
 Content/*
 !Content/Share/
 
-# (git 추적을 위한 임시파일)
-Content/Share/.gitkeep
 
 # Visual Studio 2015 user specific files
 .vs/
