@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Attack.h"
-#include "Damageable.h"
-#include "ShooterComp.h"
+#include "GameEngineBasic/Components/public/Attack.h"
+#include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
 
+class UShooterComp;
 class UHealthComp;
 
 UCLASS()

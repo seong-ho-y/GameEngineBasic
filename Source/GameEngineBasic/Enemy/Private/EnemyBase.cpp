@@ -1,10 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameEngineBasic/Public/EnemyBase.h"
+#include "GameEngineBasic/Enemy/Public/EnemyBase.h"
 
-#include "ShooterComp.h"
-#include "GameEngineBasic/Public/HealthComp.h"
+#include "GameEngineBasic/Components/public/Attack.h"
+#include "GameEngineBasic/Components/public/Damageable.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
 
 // Sets default values
 AEnemyBase::AEnemyBase()

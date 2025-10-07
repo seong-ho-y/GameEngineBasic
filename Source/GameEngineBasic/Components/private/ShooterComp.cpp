@@ -1,7 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "ShooterComp.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
+
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 

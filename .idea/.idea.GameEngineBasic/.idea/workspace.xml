@@ -13,14 +13,31 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b0a2aea4-bce7-4c54-9535-96e8f1fc1b2f" name="변경" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Config/DefaultEditor.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultEditor.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Config/DefaultEngine.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultEngine.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/GameEngineBasic.Build.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/GameEngineBasic.Build.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/ShooterComp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Private/ShooterComp.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/ShooterComp.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Public/ShooterComp.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/BP_PorjectileBase.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/BP_PorjectileBase.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_MyTestPawn.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_MyTestPawn.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_PlayerController.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_PlayerController.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Player_Jang/IMC_Default.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Player_Jang/IMC_Default.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/VehicleTemplate/Blueprints/BP_VehicleAdvGameMode.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/VehicleTemplate/Blueprints/BP_VehicleAdvGameMode.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Attack.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/Attack.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/BTS_FindPlayer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTS_FindPlayer.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/BTS_Rotate.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTS_Rotate.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/BTT_Shoot.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTT_Shoot.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Damageable.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/Damageable.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/EnemyBase.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Private/EnemyBase.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/HealthComp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/HealthComp.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Looting.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/Looting.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Projectile.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Projectile.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/ShooterComp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/ShooterComp.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/Attack.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/Attack.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/BTS_FindPlayer.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTS_FindPlayer.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/BTS_Rotate.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTS_Rotate.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/BTT_Shoot.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTT_Shoot.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/Damageable.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/Damageable.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/EnemyBase.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Public/EnemyBase.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/HealthComp.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/HealthComp.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/Looting.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/Looting.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/ShooterComp.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/ShooterComp.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,41 +50,50 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "seong-ho-y"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;seong-ho-y&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/seong-ho-y/GameEngineBasic.git",
-    "accountId": "893af689-d448-444f-ad21-accfffc37ada"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/seong-ho-y/GameEngineBasic.git&quot;,
+    &quot;accountId&quot;: &quot;893af689-d448-444f-ad21-accfffc37ada&quot;
   }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 3
-}]]></component>
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Components/public/Attack.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Components/public/Damageable.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Components/public/HealthComp.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Components/public/Looting.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Components/public/ShooterComp.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Private/ShooterPlus.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Public/ShooterPlus.h" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
   <component name="ProjectId" id="33fiqeej762HtGWi2vL7AOd8i1O" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "C/C++ 프로젝트.GameEngineBasic.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "branch__SH",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;C/C++ 프로젝트.GameEngineBasic.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;branch__SH&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="C/C++ 프로젝트.GameEngineBasic">
     <configuration name="GameEngineBasic" type="CppProject" factoryName="C++ Project">
       <configuration_1 setup="1">
@@ -160,7 +186,10 @@
       <method v="2" />
     </configuration>
     <configuration default="true" type="docker-deploy" factoryName="dockerfile" temporary="true">
-      <deployment type="dockerfile" />
+      <deployment type="dockerfile">
+        <settings />
+      </deployment>
+      <EXTENSION ID="com.jetbrains.rider.docker.debug" isFastModeEnabled="true" isSslEnabled="false" />
       <method v="2" />
     </configuration>
   </component>
