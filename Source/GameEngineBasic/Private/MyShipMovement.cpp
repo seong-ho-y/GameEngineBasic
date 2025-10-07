@@ -20,10 +20,10 @@ void UMyShipMovement::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Initialize°¡ È£ÃâµÇÁö ¾Ê¾ÒÀ» °æ¿ìÀÇ ¾ÈÀüÀåÄ¡
+	// Initializeï¿½ï¿½ È£ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¡
 	if (!ShipMesh)
 	{
-		// ±âº»ÀûÀ¸·Î ¿À³ÊÀÇ ·çÆ®°¡ UStaticMeshComponent¶ó¸é ÀÚµ¿ ÃßÁ¤
+		// ï¿½âº»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ®ï¿½ï¿½ UStaticMeshComponentï¿½ï¿½ï¿½ ï¿½Úµï¿½ ï¿½ï¿½ï¿½ï¿½
 		if (AActor* Owner = GetOwner())
 		{
 			if (USceneComponent* Root = Owner->GetRootComponent())
@@ -49,7 +49,7 @@ void UMyShipMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 		return;
 	}
 
-	// Pawn.cppÀÇ Tick°ú µ¿ÀÏÇÑ ºí·»µù ·ÎÁ÷
+	// Pawn.cppï¿½ï¿½ Tickï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	const float LookMag = CurrentLookInput.Length();
 	const bool bHasLook = LookMag > LookDeadzone;
 
@@ -58,10 +58,10 @@ void UMyShipMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 	UprightAlpha = FMath::FInterpTo(UprightAlpha, TargetAlpha, DeltaTime, BlendSpeed);
 
-	// Upright Àû¿ë (ÃÖ´ë °­µµ ¹èÀ² Æ÷ÇÔ)
+	// Upright ï¿½ï¿½ï¿½ï¿½ (ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	ApplyUpright(DeltaTime, UprightAlpha * UprightMaxStrength);
 
-	// ·Ñ PD Á¦¾î + ¼Óµµ Å¬·¥ÇÁ
+	// ï¿½ï¿½ PD ï¿½ï¿½ï¿½ï¿½ + ï¿½Óµï¿½ Å¬ï¿½ï¿½ï¿½ï¿½
 	ApplyBankControl(DeltaTime);
 	ClampSpeeds();
 }
@@ -118,30 +118,30 @@ void UMyShipMovement::Boost()
 	bIsBoosting = !bIsBoosting;
 }
 
-// ===== ³»ºÎ Á¦¾î =====
+// ===== ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ =====
 
 void UMyShipMovement::ApplyBankControl(float /*DeltaTime*/)
 {
 	if (!ShipMesh || !GetOwner()) return;
 
-	// ¸¶¿ì½º X¿¡ ºñ·ÊÇÑ ¸ñÇ¥ ·Ñ °¢(µµ)
+	// ï¿½ï¿½ï¿½ì½º Xï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ ï¿½ï¿½ ï¿½ï¿½(ï¿½ï¿½)
 	const float TargetRoll = FMath::Clamp(CurrentLookInput.X, -1.0f, 1.0f) * MaxRollAngle;
 
-	// ÇöÀç ·Ñ(µµ)
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½(ï¿½ï¿½)
 	const float CurrentRoll = GetOwner()->GetActorRotation().Roll;
 
-	// ¿ÀÂ÷
+	// ï¿½ï¿½ï¿½ï¿½
 	const float Error = FMath::FindDeltaAngleDegrees(CurrentRoll, TargetRoll);
 
-	// ÇöÀç °¢¼Óµµ(µµ/ÃÊ)ÀÇ "·Ñ Ãà ¼ººÐ" (·ÑÃà = Æ÷¿öµå)
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Óµï¿½(ï¿½ï¿½/ï¿½ï¿½)ï¿½ï¿½ "ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½" (ï¿½ï¿½ï¿½ï¿½ = ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
 	const FVector Fwd = GetOwner()->GetActorForwardVector();
 	const float RollRate = FVector::DotProduct(AngVelDeg, Fwd);
 
-	// PD Á¦¾î
+	// PD ï¿½ï¿½ï¿½ï¿½
 	const float Control = (BankKp * Error) - (BankKd * RollRate);
 
-	// ·Ñ Ãà ÅäÅ©
+	// ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Å©
 	const FVector RollTorque = Fwd * Control;
 	ShipMesh->AddTorqueInDegrees(RollTorque, NAME_None, /*bAccelChange=*/true);
 }
@@ -150,7 +150,7 @@ void UMyShipMovement::ClampSpeeds() const
 {
 	if (!ShipMesh) return;
 
-	// ¼±¼Ó Á¦ÇÑ
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	const FVector V = ShipMesh->GetPhysicsLinearVelocity();
 	const float Speed = V.Length();
 	if (Speed > MaxLinearSpeed)
@@ -159,7 +159,7 @@ void UMyShipMovement::ClampSpeeds() const
 		ShipMesh->SetPhysicsLinearVelocity(Clamped);
 	}
 
-	// °¢¼Ó Á¦ÇÑ(µµ/ÃÊ)
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½/ï¿½ï¿½)
 	const FVector AV = ShipMesh->GetPhysicsAngularVelocityInDegrees();
 	const float AVMag = AV.Length();
 	if (AVMag > MaxAngularSpeed)
@@ -176,17 +176,17 @@ void UMyShipMovement::ApplyUpright(float /*DeltaTime*/, float Strength)
 	const FVector WorldUp = FVector::UpVector;
 	const FVector Fwd = GetOwner()->GetActorForwardVector();
 
-	// 1) ¿ùµå UpÀ» Fwd¿¡ Á÷±³ÇÑ Æò¸éÀ¸·Î Åõ¿µ ¡æ ·Ñ¸¸ ±³Á¤
+	// 1) ï¿½ï¿½ï¿½ï¿½ Upï¿½ï¿½ Fwdï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ñ¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 	FVector DesiredUp = WorldUp - FVector::DotProduct(WorldUp, Fwd) * Fwd;
 	const float Len = DesiredUp.Size();
 	if (Len < 1e-3f)
 	{
-		// "±Ø" ±ÙÃ³ ¾ÈÁ¤¼º
+		// "ï¿½ï¿½" ï¿½ï¿½Ã³ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		return;
 	}
 	DesiredUp /= Len;
 
-	// 2) ÇöÀç Up°úÀÇ Â÷ÀÌ¸¦ Ãà/°¢µµ·Î °è»ê
+	// 2) ï¿½ï¿½ï¿½ï¿½ Upï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½ ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 	const FVector CurrUp = GetOwner()->GetActorUpVector();
 	FVector Axis = FVector::CrossProduct(CurrUp, DesiredUp);
 	const float SinTheta = Axis.Size();
@@ -196,18 +196,18 @@ void UMyShipMovement::ApplyUpright(float /*DeltaTime*/, float Strength)
 
 	const float AngleDeg = FMath::RadiansToDegrees(FMath::Atan2(SinTheta, CosTheta));
 
-	// 3) ÇöÀç °¢¼ÓµµÀÇ ±³Á¤Ãà ¼ººÐ¸¸ °¨¼è
+	// 3) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Óµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ð¸ï¿½ ï¿½ï¿½ï¿½ï¿½
 	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
 	const float RateAlongAxis = FVector::DotProduct(AngVelDeg, Axis);
 
-	// 4) "±Ø" ±ÙÃ³ ½ºÄÉÀÏ¸µ
-	const float PoleScale = 1.f - FMath::Abs(FVector::DotProduct(Fwd, WorldUp)); // ¼öÆò 1, ¼öÁ÷ 0
+	// 4) "ï¿½ï¿½" ï¿½ï¿½Ã³ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½
+	const float PoleScale = 1.f - FMath::Abs(FVector::DotProduct(Fwd, WorldUp)); // ï¿½ï¿½ï¿½ï¿½ 1, ï¿½ï¿½ï¿½ï¿½ 0
 
-	// 5) PD Á¦¾î + ºí·»µå
+	// 5) PD ï¿½ï¿½ï¿½ï¿½ + ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	const float Control = Strength * PoleScale * ((UprightKp * AngleDeg) - (UprightKd * RateAlongAxis));
 	ShipMesh->AddTorqueInDegrees(Axis * Control, NAME_None, /*bAccelChange=*/true);
 
-	// (¿É¼Ç) Yaw º¹¿ø
+	// (ï¿½É¼ï¿½) Yaw ï¿½ï¿½ï¿½ï¿½
 	if (bRestoreYawToInitial && PoleScale > 0.1f)
 	{
 		const float CurrYaw = GetOwner()->GetActorRotation().Yaw;
