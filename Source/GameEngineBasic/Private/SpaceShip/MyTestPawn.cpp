@@ -1,6 +1,7 @@
 ﻿
 #include "SpaceShip/MyTestPawn.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "MyShipMovement/MyShipMovement.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -30,7 +31,6 @@ AMyTestPawn::AMyTestPawn()
 	// 값이 높을수록 회전이 더 빨리 멈춥니다.
 	ShipMesh->SetAngularDamping(1.2f);
 
-
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 	SpringArm->TargetArmLength = 800.f;
@@ -38,49 +38,34 @@ AMyTestPawn::AMyTestPawn()
 
 	// 카메라 지연(과하지 않게)
 	SpringArm->bEnableCameraLag = true;
-	SpringArm->CameraLagSpeed = 30.0f;
+	SpringArm->CameraLagSpeed = 60.f; // 1) 속도 크게 올려서 빨리 붙도록
+	SpringArm->CameraLagMaxDistance = 5.f; // 2) 최대 지연거리 크게 줄여서 “길게 뒤쳐짐” 방지
 
 	SpringArm->bEnableCameraRotationLag = false;
-	SpringArm->CameraRotationLagSpeed = 8.0f;
+	SpringArm->CameraRotationLagSpeed = 20.0f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 
-
+	ShipMovement = CreateDefaultSubobject<UMyShipMovement>(TEXT("ShipMovement"));
 }
 
 // 게임 시작 시 호출되는 함수
 void AMyTestPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	InitialYaw = GetActorRotation().Yaw; // 시작 헤딩 기억
+
+	if (ShipMovement && ShipMesh)
+	{
+		const float InitialYaw = GetActorRotation().Yaw;
+		ShipMovement->Initialize(ShipMesh, InitialYaw);
+	}
 }
 
 // 매 프레임마다 호출되는 함수
 void AMyTestPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	// 현재 마우스 입력의 크기(0~1 가정) 
-	const float LookMag = CurrentLookInput.Length(); 
-
-	// Deadzone을 넘어가면 '입력 있음' 판단 
-	const bool bHasLook = LookMag > LookDeadzone;
-
-	// 입력이 있으면 Upright 약하게(0), 없으면 강하게(1)
-	const float TargetAlpha = bHasLook ? 0.0f : 1.0f;
-
-	// 각각 다르게 보간 속도 적용
-	const float BlendSpeed = bHasLook ? UprightBlendOutSpeed : UprightBlendInSpeed;
-
-	UprightAlpha = FMath::FInterpTo(UprightAlpha, TargetAlpha, DeltaTime, BlendSpeed);
-
-	// Upright 적용(최대 강도 배율 포함)
-	ApplyUpright(DeltaTime, UprightAlpha * UprightMaxStrength);
-
-	// 롤 PD 제어와 속도 클램프는 기존대로
-	ApplyBankControl(DeltaTime);
-	ClampSpeeds();
 }
 
 // 플레이어 입력 처리
@@ -103,133 +88,20 @@ void AMyTestPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AMyTestPawn::MoveForward(const FInputActionValue& Value)
 {
-	const float Axis = Value.Get<float>();
-	if (FMath::IsNearlyZero(Axis))
-	{
-		return;
-	}
-
-	float CurrentThrust = ThrustForce * Axis;
-	if (bIsBoosting)
-	{
-		CurrentThrust *= BoostMultiplier;
-	}
-
-	// 질량 무시하고 가속으로(가벼운 조작감)
-	ShipMesh->AddForce(GetActorForwardVector() * CurrentThrust, NAME_None, /*bAccelChange=*/true);
+	if (ShipMovement) { ShipMovement->MoveForward(Value); }
 }
 
 void AMyTestPawn::Look(const FInputActionValue& Value)
 {
-	CurrentLookInput = Value.Get<FVector2D>();
-
-	const FVector PitchTorque = GetActorRightVector() * (-CurrentLookInput.Y * TurnTorque);
-	const FVector YawTorque = GetActorUpVector() * (CurrentLookInput.X * TurnTorque);
-	
-	ShipMesh->AddTorqueInDegrees(PitchTorque + YawTorque, NAME_None, /*bAccelChange=*/true);
+	if (ShipMovement) { ShipMovement->Look(Value); }
 }
 
-void AMyTestPawn::LookEnded(const FInputActionValue& /*Value*/)
+void AMyTestPawn::LookEnded(const FInputActionValue& Value)
 {
-	CurrentLookInput = FVector2D::ZeroVector; // 입력 끝났을 때 자연감 복귀
+	if (ShipMovement) { ShipMovement->LookEnded(Value); }
 }
 
 void AMyTestPawn::Boost()
 {
-	bIsBoosting = !bIsBoosting;
-}
-
-void AMyTestPawn::ApplyBankControl(float DeltaTime)
-{
-	// 마우스 X에 비례한 목표 롤 각도(도)
-	const float TargetRoll = FMath::Clamp(CurrentLookInput.X, -1.0f, 1.0f) * MaxRollAngle;
-
-	// 현재 롤 각(도)
-	const float CurrentRoll = GetActorRotation().Roll;
-
-	// 오차
-	const float Error = FMath::FindDeltaAngleDegrees(CurrentRoll, TargetRoll);
-
-	// 현재 각속도(도/초)에서 "롤 축 성분"만 추출 (롤 축=포워드 벡터)
-	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
-	const FVector Fwd = GetActorForwardVector();
-	const float RollRate = FVector::DotProduct(AngVelDeg, Fwd); // 도/초
-
-	// 간단한 PD 제어: Torque = Kp * error - Kd * rate
-	const float Control = (BankKp * Error) - (BankKd * RollRate);
-
-	// 롤 축 토크 적용(도 단위)
-	const FVector RollTorque = Fwd * Control;
-	ShipMesh->AddTorqueInDegrees(RollTorque, NAME_None, /*bAccelChange=*/true);
-}
-
-void AMyTestPawn::ClampSpeeds() const
-{
-	// 선속 제한
-	const FVector V = ShipMesh->GetPhysicsLinearVelocity();
-	const float Speed = V.Length();
-	if (Speed > MaxLinearSpeed)
-	{
-		const FVector Clamped = V.GetSafeNormal() * MaxLinearSpeed;
-		ShipMesh->SetPhysicsLinearVelocity(Clamped);
-	}
-
-	// 각속 제한(도/초)
-	const FVector AV = ShipMesh->GetPhysicsAngularVelocityInDegrees();
-	const float AVMag = AV.Length();
-	if (AVMag > MaxAngularSpeed)
-	{
-		const FVector ClampedAV = AV.GetSafeNormal() * MaxAngularSpeed;
-		ShipMesh->SetPhysicsAngularVelocityInDegrees(ClampedAV);
-	}
-}
-
-void AMyTestPawn::ApplyUpright(float DeltaTime, float Strength)
-{
-	if (Strength <= KINDA_SMALL_NUMBER || !ShipMesh) return;
-
-	const FVector WorldUp = FVector::UpVector;
-	const FVector Fwd = GetActorForwardVector();
-
-	// 1) 월드 Up을 Fwd에 직교한 평면으로 투영 → 피치 보존, 롤만 교정
-	FVector DesiredUp = WorldUp - FVector::DotProduct(WorldUp, Fwd) * Fwd;
-	const float Len = DesiredUp.Size();
-	if (Len < 1e-3f)
-	{
-		// 앞/뒤로 거의 수직(“극”)을 보고 있을 때는 안정성을 위해 스킵
-		return;
-	}
-	DesiredUp /= Len;
-
-	// 2) 현재 Up과의 차이를 축/각도로 계산
-	const FVector CurrUp = GetActorUpVector();
-	FVector Axis = FVector::CrossProduct(CurrUp, DesiredUp);
-	const float SinTheta = Axis.Size();
-	const float CosTheta = FVector::DotProduct(CurrUp, DesiredUp);
-	if (SinTheta < 1e-3f && CosTheta > 0.999f) return;
-	Axis /= (SinTheta + KINDA_SMALL_NUMBER);
-
-	const float AngleDeg = FMath::RadiansToDegrees(FMath::Atan2(SinTheta, CosTheta));
-
-	// 3) 현재 각속도의 교정축 성분만 감쇠에 사용
-	const FVector AngVelDeg = ShipMesh->GetPhysicsAngularVelocityInDegrees();
-	const float RateAlongAxis = FVector::DotProduct(AngVelDeg, Axis);
-
-	// 4) “극” 근처에서는 힘을 자연스럽게 약화 (수직을 보며 회전 폭주 방지)
-	const float PoleScale = 1.f - FMath::Abs(FVector::DotProduct(Fwd, WorldUp)); // 수평일 때 1, 수직일 때 0
-
-	// 5) PD 제어 + 블렌드 강도
-	const float Control = Strength * PoleScale * ((UprightKp * AngleDeg) - (UprightKd * RateAlongAxis));
-	ShipMesh->AddTorqueInDegrees(Axis * Control, NAME_None, /*bAccelChange=*/true);
-
-	// (옵션) Yaw 복원도 같은 스케일 적용 (원하면 유지)
-	if (bRestoreYawToInitial && PoleScale > 0.1f)
-	{
-		const float CurrYaw = GetActorRotation().Yaw;
-		const float YawErr = FMath::FindDeltaAngleDegrees(CurrYaw, InitialYaw);
-		const float YawRate = FVector::DotProduct(AngVelDeg, WorldUp);
-
-		const float YawControl = Strength * PoleScale * ((YawKp * YawErr) - (YawKd * YawRate));
-		ShipMesh->AddTorqueInDegrees(WorldUp * YawControl, NAME_None, /*bAccelChange=*/true);
-	}
+	if (ShipMovement) { ShipMovement->Boost(); }
 }

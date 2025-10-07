@@ -28,6 +28,7 @@ public:
 	float MaxHealth;
 
 	float CurrentHealth;
+
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Health")
 	float MaxShield;
 
