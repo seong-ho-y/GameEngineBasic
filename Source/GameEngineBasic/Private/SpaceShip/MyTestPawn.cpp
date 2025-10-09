@@ -1,8 +1,10 @@
 ﻿
 #include "SpaceShip/MyTestPawn.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "MyShipMovement/MyShipMovement.h"
+#include "ShooterComp.h"
+
 #include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Components/InputComponent.h"
 #include "Components/StaticMeshComponent.h"
 
@@ -39,15 +41,13 @@ AMyTestPawn::AMyTestPawn()
 	// 카메라 지연(과하지 않게)
 	SpringArm->bEnableCameraLag = true;
 	SpringArm->CameraLagSpeed = 60.f; // 1) 속도 크게 올려서 빨리 붙도록
-	SpringArm->CameraLagMaxDistance = 5.f; // 2) 최대 지연거리 크게 줄여서 “길게 뒤쳐짐” 방지
-
 	SpringArm->bEnableCameraRotationLag = false;
-	SpringArm->CameraRotationLagSpeed = 20.0f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 
 	ShipMovement = CreateDefaultSubobject<UMyShipMovement>(TEXT("ShipMovement"));
+	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 }
 
 // 게임 시작 시 호출되는 함수
@@ -57,8 +57,7 @@ void AMyTestPawn::BeginPlay()
 
 	if (ShipMovement && ShipMesh)
 	{
-		const float InitialYaw = GetActorRotation().Yaw;
-		ShipMovement->Initialize(ShipMesh, InitialYaw);
+		ShipMovement->Initialize(ShipMesh);
 	}
 }
 
@@ -75,15 +74,31 @@ void AMyTestPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	{
 		EnhancedInput->BindAction(IA_MoveForward, ETriggerEvent::Triggered, this, &AMyTestPawn::MoveForward);
 
-		EnhancedInput->BindAction(IA_Boost, ETriggerEvent::Started, this, &AMyTestPawn::Boost);
+		EnhancedInput->BindAction(IA_Boost, ETriggerEvent::Started, this, &AMyTestPawn::Boost_Pressed);
+		EnhancedInput->BindAction(IA_Boost, ETriggerEvent::Completed, this, &AMyTestPawn::Boost_Released);
 
 		EnhancedInput->BindAction(IA_Look, ETriggerEvent::Triggered, this, &AMyTestPawn::Look);
-		EnhancedInput->BindAction(IA_Look, ETriggerEvent::Completed, this, &AMyTestPawn::LookEnded);
+
+		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Triggered, this, &AMyTestPawn::FireStarted);
+
+		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Started, this, &AMyTestPawn::FireStarted);
+		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Completed, this, &AMyTestPawn::FireTriggered);
+	
+		EnhancedInput->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &AMyTestPawn::Roll);
+		EnhancedInput->BindAction(IA_Roll, ETriggerEvent::Completed, this, &AMyTestPawn::Roll);
+		
+		EnhancedInput->BindAction(IA_Brake, ETriggerEvent::Started, this, &AMyTestPawn::Brake_Pressed);
+		EnhancedInput->BindAction(IA_Brake, ETriggerEvent::Completed, this, &AMyTestPawn::Brake_Released);
 	}
 
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent not found!"));
 	}
+}
+
+void AMyTestPawn::Roll(const FInputActionValue& Value)
+{
+	if (ShipMovement) ShipMovement->Roll(Value);
 }
 
 void AMyTestPawn::MoveForward(const FInputActionValue& Value)
@@ -96,12 +111,42 @@ void AMyTestPawn::Look(const FInputActionValue& Value)
 	if (ShipMovement) { ShipMovement->Look(Value); }
 }
 
-void AMyTestPawn::LookEnded(const FInputActionValue& Value)
+void AMyTestPawn::Boost_Pressed()
 {
-	if (ShipMovement) { ShipMovement->LookEnded(Value); }
+	if (!ShipMovement) return;
+	ShipMovement->StartBoost();
 }
 
-void AMyTestPawn::Boost()
+void AMyTestPawn::Boost_Released()
 {
-	if (ShipMovement) { ShipMovement->Boost(); }
+	if (!ShipMovement) return;
+	ShipMovement->StopBoost();
+}
+
+void AMyTestPawn::Brake_Pressed()
+{
+	if (!ShipMovement) return;
+	ShipMovement->StartBrake();
+}
+
+void AMyTestPawn::Brake_Released()
+{
+	if (!ShipMovement) return;
+	ShipMovement->StopBrake();
+}
+
+void AMyTestPawn::FireTriggered(const FInputActionValue& /*Value*/)
+{
+	UE_LOG(LogTemp, Warning, TEXT("FireTriggered"));
+	if (Shooter) Shooter->TryFire(); // 쿨다운이 끝났을 때만 실제 발사됨
+}
+
+void AMyTestPawn::FireStarted(const FInputActionValue& /*Value*/)
+{
+	UE_LOG(LogTemp, Warning, TEXT("FireStarted"));
+}
+
+void AMyTestPawn::FireCompleted(const FInputActionValue& /*Value*/)
+{
+	UE_LOG(LogTemp, Warning, TEXT("FireCompleted"));
 }
