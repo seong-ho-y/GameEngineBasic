@@ -26,6 +26,7 @@ public:
 	void Look(const struct FInputActionValue& Value);
 	void LookEnded(const struct FInputActionValue& Value);
 	void Roll(const struct FInputActionValue& Value);
+	void ApplyBrake(float DeltaTime);
 	void StartBrake();
 	void StopBrake();
 	void StartBoost();
@@ -44,7 +45,7 @@ protected:
 
 	// --- Physics ---
 	UPROPERTY(EditAnywhere, Category = "Physics", meta = (ClampMin = "0"))
-	float ThrustForce = 1000.f;
+	float ThrustForce = 2000.f;
 
 	UPROPERTY(EditAnywhere, Category = "Physics", meta = (ClampMin = "0"))
 	float TurnTorque = 300.f; // 클수록 마우스 감도 증가

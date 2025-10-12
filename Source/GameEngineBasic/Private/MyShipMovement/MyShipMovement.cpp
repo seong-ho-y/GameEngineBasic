@@ -73,6 +73,38 @@ void UMyShipMovement::Roll(const FInputActionValue& Value)
 	RollInput = FMath::Clamp(Value.Get<float>(), -1.f, 1.f);
 }
 
+void UMyShipMovement::ApplyBrake(float DeltaTime)
+{
+	if (!ShipMesh) return;
+
+	const FVector V = ShipMesh->GetPhysicsLinearVelocity();
+	const float   S = V.Size();
+	if (S <= KINDA_SMALL_NUMBER)
+	{
+		// 이미 거의 정지
+		ShipMesh->SetPhysicsLinearVelocity(FVector::ZeroVector, false);
+		return;
+	}
+
+	// 목표 감속량 (이번 프레임에서 줄일 속도 크기)
+	const float MaxDeltaSpeed = BrakeDecel * DeltaTime;
+
+	// 1) 아주 느릴 때는 멈춤으로 스냅 (뒤집힘 방지)
+	if (S <= MaxDeltaSpeed)
+	{
+		ShipMesh->SetPhysicsLinearVelocity(FVector::ZeroVector, false);
+		return;
+	}
+
+	// 2) 정상 구간: F = m*a로 ‘현재 속도의 정반대’ 방향으로 일정 감속
+	const float Mass = ShipMesh->GetMass();
+	const FVector DirOpposite = -V.GetSafeNormal();             // 진행 반대
+	const FVector Force = DirOpposite * (Mass * BrakeDecel);    // 실제 힘
+
+	// 물리력으로 감속 (AccelChange=false: 진짜 Force로 적용, 질량 영향 O)
+	ShipMesh->AddForce(Force, NAME_None, false);
+}
+
 void UMyShipMovement::ApplyForces(float DeltaTime)
 {
 	if (!ShipMesh) return;
@@ -80,19 +112,8 @@ void UMyShipMovement::ApplyForces(float DeltaTime)
 	// --- 브레이크 우선 ---
 	if (bIsBraking)
 	{
-		// 현재 속도를 BrakeDecel로 감속. 0 아래로는 떨어지지 않게 클램프.
-		const FVector V = ShipMesh->GetPhysicsLinearVelocity();
-		const float   S = V.Size();
-
-		if (S > KINDA_SMALL_NUMBER)
-		{
-			const float NewS = FMath::Max(0.f, S - BrakeDecel * DeltaTime);
-			const FVector NewV = (NewS > 0.f) ? (V * (NewS / S)) : FVector::ZeroVector;
-			ShipMesh->SetPhysicsLinearVelocity(NewV, false);
-		}
-
-		// 브레이크 중에는 추력 무시(감속 우선)
-		return;
+		ApplyBrake(DeltaTime);  
+		return;                 
 	}
 
 	// --- 전진 추력 ---
