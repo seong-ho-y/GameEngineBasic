@@ -89,6 +89,7 @@ void UShooterComp::Fire_Implementation()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = MyOwner; // Set MyOwner to Projectile's Owner
 	SpawnParams.Instigator = MyOwner->GetInstigator(); // Set MyOwner's Instigator to Projectile's Instigator
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
 	

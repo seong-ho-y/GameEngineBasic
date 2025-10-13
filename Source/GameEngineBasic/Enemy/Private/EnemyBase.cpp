@@ -1,15 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameEngineBasic/Enemy/Public/EnemyBase.h"
-
+#include "../Public/EnemyBase.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameEngineBasic/Components/public/Attack.h"
 #include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+#include "GameFramework/PawnMovementComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+#include "GameFramework/Pawn.h"
 
 class AAIController;
 // Sets default values
@@ -17,6 +21,18 @@ AEnemyBase::AEnemyBase()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	// 1. 루트 컴포넌트가 될 콜라이더를 생성하고 루트로 지정
+	CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComponent"));
+	RootComponent = CollisionComponent;
+
+	// 2. 메시 컴포넌트를 생성하고 루트에 부착
+	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	MeshComponent->SetupAttachment(RootComponent);
+
+	// 3. 이동 컴포넌트를 생성
+	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
+	MovementComponent->UpdatedComponent = RootComponent;
+
 	HealthComp = CreateDefaultSubobject<UHealthComp>("HealthComp");
 	ShooterComp = CreateDefaultSubobject<UShooterComp>("ShooterComp");
 }
@@ -33,6 +49,63 @@ void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!BlackboardCache && AICache)
+	{
+		BlackboardCache = AICache->GetBlackboardComponent();
+	}
+	if (!BlackboardCache)
+	{
+		return;
+	}
+
+	
+	// 블랙보드에서 스로틀 값 가져오기
+	const float ThrottleValue = BlackboardCache->GetValueAsFloat(TEXT("ThrottleValue"));
+
+	// MovementComp 찾아오기 가져오기
+	if (UFloatingPawnMovement* FloatingMovement = Cast<UFloatingPawnMovement>(GetMovementComponent()))
+	{
+		// --- 부드러운 추진감 계산용 변수들 ---
+		static FVector CurrentVelocity = FVector::ZeroVector;   // 현재 속도
+		const FVector Forward = GetActorForwardVector();         // 현재 진행 방향
+		const float TargetSpeed = MaxSpeed * ThrottleValue;      // 목표 속도
+		const float Accel = BaseAcceleration;                    // 가속률 (기본값)
+
+		// 속도를 부드럽게 보간 (가속/감속 모두 처리)
+		const float InterpSpeed = (ThrottleValue > 0.f) ? Accel : Deceleration;
+		const FVector DesiredVelocity = Forward * TargetSpeed;
+
+		// 부드럽게 속도 보간 (관성 효과)
+		CurrentVelocity = FMath::VInterpTo(CurrentVelocity, DesiredVelocity, DeltaTime, InterpSpeed);
+
+		// 실제 이동 입력으로 전달
+		const FVector MoveDirection = CurrentVelocity.GetSafeNormal();
+		const float MoveScale = CurrentVelocity.Size() / MaxSpeed;
+
+		AddMovementInput(MoveDirection, MoveScale);
+
+		// 로그 확인 (디버그용)
+		//UE_LOG(LogTemp, Verbose, TEXT("Speed: %.1f / %.1f"), CurrentVelocity.Size(), MaxSpeed);
+	}
+}
+
+// 이 부분이 AI와 Pawn을 연결하는 핵심입니다.
+void AEnemyBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// 이 Pawn을 조종하는 컨트롤러가 AIController인지 확인하고 캐시에 저장
+	AICache = Cast<AAIController>(NewController);
+	if (AICache)
+	{
+		// AIController가 사용하는 블랙보드를 가져와 캐시에 저장
+		BlackboardCache = AICache->GetBlackboardComponent();
+		UE_LOG(LogTemp, Warning, TEXT("AICache is valid"));
+		if (!BlackboardCache)
+		{
+			UE_LOG(LogTemp, Error, TEXT("BB is not found"));
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -93,12 +166,14 @@ void AEnemyBase::Activate()
 		AIController->GetBrainComponent()->StartLogic();
 	}
     
+	/*
 	// 4. 캐릭터 이동을 활성화
 	if (GetCharacterMovement())
 	{
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 		GetCharacterMovement()->Activate();
 	}
+	*/
 }
 void AEnemyBase::DeActivate()
 {
@@ -116,10 +191,12 @@ void AEnemyBase::DeActivate()
 		AIController->GetBrainComponent()->StopLogic("Deactivated by Object Pool");
 	}
 
+	/*
 	// 3. 캐릭터의 움직임을 즉시 멈추고 비활성화합니다.
 	if (GetCharacterMovement())
 	{
 		GetCharacterMovement()->StopMovementImmediately();
 		GetCharacterMovement()->DisableMovement();
 	}
+	*/
 }

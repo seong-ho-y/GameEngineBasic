@@ -14,10 +14,14 @@
   <component name="ChangeListManager">
     <list default="true" id="b0a2aea4-bce7-4c54-9535-96e8f1fc1b2f" name="변경" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTS_Rotate.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTS_Rotate.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTS_Rotate.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTS_Rotate.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/HealthComp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/HealthComp.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/HealthComp.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/public/HealthComp.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Config/DefaultEditor.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultEditor.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Config/DefaultEditorPerProjectUserSettings.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Config/DefaultEngine.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultEngine.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Config/DefaultGame.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Config/DefaultInput.ini" beforeDir="false" afterPath="$PROJECT_DIR$/Config/DefaultInput.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTT_SetThrottle.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTT_SetThrottle.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTT_SetThrottle.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/AI/Public/BTT_SetThrottle.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/ShooterComp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Components/private/ShooterComp.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Private/EnemyBase.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Private/EnemyBase.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Public/EnemyBase.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Public/EnemyBase.h" afterDir="false" />
     </list>
@@ -45,6 +49,16 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Developer/BSPUtils/Private/BSPUtils.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Developer/FunctionalTesting/Private/FunctionalTest.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Programs/AutomationTool/Gauntlet/Platform/IOS/Gauntlet.IOSBuildSource.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/AIModule/Classes/AIController.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/AIModule/Classes/Actions/PawnAction_Move.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/AIModule/Classes/Navigation/PathFollowingComponent.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/AIModule/Private/AIController.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/Engine/Classes/GameFramework/FloatingPawnMovement.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/Engine/Classes/GameFramework/Pawn.h" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../../Program Files/Epic Games/UE_5.4/Engine/Source/Runtime/Engine/Private/Pawn.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTS_FindPlayer.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTS_Rotate.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/AI/Private/BTT_SetThrottle.cpp" root0="FORCE_HIGHLIGHTING" />
@@ -70,8 +84,9 @@
     <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/GameEngineBasicOffroadWheelRear.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Source/GameEngineBasic/GameEngineBasicPawn.cpp" root0="FORCE_HIGHLIGHTING" />
   </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="Toolset" />
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
@@ -88,11 +103,14 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;branch__SH&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -216,12 +234,16 @@
       <updated>1759714721646</updated>
       <workItem from="1759714722696" duration="11462000" />
       <workItem from="1760261454015" duration="734000" />
+      <workItem from="1760344449403" duration="10776000" />
+      <workItem from="1760358259903" duration="124000" />
+      <workItem from="1760358511388" duration="10621000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
