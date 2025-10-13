@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "MyShipMovement.generated.h"
 
 
@@ -42,6 +44,27 @@ protected:
 	// --- 대상 메쉬 ---
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShipMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	UParticleSystem* ThrusterFX;      // Cascade 파티클 에셋
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	FName LeftThrusterSocket = "Thruster_L";
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	FName MiddleThrusterSocket = "Thruster_M";
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	FName RightThrusterSocket = "Thruster_R";
+
+	UPROPERTY(Transient) 
+	UParticleSystemComponent* LeftThrusterComp = nullptr;
+
+	UPROPERTY(Transient)
+	UParticleSystemComponent* MiddleThrusterComp = nullptr;
+
+	UPROPERTY(Transient)
+	UParticleSystemComponent* RightThrusterComp = nullptr;
 
 	// --- Physics ---
 	UPROPERTY(EditAnywhere, Category = "Physics", meta = (ClampMin = "0"))

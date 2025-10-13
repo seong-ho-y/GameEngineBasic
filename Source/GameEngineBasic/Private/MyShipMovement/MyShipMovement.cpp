@@ -5,7 +5,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Actor.h"
 #include "InputActionValue.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Engine/World.h"
+
 
 
 // Sets default values for this component's properties
@@ -17,6 +22,59 @@ UMyShipMovement::UMyShipMovement()
 void UMyShipMovement::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!ShipMesh)
+	{
+		if (AActor* Owner = GetOwner())
+		{
+			ShipMesh = Owner->FindComponentByClass<UStaticMeshComponent>();
+		}
+	}
+	
+	if (ShipMesh->DoesSocketExist(LeftThrusterSocket))
+	{
+		LeftThrusterComp = UGameplayStatics::SpawnEmitterAttached(
+			ThrusterFX,
+			ShipMesh,
+			LeftThrusterSocket,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			false);
+
+		LeftThrusterComp->bAutoActivate = false;
+		LeftThrusterComp->DeactivateSystem();
+	}
+
+	if (ShipMesh->DoesSocketExist(RightThrusterSocket))
+	{
+		RightThrusterComp = UGameplayStatics::SpawnEmitterAttached(
+			ThrusterFX,
+			ShipMesh,
+			RightThrusterSocket,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			false);
+
+		RightThrusterComp->bAutoActivate = false;
+		RightThrusterComp->DeactivateSystem();
+	}
+
+	if (ShipMesh->DoesSocketExist(MiddleThrusterSocket))
+	{
+		MiddleThrusterComp = UGameplayStatics::SpawnEmitterAttached(
+			ThrusterFX,
+			ShipMesh,
+			RightThrusterSocket,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			false);
+
+		MiddleThrusterComp->bAutoActivate = false;
+		MiddleThrusterComp->DeactivateSystem();
+	}
 }
 
 void UMyShipMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -27,7 +85,6 @@ void UMyShipMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	{
 		return;
 	}
-
 	ApplyForces(DeltaTime);
 	ApplyTorques(DeltaTime);
 	ClampSpeeds();
@@ -43,7 +100,6 @@ void UMyShipMovement::MoveForward(const FInputActionValue& Value)
 {
 	const float In = Value.Get<float>();
 	ThrottleInput = FMath::Clamp(In, 0.f, 1.f);
-
 }
 
 void UMyShipMovement::Look(const FInputActionValue& Value)
@@ -60,11 +116,33 @@ void UMyShipMovement::LookEnded(const FInputActionValue& /*Value*/)
 	CurrentLookInput = FVector2D::ZeroVector;
 }
 
-void UMyShipMovement::StartBoost() { bIsBoosting = true; }
-void UMyShipMovement::StopBoost() { bIsBoosting = false; }
+void UMyShipMovement::StartBoost()
+{ 
+	bIsBoosting = true; 
 
-void UMyShipMovement::StartBrake() { bIsBraking = true; }
-void UMyShipMovement::StopBrake() { bIsBraking = false; }
+	if (LeftThrusterComp)  LeftThrusterComp->ActivateSystem(true);
+	if (MiddleThrusterComp)  MiddleThrusterComp->ActivateSystem(true);
+	if (RightThrusterComp) RightThrusterComp->ActivateSystem(true);
+	
+}
+void UMyShipMovement::StopBoost() 
+{ 
+	bIsBoosting = false; 
+
+	if (LeftThrusterComp)  LeftThrusterComp->DeactivateSystem();
+	if (MiddleThrusterComp)  MiddleThrusterComp->DeactivateSystem();
+	if (RightThrusterComp) RightThrusterComp->DeactivateSystem();
+}
+
+void UMyShipMovement::StartBrake() 
+{ 
+	bIsBraking = true; 
+}
+void UMyShipMovement::StopBrake() 
+{ 
+	bIsBraking = false;
+
+}
 
 // ===== 내부 제어 =====
 
@@ -109,11 +187,11 @@ void UMyShipMovement::ApplyForces(float DeltaTime)
 {
 	if (!ShipMesh) return;
 
-	// --- 브레이크 우선 ---
+	// 2) 브레이크 우선
 	if (bIsBraking)
 	{
-		ApplyBrake(DeltaTime);  
-		return;                 
+		ApplyBrake(DeltaTime);
+		return; 
 	}
 
 	// --- 전진 추력 ---
