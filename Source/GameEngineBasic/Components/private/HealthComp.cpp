@@ -32,6 +32,10 @@ void UHealthComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	// ...
 }
 
+void UHealthComp::InitStats()
+{
+}
+
 void UHealthComp::TakeDamage()
 {
 }

@@ -11,6 +11,7 @@
 class UShooterComp;
 class UHealthComp;
 
+
 UCLASS()
 class GAMEENGINEBASIC_API AEnemyBase : public ACharacter, public IDamageable, public IAttack
 {
@@ -43,4 +44,6 @@ public:
 	virtual bool IsDead_Implementation() const override;
 
 	virtual void Attack_Implementation() override;
+	void Activate();
+	void DeActivate();
 };

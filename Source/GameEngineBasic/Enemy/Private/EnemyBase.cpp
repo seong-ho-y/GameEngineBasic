@@ -3,11 +3,15 @@
 
 #include "GameEngineBasic/Enemy/Public/EnemyBase.h"
 
+#include "AIController.h"
+#include "BrainComponent.h"
 #include "GameEngineBasic/Components/public/Attack.h"
 #include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
+class AAIController;
 // Sets default values
 AEnemyBase::AEnemyBase()
 {
@@ -59,3 +63,63 @@ void AEnemyBase::Attack_Implementation()
 	IAttack::Attack_Implementation();
 }
 
+void AEnemyBase::Activate()
+{
+	UE_LOG(LogTemp, Warning, TEXT("%s Activated"), *GetName());
+
+	// 1. 액터를 보이게 하고, 충돌 및 틱을 활성화
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+
+	// 2. 컴포넌트의 상태를 초기화합니다.
+	// HealthComp에 체력과 쉴드를 최대로 설정해주기
+	// Descriptor를 써서 할거같긴함
+	if (HealthComp)
+	{
+		HealthComp->InitStats();
+	}
+
+	// ShooterComp 등 다른 컴포넌트
+	// if (ShooterComp)
+	// {
+	//     ShooterComp->ResetAmmo(); 
+	// }
+
+	// 3. AI 로직을 다시 시작
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController && AIController->GetBrainComponent())
+	{
+		AIController->GetBrainComponent()->StartLogic();
+	}
+    
+	// 4. 캐릭터 이동을 활성화
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		GetCharacterMovement()->Activate();
+	}
+}
+void AEnemyBase::DeActivate()
+{
+	UE_LOG(LogTemp, Warning, TEXT("%s Deactivated"), *GetName());
+
+	// 1. 액터를 숨기고, 충돌 및 틱을 비활성화하여 성능 부하를 줄입니다.
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+
+	// 2. AI 로직을 정지시킵니다.
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController && AIController->GetBrainComponent())
+	{
+		AIController->GetBrainComponent()->StopLogic("Deactivated by Object Pool");
+	}
+
+	// 3. 캐릭터의 움직임을 즉시 멈추고 비활성화합니다.
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
+}

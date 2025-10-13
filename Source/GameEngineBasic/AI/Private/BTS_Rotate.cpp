@@ -32,7 +32,6 @@ void UBTS_Rotate::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
 		FVector AILoc = Self->GetActorLocation();
 		FVector TargetLocation = Target->GetActorLocation();
 		FRotator TargetRotation = UKismetMathLibrary::FindLookAtRotation(AILoc, TargetLocation);
-		TargetRotation.Roll = 0.f;
 
 		FRotator NewRotation = FMath::RInterpTo(
 			Self->GetActorRotation(),
