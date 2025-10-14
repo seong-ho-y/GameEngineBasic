@@ -66,7 +66,7 @@ void UMyShipMovement::BeginPlay()
 		MiddleThrusterComp = UGameplayStatics::SpawnEmitterAttached(
 			ThrusterFX,
 			ShipMesh,
-			RightThrusterSocket,
+			MiddleThrusterSocket,
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
 			EAttachLocation::SnapToTarget,
