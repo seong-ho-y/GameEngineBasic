@@ -1,6 +1,7 @@
 ﻿
 #include "SpaceShip/MyTestPawn.h"
 #include "MyShipMovement/MyShipMovement.h"
+#include "ShooterComp.h"
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -10,7 +11,6 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameFramework/PlayerController.h"
 
 // 기본 생성자

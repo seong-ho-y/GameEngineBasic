@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
+#include "BTS_FindPlayer.h"
 
-#include "../Public/BTS_FindPlayer.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 

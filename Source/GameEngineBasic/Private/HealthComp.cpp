@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "GameEngineBasic/Public/HealthComp.h"
 
 // Sets default values for this component's properties
 UHealthComp::UHealthComp()
@@ -30,10 +30,6 @@ void UHealthComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
-}
-
-void UHealthComp::InitStats()
-{
 }
 
 void UHealthComp::TakeDamage()
