@@ -8,10 +8,15 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
-#include "Engine/LocalPlayer.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
+#include "EnhancedInputSubsystems.h"
+
+#include "Projectile.h"
+#include "Particles/ParticleSystem.h"
+#include "Kismet/GameplayStatics.h"
 
 // 기본 생성자
 AMyTestPawn::AMyTestPawn()
@@ -33,6 +38,14 @@ AMyTestPawn::AMyTestPawn()
 	// 값이 높을수록 회전이 더 빨리 멈춥니다.
 	ShipMesh->SetAngularDamping(1.2f);
 
+	ShipMesh->SetCollisionProfileName(TEXT("ShipBody")); // 선체
+
+	ShieldComp = CreateDefaultSubobject<USphereComponent>(TEXT("ShieldComp"));
+	ShieldComp->SetupAttachment(ShipMesh);
+	ShieldComp->InitSphereRadius(300.f); // 선체보다 살짝 크게
+	ShieldComp->SetCollisionProfileName(TEXT("Shield")); // 에디터에서 만든 Preset
+	ShieldComp->SetGenerateOverlapEvents(true);
+
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 	SpringArm->TargetArmLength = 800.f;
@@ -48,6 +61,7 @@ AMyTestPawn::AMyTestPawn()
 
 	ShipMovement = CreateDefaultSubobject<UMyShipMovement>(TEXT("ShipMovement"));
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
+	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
 }
 
 // 게임 시작 시 호출되는 함수
@@ -55,9 +69,16 @@ void AMyTestPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ShipMovement && ShipMesh)
+	if (HealthComp)
 	{
-		ShipMovement->Initialize(ShipMesh);
+		HealthComp->OnShieldBroken.AddDynamic(this, &AMyTestPawn::OnShieldBroken);
+		HealthComp->OnHealthChanged.AddDynamic(this, &AMyTestPawn::OnHealthChanged);
+		HealthComp->OnDeath.AddDynamic(this, &AMyTestPawn::OnDeath);
+	}
+
+	if (ShieldComp) 
+	{
+		ShieldComp->OnComponentBeginOverlap.AddDynamic(this, &AMyTestPawn::OnShieldOverlap);
 	}
 }
 
@@ -79,10 +100,9 @@ void AMyTestPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		EnhancedInput->BindAction(IA_Look, ETriggerEvent::Triggered, this, &AMyTestPawn::Look);
 
-		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Triggered, this, &AMyTestPawn::FireStarted);
-
 		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Started, this, &AMyTestPawn::FireStarted);
-		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Completed, this, &AMyTestPawn::FireTriggered);
+		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Triggered, this, &AMyTestPawn::FireTriggered);
+		EnhancedInput->BindAction(IA_Fire, ETriggerEvent::Completed, this, &AMyTestPawn::FireCompleted);
 	
 		EnhancedInput->BindAction(IA_Roll, ETriggerEvent::Triggered, this, &AMyTestPawn::Roll);
 		EnhancedInput->BindAction(IA_Roll, ETriggerEvent::Completed, this, &AMyTestPawn::Roll);
@@ -149,4 +169,60 @@ void AMyTestPawn::FireStarted(const FInputActionValue& /*Value*/)
 void AMyTestPawn::FireCompleted(const FInputActionValue& /*Value*/)
 {
 	UE_LOG(LogTemp, Warning, TEXT("FireCompleted"));
+}
+
+void AMyTestPawn::OnShieldOverlap(UPrimitiveComponent* Overlapped, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32, bool, const FHitResult&)
+{
+	if (OtherActor->ActorHasTag(TEXT("EnemyProjectile")))
+	{
+		if (HealthComp)
+			HealthComp->TakeDamage();
+
+		OtherActor->Destroy();
+	}
+}
+
+
+void AMyTestPawn::OnShipHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse,
+	const FHitResult& Hit)
+{
+	if (!OtherActor || OtherActor == this) return;
+	//OnDeath(this);
+}
+
+void AMyTestPawn::OnShieldBroken(AActor* OwnerActor)
+{
+	// 실드 깨졌을 때 처리
+	// 예: 경고 로그, UI 반영, 무적 타이머 등
+	UE_LOG(LogTemp, Warning, TEXT("Shield Broken!"));
+}
+
+void AMyTestPawn::OnHealthChanged(AActor* OwnerActor, float NewHealth, float NewShield)
+{
+	// HUD 업데이트 등
+	UE_LOG(LogTemp, Log, TEXT("HP: %f  Shield: %f"), NewHealth, NewShield);
+}
+
+void AMyTestPawn::OnDeath(AActor* OwnerActor)
+{
+	// 사망 처리: 입력 끄기, 폭발, 리스폰 트리거 등
+	UE_LOG(LogTemp, Warning, TEXT("Pawn Died"));
+	
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	DisableInput(PC);
+
+	if (ExplosionFX)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			ExplosionFX,
+			GetActorTransform(), // 위치/회전 그대로
+			true                 // bAutoDestroy: 파티클 끝나면 자동 정리
+		);
+	}
+
+	Destroy();
+	
 }

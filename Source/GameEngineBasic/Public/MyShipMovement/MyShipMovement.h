@@ -19,10 +19,6 @@ class GAMEENGINEBASIC_API UMyShipMovement : public UActorComponent
 public:	
 	UMyShipMovement();
 
-	// Pawn에서 메쉬를 넘겨 초기화 (BeginPlay 등에서 호출)
-	UFUNCTION(BlueprintCallable, Category = "Ship")
-	void Initialize(UStaticMeshComponent* InShipMesh);
-
 	// 입력 전달용
 	void MoveForward(const struct FInputActionValue& Value);
 	void Look(const struct FInputActionValue& Value);
