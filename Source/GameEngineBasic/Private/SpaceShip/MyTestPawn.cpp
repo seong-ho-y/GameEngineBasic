@@ -69,11 +69,6 @@ void AMyTestPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ShipMovement && ShipMesh)
-	{
-		ShipMovement->Initialize(ShipMesh);
-	}
-
 	if (HealthComp)
 	{
 		HealthComp->OnShieldBroken.AddDynamic(this, &AMyTestPawn::OnShieldBroken);
@@ -179,17 +174,13 @@ void AMyTestPawn::FireCompleted(const FInputActionValue& /*Value*/)
 void AMyTestPawn::OnShieldOverlap(UPrimitiveComponent* Overlapped, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32, bool, const FHitResult&)
 {
-	if (HealthComp)
-		HealthComp->TakeDamage();
-	OtherActor->Destroy();
-	/*
 	if (OtherActor->ActorHasTag(TEXT("EnemyProjectile")))
 	{
 		if (HealthComp)
 			HealthComp->TakeDamage();
 
 		OtherActor->Destroy();
-	}*/
+	}
 }
 
 
@@ -218,7 +209,7 @@ void AMyTestPawn::OnDeath(AActor* OwnerActor)
 {
 	// 사망 처리: 입력 끄기, 폭발, 리스폰 트리거 등
 	UE_LOG(LogTemp, Warning, TEXT("Pawn Died"));
-	/*
+	
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	DisableInput(PC);
 
@@ -233,5 +224,5 @@ void AMyTestPawn::OnDeath(AActor* OwnerActor)
 	}
 
 	Destroy();
-	*/
+	
 }

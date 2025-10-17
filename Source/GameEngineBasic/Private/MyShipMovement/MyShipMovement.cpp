@@ -90,11 +90,6 @@ void UMyShipMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	ClampSpeeds();
 }
 
-void UMyShipMovement::Initialize(UStaticMeshComponent* InShipMesh)
-{
-	ShipMesh = InShipMesh;
-}
-
 
 void UMyShipMovement::MoveForward(const FInputActionValue& Value)
 {

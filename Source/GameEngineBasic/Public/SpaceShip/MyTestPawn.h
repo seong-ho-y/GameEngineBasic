@@ -38,7 +38,6 @@ protected:
 	UStaticMeshComponent* ShipMesh;
 
 	// 컴포넌트
-
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	USphereComponent* ShieldComp = nullptr;
 
@@ -53,7 +52,6 @@ protected:
 
 
 	// 입력
-
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	UInputAction* IA_MoveForward;
 
