@@ -19,31 +19,9 @@ void AGameEngineBasicPlayerController::BeginPlay()
 	check(VehicleUI);
 
 	VehicleUI->AddToViewport();
-
-	// EnemyPoolManager 찾기
-	EnemyPoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(),StaticClass()));
-	if (!EnemyPoolManager)
-	{
-		UE_LOG(LogTemp, Error, TEXT("EnemyPoolManager not found in the world!"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("EnemyPoolManager successfully found."));
-	}
 }
 
-void AGameEngineBasicPlayerController::OnLKeyPressed()
-{
-	UE_LOG(LogTemp, Log, TEXT("L Key Pressed"));
-	if (EnemyPoolManager)
-	{
-		EnemyPoolManager->SpawnEnemiesAtSpawnPoints();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("EnemPoolManager is null"));
-	}
-}
+
 
 void AGameEngineBasicPlayerController::SetupInputComponent()
 {
@@ -55,7 +33,7 @@ void AGameEngineBasicPlayerController::SetupInputComponent()
 		// add the mapping context so we get controls
 		Subsystem->AddMappingContext(InputMappingContext, 0);
 	}
-	InputComponent->BindKey(EKeys::L, IE_Pressed, this, &AGameEngineBasicPlayerController::OnLKeyPressed);
+	
 }
 
 void AGameEngineBasicPlayerController::Tick(float Delta)

@@ -4,8 +4,10 @@
 #include "../Public/EnemyBase.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
+#include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/Attack.h"
 #include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
@@ -35,6 +37,9 @@ AEnemyBase::AEnemyBase()
 
 	HealthComp = CreateDefaultSubobject<UHealthComp>("HealthComp");
 	ShooterComp = CreateDefaultSubobject<UShooterComp>("ShooterComp");
+
+	MaxHealth = 1.0f;
+	CurrentHealth = MaxHealth;
 }
 
 // Called when the game starts or when spawned
@@ -49,6 +54,17 @@ void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!AICache) AICache = Cast<AAIController>(GetController());
+	if (!BlackboardCache && AICache) BlackboardCache = AICache->GetBlackboardComponent();
+
+	if (!BlackboardCache)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("%s: No Blackboard yet"), *GetName());
+		return;
+	}
+
+	const float ThrottleValue = BlackboardCache->GetValueAsFloat(TEXT("ThrottleValue"));
+	UE_LOG(LogTemp, Verbose, TEXT("%s Throttle=%.2f"), *GetName(), ThrottleValue);
 	if (!BlackboardCache && AICache)
 	{
 		BlackboardCache = AICache->GetBlackboardComponent();
@@ -57,10 +73,7 @@ void AEnemyBase::Tick(float DeltaTime)
 	{
 		return;
 	}
-
 	
-	// 블랙보드에서 스로틀 값 가져오기
-	const float ThrottleValue = BlackboardCache->GetValueAsFloat(TEXT("ThrottleValue"));
 
 	// MovementComp 찾아오기 가져오기
 	if (UFloatingPawnMovement* FloatingMovement = Cast<UFloatingPawnMovement>(GetMovementComponent()))
@@ -83,9 +96,6 @@ void AEnemyBase::Tick(float DeltaTime)
 		const float MoveScale = CurrentVelocity.Size() / MaxSpeed;
 
 		AddMovementInput(MoveDirection, MoveScale);
-
-		// 로그 확인 (디버그용)
-		//UE_LOG(LogTemp, Verbose, TEXT("Speed: %.1f / %.1f"), CurrentVelocity.Size(), MaxSpeed);
 	}
 }
 
@@ -118,12 +128,46 @@ void AEnemyBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 void AEnemyBase::ApplyDamage_Implementation(float DamageAmount, AController* InstigatorController, AActor* DamageCauser,
 	FVector HitLoc, TSubclassOf<UDamageType> DamageType)
 {
-	IDamageable::ApplyDamage_Implementation(DamageAmount, InstigatorController, DamageCauser, HitLoc, DamageType);
+	SpawnVfx(DamagedVfx);
+	CurrentHealth -= DamageAmount;
+	UE_LOG(LogTemp, Log, TEXT("%s took %.1f damage (HP: %.1f)"), *GetName(), DamageAmount, CurrentHealth);
+
+	if (CurrentHealth <= 0.f)
+	{
+		Die_Implementation(DamageCauser);
+	}
+	
+}
+float AEnemyBase::TakeDamage(
+	float DamageAmount,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// 여기서 실제 데미지 처리
+	ApplyDamage(DamageAmount, EventInstigator, DamageCauser, GetActorLocation(), DamageEvent.DamageTypeClass);
+
+	return DamageAmount;
 }
 
 void AEnemyBase::Die_Implementation(AActor* Killer)
 {
-	IDamageable::Die_Implementation(Killer);
+	UE_LOG(LogTemp, Warning, TEXT("%s Died"), *GetName());
+	SpawnVfx(ExplosionVfx);
+
+	// AI 정지
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (AIController->GetBrainComponent())
+		{
+			AIController->GetBrainComponent()->StopLogic("Died");
+		}
+	}
+
+	// 풀에 반환 (DeActivate)
+	DeActivate();
 }
 
 bool AEnemyBase::IsDead_Implementation() const
@@ -145,6 +189,12 @@ void AEnemyBase::Activate()
 	SetActorEnableCollision(true);
 	SetActorTickEnabled(true);
 
+	
+	// 체력 리셋 (임시)
+	CurrentHealth = MaxHealth;
+
+
+	
 	// 2. 컴포넌트의 상태를 초기화합니다.
 	// HealthComp에 체력과 쉴드를 최대로 설정해주기
 	// Descriptor를 써서 할거같긴함
@@ -199,4 +249,9 @@ void AEnemyBase::DeActivate()
 		GetCharacterMovement()->DisableMovement();
 	}
 	*/
+}
+
+void AEnemyBase::SpawnVfx(UNiagaraSystem* Vfx)
+{
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Vfx, GetActorLocation());
 }

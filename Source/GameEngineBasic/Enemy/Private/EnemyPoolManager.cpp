@@ -47,6 +47,7 @@ void AEnemyPoolManager::BeginPlay()
 
 FEnemySpawnProfile AEnemyPoolManager::GetRandomSpawnProfile() const
 {
+	UE_LOG(LogTemp, Warning, TEXT("RandomSpawnProfile Created"));
 	FEnemySpawnProfile Result;
 	if (RandomEnemyClasses.Num() > 0)
 	{
