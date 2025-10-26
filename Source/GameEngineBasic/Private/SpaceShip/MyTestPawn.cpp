@@ -8,13 +8,10 @@
 #include "Components/StaticMeshComponent.h"
 
 #include "EnhancedInputComponent.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
-#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "ShooterComp.h"
+#include "HealthComp.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
-#include "EnhancedInputSubsystems.h"
-
-#include "Projectile.h"
 #include "Particles/ParticleSystem.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -60,6 +57,7 @@ AMyTestPawn::AMyTestPawn()
 	Camera->SetupAttachment(SpringArm);
 
 	ShipMovement = CreateDefaultSubobject<UMyShipMovement>(TEXT("ShipMovement"));
+	ShipMovement->SetComponentTickEnabled(true);
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
 }
@@ -68,7 +66,7 @@ AMyTestPawn::AMyTestPawn()
 void AMyTestPawn::BeginPlay()
 {
 	Super::BeginPlay();
-
+	UE_LOG(LogTemp, Warning, TEXT("MyTestPawn BeginPlay, Controller: %s"), *GetNameSafe(GetController()));
 	if (HealthComp)
 	{
 		HealthComp->OnShieldBroken.AddDynamic(this, &AMyTestPawn::OnShieldBroken);

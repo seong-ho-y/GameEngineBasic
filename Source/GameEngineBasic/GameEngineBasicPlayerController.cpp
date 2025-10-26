@@ -6,6 +6,8 @@
 #include "GameEngineBasicUI.h"
 #include "EnhancedInputSubsystems.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "Enemy/Public/EnemyPoolManager.h"
+#include "Kismet/GameplayStatics.h"
 
 void AGameEngineBasicPlayerController::BeginPlay()
 {
@@ -19,6 +21,8 @@ void AGameEngineBasicPlayerController::BeginPlay()
 	VehicleUI->AddToViewport();
 }
 
+
+
 void AGameEngineBasicPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -29,6 +33,7 @@ void AGameEngineBasicPlayerController::SetupInputComponent()
 		// add the mapping context so we get controls
 		Subsystem->AddMappingContext(InputMappingContext, 0);
 	}
+	
 }
 
 void AGameEngineBasicPlayerController::Tick(float Delta)

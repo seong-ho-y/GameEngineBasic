@@ -6,6 +6,9 @@ Content/*
 # Visual Studio 2015 user specific files
 .vs/
 
+# Rider
+.idea/
+
 # Compiled Object files
 *.slo
 *.lo

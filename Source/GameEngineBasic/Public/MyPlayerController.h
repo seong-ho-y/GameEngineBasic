@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "MyPlayerController.generated.h"
 
+class AEnemyPoolManager;
 class UInputMappingContext;
 class AMySpaceShip;
 
@@ -35,6 +36,8 @@ public:
 protected:
 
 	virtual void OnPossess(APawn* InPawn) override;
+	void OnLKeyPressed();
 
-
+private:
+	AEnemyPoolManager* EnemyPoolManager;
 };

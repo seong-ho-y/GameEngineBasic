@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "HealthComp.h"
 #include "GameFramework/Actor.h"
 #include <sstream>
 
