@@ -15,13 +15,12 @@ class GAMEENGINEBASIC_API UBTS_Rotate : public UBTService
 	GENERATED_BODY()
 public:
 	UBTS_Rotate();
-
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BlackBoard")
 	FBlackboardKeySelector TargetKeySelector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BlackBoard")
-	float RotationSpeed = 5.0f;
+	float RotationSpeed = 10.0f;
 
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };

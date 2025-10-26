@@ -2,8 +2,8 @@
 
 
 #include "Projectile.h"
+#include "Damageable.h"
 #include "Components/SphereComponent.h"
-#include "GameEngineBasic/Components/public/Damageable.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
