@@ -1,8 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameEngineBasic/Components/public/ShooterComp.h"
-
+#include "ShooterComp.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -89,7 +88,6 @@ void UShooterComp::Fire_Implementation()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = MyOwner; // Set MyOwner to Projectile's Owner
 	SpawnParams.Instigator = MyOwner->GetInstigator(); // Set MyOwner's Instigator to Projectile's Instigator
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
 	
