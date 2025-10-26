@@ -15,6 +15,10 @@ AProjectile::AProjectile()
 	CollisionComp->InitSphereRadius(5.0f);
 	CollisionComp->BodyInstance.SetCollisionProfileName(TEXT("Projectile"));
 	CollisionComp->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+	CollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CollisionComp->SetSimulatePhysics(false);
+	CollisionComp->SetNotifyRigidBodyCollision(true); // <- ★ OnHit 이벤트 발생 필수
+	CollisionComp->SetGenerateOverlapEvents(false);
 
 	// Set as root component
 	RootComponent = CollisionComp;
@@ -63,6 +67,7 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 	{
 		return;
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Projectile hit %s"), *OtherActor->GetName());
 	// 1. 부딪힌 대상이 IDamageable인지 확인
 	if (OtherActor->GetClass()->ImplementsInterface(UDamageable::StaticClass()))
 	{
