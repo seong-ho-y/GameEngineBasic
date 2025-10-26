@@ -3,6 +3,7 @@
 
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameFramework/Actor.h"
+#include <sstream>
 
 // Sets default values for this component's properties
 UHealthComp::UHealthComp()
@@ -63,13 +64,17 @@ void UHealthComp::InitStats()
 void UHealthComp::TakeDamage()
 {
 	// 피격 시각 갱신 및 재생 시작점 재설정
-	const float Now = GetWorld()->GetTimeSeconds();
-	if (Now - LastDamageTime < 500)
-		return;
-	
-	LastDamageTime = Now;
 
-	// 다음 회복은 '지금 + Delay' 시각부터 시작
+	const float Now = GetWorld()->GetTimeSeconds();
+	const float InvincibleDuration = 0.3f; // 무적시간 (초)
+
+	if (Now - LastDamageTime < InvincibleDuration)
+	{
+		// 아직 무적시간 중이라면 데미지 무시
+		return;
+	}
+
+	LastDamageTime = Now;
 	NextRegenTime = Now + ShieldRegenDelay;
 
 	// 우선 실드 1 감소, 실드가 없으면 체력 1 감소
@@ -81,6 +86,10 @@ void UHealthComp::TakeDamage()
 	{
 		ApplyHealthDamage(1);
 	}
+	std::stringstream ss;
+	ss << "CurrentShield: " << CurrentShield << ' ' << "CurrentHealth: " << CurrentHealth;
+	if (GEngine) GEngine->AddOnScreenDebugMessage(95, 1.0f, FColor::Blue, ss.str().c_str());
+
 }
 
 void UHealthComp::RestoreShield(int Amount)
@@ -113,6 +122,7 @@ void UHealthComp::ApplyShieldDamage(int Amount)
 	{
 		OnShieldBroken.Broadcast(GetOwner());
 	}
+
 
 	BroadcastChanged();
 }

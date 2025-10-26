@@ -179,6 +179,8 @@ void AMyTestPawn::OnShieldOverlap(UPrimitiveComponent* Overlapped, AActor* Other
 		if (HealthComp)
 			HealthComp->TakeDamage();
 
+		UE_LOG(LogTemp, Warning, TEXT("Attacked!!"));
+
 		OtherActor->Destroy();
 	}
 }
