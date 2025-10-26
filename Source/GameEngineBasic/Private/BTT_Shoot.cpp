@@ -1,10 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "../Public/BTT_Shoot.h"
+#include "BTT_Shoot.h"
+
 #include "AIController.h"
+#include "ShooterComp.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
 
 UBTT_Shoot::UBTT_Shoot()
 {
