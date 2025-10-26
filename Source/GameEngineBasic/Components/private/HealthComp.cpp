@@ -74,6 +74,17 @@ void UHealthComp::TakeDamage()
 		return;
 	}
 
+	float Elapsed = Now - LastDamageTime;
+	float RemainingInvincible = FMath::Max(0.f, InvincibleDuration - Elapsed);
+
+	// 남은 무적시간 출력
+	if (GEngine)
+	{
+		FString Msg = FString::Printf(TEXT("무적 남은 시간: %.2f초"), RemainingInvincible);
+		GEngine->AddOnScreenDebugMessage(97, 1.0f, FColor::Yellow, Msg);
+	}
+
+
 	LastDamageTime = Now;
 	NextRegenTime = Now + ShieldRegenDelay;
 
@@ -87,6 +98,7 @@ void UHealthComp::TakeDamage()
 		ApplyHealthDamage(1);
 	}
 	std::stringstream ss;
+
 	ss << "CurrentShield: " << CurrentShield << ' ' << "CurrentHealth: " << CurrentHealth;
 	if (GEngine) GEngine->AddOnScreenDebugMessage(95, 1.0f, FColor::Blue, ss.str().c_str());
 
