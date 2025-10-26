@@ -54,10 +54,6 @@ void AMySpaceShip::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (ShipMovement && ShipMesh)
-	{
-		ShipMovement->Initialize(ShipMesh);
-	}
 }
 
 // 매 프레임마다 호출되는 함수

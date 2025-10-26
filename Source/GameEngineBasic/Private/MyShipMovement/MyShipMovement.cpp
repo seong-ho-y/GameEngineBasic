@@ -90,11 +90,6 @@ void UMyShipMovement::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	ClampSpeeds();
 }
 
-void UMyShipMovement::Initialize(UStaticMeshComponent* InShipMesh)
-{
-	ShipMesh = InShipMesh;
-}
-
 
 void UMyShipMovement::MoveForward(const FInputActionValue& Value)
 {
@@ -245,21 +240,28 @@ void UMyShipMovement::ClampSpeeds() const
 {
 	if (!ShipMesh) return;
 
-	// 선속 제한
 	const FVector V = ShipMesh->GetPhysicsLinearVelocity();
-	const float Speed = V.Length();
-	if (Speed > MaxLinearSpeed)
+	const FVector Fwd = ShipMesh->GetForwardVector();
+
+	const float Vforward = FVector::DotProduct(V, Fwd);
+	const bool  bAccel = (ThrottleInput > 0.f || bIsBoosting) && !bIsBraking;
+
+	// 너무 잦은 토글/부동소수 떨림 방지를 위한 여유값
+	constexpr float Eps = 1.0f; // 1 cm/s
+
+	// ── 전방 성분만 상한 클램프 ─────────────────────────────
+	if (bAccel && Vforward > MaxLinearSpeed + Eps)
 	{
-		const FVector Clamped = V.GetSafeNormal() * MaxLinearSpeed;
-		ShipMesh->SetPhysicsLinearVelocity(Clamped);
+		const FVector Vside = V - (Vforward * Fwd);
+		const FVector ClampedForward = Fwd * MaxLinearSpeed;
+		ShipMesh->SetPhysicsLinearVelocity(Vside + ClampedForward, false);
 	}
 
-	// 각속 제한(도/초)
+	// ── 각속도도 "넘었을 때만" 제한 ─────────────────────────
 	const FVector AV = ShipMesh->GetPhysicsAngularVelocityInDegrees();
-	const float AVMag = AV.Length();
-	if (AVMag > MaxAngularSpeed)
+	const float   AVsz = AV.Size();
+	if (AVsz > MaxAngularSpeed + 0.1f)
 	{
-		const FVector ClampedAV = AV.GetSafeNormal() * MaxAngularSpeed;
-		ShipMesh->SetPhysicsAngularVelocityInDegrees(ClampedAV);
+		ShipMesh->SetPhysicsAngularVelocityInDegrees(AV.GetSafeNormal() * MaxAngularSpeed, false);
 	}
 }
