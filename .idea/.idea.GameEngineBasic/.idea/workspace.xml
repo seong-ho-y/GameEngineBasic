@@ -13,9 +13,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b0a2aea4-bce7-4c54-9535-96e8f1fc1b2f" name="변경" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/projectSettingsUpdater.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/projectSettingsUpdater.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.GameEngineBasic/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Enemy_SH/BP_EnemyBase.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Enemy_SH/BP_EnemyBase.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Enemy_SH/BP_EnemyHover.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Enemy_SH/BP_EnemyHover.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Enemy_SH/BP_EnemyProjectile.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Enemy_SH/BP_EnemyProjectile.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/MapTest_SH.umap" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/MapTest_SH.umap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_MyTestPawn.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_MyTestPawn.uasset" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_PlayerProjectile.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Player_Jang/BP_PlayerProjectile.uasset" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GameEngineBasic.uproject" beforeDir="false" afterPath="$PROJECT_DIR$/GameEngineBasic.uproject" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Projectile.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Private/Projectile.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/Share/Player_Jang/Input/BP_PlayerController.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/Share/Player_Jang/Input/BP_PlayerController.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/VehicleTemplate/Blueprints/BP_VehicleAdvGameMode.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/VehicleTemplate/Blueprints/BP_VehicleAdvGameMode.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Content/VehicleTemplate/Input/Actions/IA_Throttle.uasset" beforeDir="false" afterPath="$PROJECT_DIR$/Content/VehicleTemplate/Input/Actions/IA_Throttle.uasset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GameEngineBasic.pptx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Private/EnemyBase.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Private/EnemyBase.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Public/EnemyBase.h" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Enemy/Public/EnemyBase.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/EnemyBase.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/HealthComp.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Private/HealthComp.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Private/SpaceShip/MyTestPawn.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Source/GameEngineBasic/Private/SpaceShip/MyTestPawn.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Source/GameEngineBasic/Public/EnemyBase.h" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -232,6 +247,8 @@
       <workItem from="1761378346328" duration="718000" />
       <workItem from="1761382852833" duration="14888000" />
       <workItem from="1761479250630" duration="557000" />
+      <workItem from="1761480341108" duration="57000" />
+      <workItem from="1761481515688" duration="1650000" />
     </task>
     <servers />
   </component>
@@ -242,5 +259,23 @@
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -4,14 +4,15 @@
 #include "../Public/EnemyBase.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "Damageable.h"
 #include "NiagaraFunctionLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
 #include "Engine/DamageEvents.h"
-#include "GameEngineBasic/Components/public/Attack.h"
-#include "GameEngineBasic/Components/public/Damageable.h"
-#include "GameEngineBasic/Components/public/HealthComp.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "Attack.h"
+#include "Damageable.h"
+#include "HealthComp.h"
+#include "ShooterComp.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -146,9 +147,9 @@ float AEnemyBase::TakeDamage(
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	// 여기서 실제 데미지 처리
-	ApplyDamage(DamageAmount, EventInstigator, DamageCauser, GetActorLocation(), DamageEvent.DamageTypeClass);
-
+	IDamageable::Execute_ApplyDamage(
+		this, DamageAmount, EventInstigator, DamageCauser, GetActorLocation(), DamageEvent.DamageTypeClass
+	);
 	return DamageAmount;
 }
 

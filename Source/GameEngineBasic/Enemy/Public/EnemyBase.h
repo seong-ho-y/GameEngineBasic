@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "NiagaraSystem.h"
-#include "GameEngineBasic/Components/public/Attack.h"
-#include "GameEngineBasic/Components/public/Damageable.h"
+#include "Attack.h"
+#include "Damageable.h"
 #include "GameFramework/Pawn.h"
 #include "EnemyBase.generated.h"
 
