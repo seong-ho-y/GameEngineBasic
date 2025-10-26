@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "MyShipMovement.generated.h"
 
 
@@ -22,6 +24,7 @@ public:
 	void Look(const struct FInputActionValue& Value);
 	void LookEnded(const struct FInputActionValue& Value);
 	void Roll(const struct FInputActionValue& Value);
+	void ApplyBrake(float DeltaTime);
 	void StartBrake();
 	void StopBrake();
 	void StartBoost();
@@ -38,9 +41,30 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShipMesh = nullptr;
 
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	UParticleSystem* ThrusterFX;      // Cascade 파티클 에셋
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	FName LeftThrusterSocket = "Thruster_L";
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	FName MiddleThrusterSocket = "Thruster_M";
+
+	UPROPERTY(EditAnywhere, Category = "FX|Thruster")
+	FName RightThrusterSocket = "Thruster_R";
+
+	UPROPERTY(Transient) 
+	UParticleSystemComponent* LeftThrusterComp = nullptr;
+
+	UPROPERTY(Transient)
+	UParticleSystemComponent* MiddleThrusterComp = nullptr;
+
+	UPROPERTY(Transient)
+	UParticleSystemComponent* RightThrusterComp = nullptr;
+
 	// --- Physics ---
 	UPROPERTY(EditAnywhere, Category = "Physics", meta = (ClampMin = "0"))
-	float ThrustForce = 1000.f;
+	float ThrustForce = 1500.f;
 
 	UPROPERTY(EditAnywhere, Category = "Physics", meta = (ClampMin = "0"))
 	float TurnTorque = 300.f; // 클수록 마우스 감도 증가
