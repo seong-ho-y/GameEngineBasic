@@ -43,20 +43,21 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	{
 		if (MoveAction)
 			EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Move);
-
 		if (LookAction)
 			EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Look);
-
 		if (JumpAction)
 		{
 			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartJump);
 			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopJump);
 		}
-
 		if (AimAction)
 		{
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartAim);
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopAim);
+		}
+		if (FlyAction)
+		{
+			EnhancedInput->BindAction(FlyAction, ETriggerEvent::Started, this, &ASpaceCharacter::ToggleFlyingMode);
 		}
 	}
 }
@@ -65,12 +66,21 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 void ASpaceCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 }
 
 // Called every frame
 void ASpaceCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bIsFlyingMode)
+	{
+		ConsumeFuel(DeltaTime);
+	}
+	else
+	if (GetCharacterMovement()->IsFalling() && GetCharacterMovement()->MovementMode == MOVE_Walking)
+		RechargeFuel(DeltaTime);
 }
 
 
@@ -100,9 +110,11 @@ void ASpaceCharacter::Look(const FInputActionValue& Value)
 
 void ASpaceCharacter::StartJump()
 {
+	/*
 	std::stringstream ss("Jump Started\n");
 	if(GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ss.str().c_str());
+	*/
 	Jump();
 }
 
@@ -113,20 +125,60 @@ void ASpaceCharacter::StopJump()
 
 void ASpaceCharacter::StartAim()
 {
+	/*
 	std::stringstream ss("Aim Started\n");
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ss.str().c_str());
-
+	*/
 	bIsAiming = true;
 }
 
 void ASpaceCharacter::StopAim()
 {
+	/*
 	std::stringstream ss("Aim Stop\n");
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, ss.str().c_str());
-
+	*/
 	bIsAiming = false;
 }
 
+void ASpaceCharacter::ToggleFlyingMode()
+{
+	// 이미 비행 중이면 해제
+	if (bIsFlyingMode)
+	{
+		bIsFlyingMode = false;
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		return;
+	}
+	
+	// 비행 시작: 연료가 일정량 이상 있어야 함
+	if (CurrentFuel > 5.f)
+	{
+		bIsFlyingMode = true;
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+
+		auto* Move = GetCharacterMovement();
+		Move->BrakingFrictionFactor = 0.2f;
+		Move->MaxFlySpeed = 900.f; 
+	}
+}
+
+void ASpaceCharacter::ConsumeFuel(float DeltaTime)
+{
+	CurrentFuel = FMath::Max(0.f, CurrentFuel - FuelConsumeRate * DeltaTime);
+
+	// 연료 고갈 시 즉시 비행 해제
+	if (CurrentFuel <= 0.f)
+	{
+		bIsFlyingMode = false;
+		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	}
+}
+
+void ASpaceCharacter::RechargeFuel(float DeltaTime)
+{
+	CurrentFuel = FMath::Min(MaxFuel, CurrentFuel + FuelRechargeRate * DeltaTime);
+}
 

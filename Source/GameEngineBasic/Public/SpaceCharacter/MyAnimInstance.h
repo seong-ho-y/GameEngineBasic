@@ -17,7 +17,22 @@ protected:
     float Speed;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    float Pitch;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    float Roll;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    float Yaw;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    float YawDelta;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     bool bIsInAir;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    bool bisAccelerating;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     bool bIsFlying;
