@@ -33,13 +33,26 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* LookAction;
 
-	// fire
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* FlyAction;
+
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* AimAction;
 
-	/** Fire Input Action (Pressed/Released) */
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
+	float MaxFuel = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
+	float CurrentFuel = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
+	float FuelConsumeRate = 12.f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
+	float FuelRechargeRate = 6.f;
 protected:
 	virtual void BeginPlay() override;
 
@@ -51,10 +64,17 @@ protected:
 
 	void StartAim();
 	void StopAim();
+
+	void ToggleFlyingMode();
+	void ConsumeFuel(float DeltaTime);
+	void RechargeFuel(float DeltaTime);
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
 	bool bIsAiming = false;
+	bool bIsFlyingMode = false;
+
+	
 };

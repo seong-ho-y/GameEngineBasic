@@ -27,7 +27,7 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		Speed = Velocity.Size();
 
 		bIsInAir = OwningCharacter->GetCharacterMovement()->IsFalling();
-
+		bisAccelerating = OwningCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
 		bIsFlying = OwningCharacter->GetCharacterMovement()->MovementMode == MOVE_Flying;
 
 		FRotator ActorRot = OwningCharacter->GetActorRotation();
