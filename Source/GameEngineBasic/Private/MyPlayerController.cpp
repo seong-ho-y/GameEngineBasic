@@ -2,7 +2,10 @@
 
 #include "MyPlayerController.h"
 #include "EnhancedInputSubsystems.h"
-#include "SpaceShip/MySpaceShip.h"
+#include "SpaceShip/MyTestPawn.h"
+#include "Kismet/GameplayStatics.h"
+#include "SpaceCharacter/SpaceCharacter.h"
+//#include "SpaceShip/MySpaceShip.h"
 
 void AMyPlayerController::BeginPlay()
 {
@@ -13,13 +16,6 @@ void AMyPlayerController::BeginPlay()
 void AMyPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-
-	// get the enhanced input subsystem
-	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
-	{
-		// add the mapping context so we get controls
-		Subsystem->AddMappingContext(InputMappingContext, 0);
-	}
 }
 
 void AMyPlayerController::Tick(float Delta)
@@ -32,8 +28,22 @@ void AMyPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 
-	if (AMySpaceShip* Ship = Cast<AMySpaceShip>(InPawn))
-	{
-		return;
-	}
+	OnPlayerPawnChanged.Broadcast(InPawn);
+
+    if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+        ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
+    {
+        Subsystem->ClearAllMappings();
+
+        if (Cast<ASpaceCharacter>(InPawn))
+        {
+            Subsystem->AddMappingContext(CharacterInputContext, 0);
+
+        }
+        else if (Cast<AMyTestPawn>(InPawn))
+        {
+            Subsystem->AddMappingContext(ShipInputContext, 0);
+
+        }
+    }
 }
