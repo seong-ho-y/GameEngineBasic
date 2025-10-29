@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "NiagaraSystem.h"
 #include "GameEngineBasic/Components/public/Attack.h"
 #include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameFramework/Pawn.h"
@@ -51,9 +50,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement")
 	float Deceleration = 1.2f;
-	float MaxHealth;
-	float CurrentHealth;
-
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 public:	
@@ -62,14 +59,10 @@ public:
 	
 	void PossessedBy(AController* NewController);
 
-	
-	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void ApplyDamage_Implementation(float DamageAmount, AController* InstigatorController, AActor* DamageCauser, FVector HitLoc, TSubclassOf<UDamageType> DamageType) override;
-	float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
-	                 AActor* DamageCauser);
 
 	virtual void Die_Implementation(AActor* Killer) override;
 
@@ -78,7 +71,6 @@ public:
 	virtual void Attack_Implementation() override;
 	void Activate();
 	void DeActivate();
-	void SpawnVfx(UNiagaraSystem* Vfx);
 
 protected:
 	// AI 컨트롤러와 블랙보드에 대한 참조를 저장해둘 변수 (매번 찾는 것보다 효율적)
@@ -97,11 +89,4 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement Stats")
 	float BoostMultiplier = 3.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vfx")
-	UNiagaraSystem* DamagedVfx;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vfx")
-	UNiagaraSystem* ExplosionVfx;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vfx")
-	UNiagaraSystem* AttackVfx;
 };

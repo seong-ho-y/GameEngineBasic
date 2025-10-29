@@ -6,7 +6,6 @@
 #include "GameFramework/PlayerController.h"
 #include "GameEngineBasicPlayerController.generated.h"
 
-class AEnemyPoolManager;
 class UInputMappingContext;
 class AGameEngineBasicPawn;
 class UGameEngineBasicUI;
@@ -40,10 +39,6 @@ protected:
 protected:
 
 	virtual void BeginPlay() override;
-	void OnLKeyPressed();
-	UPROPERTY()
-	AEnemyPoolManager* EnemyPoolManager;
-	
 	virtual void SetupInputComponent() override;
 
 public:

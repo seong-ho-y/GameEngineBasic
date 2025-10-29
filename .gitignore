@@ -4,7 +4,6 @@ Content/*
 
 # Rider (JetBrains IDE)
 .idea/
-*.sln.iml
 
 # Visual Studio 2015 user specific files
 .vs/

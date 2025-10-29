@@ -3,9 +3,7 @@
 
 #include "../Public/EnemyPoolManager.h"
 
-#include "EnemySpawnPoint.h"
 #include "GameEngineBasic/Enemy/Public/EnemyBase.h"
-#include "Kismet/GameplayStatics.h"
 
 class AEnemyBase;
 // Sets default values
@@ -37,24 +35,11 @@ void AEnemyPoolManager::BeginPlay()
 			{
 				NewEnemy->DeActivate();        // 생성 직후 비활성화 상태
 				NewPool.PooledEnemies.Add(NewEnemy); // 풀에 추가
-				UE_LOG(LogTemp,Log,TEXT("Enemy has spawned || initialized before pooling"));
 			}
 		}
         
 		EnemyPoolMap.Add(EnemyClass, NewPool);
 	}
-}
-
-FEnemySpawnProfile AEnemyPoolManager::GetRandomSpawnProfile() const
-{
-	UE_LOG(LogTemp, Warning, TEXT("RandomSpawnProfile Created"));
-	FEnemySpawnProfile Result;
-	if (RandomEnemyClasses.Num() > 0)
-	{
-		int32 Index = FMath::RandRange(0, RandomEnemyClasses.Num() - 1);
-		Result.EnemyClass = RandomEnemyClasses[Index];
-	}
-	return Result;
 }
 
 
@@ -114,47 +99,5 @@ void AEnemyPoolManager::ReturnEnemy(AEnemyBase* Enemy)
 	}
 }
 
-void AEnemyPoolManager::SpawnEnemiesAtSpawnPoints()
-{
-	TArray<AActor*> SpawnPoints;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnPoint::StaticClass(), SpawnPoints);
-	if (SpawnPoints.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No EnemySpawnPoint found in the world."));
-		return;
-	}
 
-	for (AActor* Actor : SpawnPoints)
-	{
-		AEnemySpawnPoint* SpawnPoint = Cast<AEnemySpawnPoint>(Actor);
-		if (!SpawnPoint) continue;
-		FEnemySpawnProfile SpawnProfile;
-
-		if (SpawnPoint->HasCustomProfile())
-		{
-			// 해당 포인트가 직접 지정한 프로필 사용
-			SpawnProfile = SpawnPoint->GetCustomProfile();
-		}
-		else
-		{
-			// 랜덤 생성 (웨이브 로직용)
-			SpawnProfile = GetRandomSpawnProfile();
-		}
-
-		if (!SpawnProfile.EnemyClass)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("No valid EnemyClass in spawn profile."));
-			continue;
-		}
-
-		FVector Location = SpawnPoint->GetActorLocation();
-		FRotator Rotation = SpawnPoint->GetActorRotation();
-
-		AEnemyBase* Spawned = SpawnEnemy(SpawnProfile, Location, Rotation);
-		if (Spawned)
-		{
-			UE_LOG(LogTemp, Log, TEXT("Spawned %s at %s"), *Spawned->GetName(), *Location.ToString());
-		}
-	}
-}
 // Called when the game starts or when spawned

@@ -44,8 +44,6 @@ public:
 	AEnemyBase* SpawnEnemy(const FEnemySpawnProfile& Profile, const FVector& Location, const FRotator& Rotation);
 	void ReturnEnemy(AEnemyBase* Enemy);
 
-	UFUNCTION(BlueprintCallable, Category = "Enemy Pool")
-	void SpawnEnemiesAtSpawnPoints();
 
 protected:
 	// Called when the game starts or when spawned
@@ -56,9 +54,4 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Pool Settings")
 	TMap<TSubclassOf<AEnemyBase>, int32> EnemyPoolSizes;
 	
-	UFUNCTION(BlueprintCallable, Category="Enemy Pool")
-	FEnemySpawnProfile GetRandomSpawnProfile() const;
-
-	UPROPERTY(EditAnywhere, Category="Enemy Pool")
-	TArray<TSubclassOf<AEnemyBase>> RandomEnemyClasses;
 };

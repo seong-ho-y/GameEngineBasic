@@ -6,9 +6,12 @@
 #include "GameFramework/PlayerController.h"
 #include "MyPlayerController.generated.h"
 
-class AEnemyPoolManager;
 class UInputMappingContext;
-class AMySpaceShip;
+class AMyTestPawn;
+class ASpaceCharacter;
+//class AMySpaceShip;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerPawnChanged, APawn*, NewPawn);
 
 UCLASS()
 class GAMEENGINEBASIC_API AMyPlayerController : public APlayerController
@@ -16,28 +19,25 @@ class GAMEENGINEBASIC_API AMyPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 protected:
+	// IMC for character
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputMappingContext* CharacterInputContext;
 
-	/** Input Mapping Context to be used for player input */
+	// IMC for vehicle
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputMappingContext* InputMappingContext;
+	UInputMappingContext* ShipInputContext;
 
-	/** Pointer to the controlled vehicle pawn */
-	TObjectPtr<AMySpaceShip> VehiclePawn;
+
+	TObjectPtr<AMyTestPawn> VehiclePawn;
 
 protected:
-
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
-public:
-
+	virtual void OnPossess(APawn* InPawn) override;
 	virtual void Tick(float Delta) override;
 
-protected:
-
-	virtual void OnPossess(APawn* InPawn) override;
-	void OnLKeyPressed();
-
-private:
-	AEnemyPoolManager* EnemyPoolManager;
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnPlayerPawnChanged OnPlayerPawnChanged;
 };
