@@ -4,8 +4,10 @@
 #include "../Public/EnemyBase.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
+#include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/Attack.h"
 #include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
@@ -118,14 +120,45 @@ void AEnemyBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 void AEnemyBase::ApplyDamage_Implementation(float DamageAmount, AController* InstigatorController, AActor* DamageCauser,
 	FVector HitLoc, TSubclassOf<UDamageType> DamageType)
 {
-	IDamageable::ApplyDamage_Implementation(DamageAmount, InstigatorController, DamageCauser, HitLoc, DamageType);
+	SpawnVfx(DamagedVfx);
+	Die_Implementation(DamageCauser);
+	
+}
+float AEnemyBase::TakeDamage(
+	float DamageAmount,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
+{
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// 여기서 실제 데미지 처리
+	ApplyDamage(DamageAmount, EventInstigator, DamageCauser, GetActorLocation(), DamageEvent.DamageTypeClass);
+
+	return DamageAmount;
 }
 
 void AEnemyBase::Die_Implementation(AActor* Killer)
 {
-	IDamageable::Die_Implementation(Killer);
-}
+	UE_LOG(LogTemp, Warning, TEXT("%s Died"), *GetName());
+	SpawnVfx(ExplosionVfx);
 
+	// AI 정지
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		if (AIController->GetBrainComponent())
+		{
+			AIController->GetBrainComponent()->StopLogic("Died");
+		}
+	}
+
+	// 풀에 반환 (DeActivate)
+	DeActivate();
+}
+void AEnemyBase::SpawnVfx(UNiagaraSystem* Vfx)
+{
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Vfx, GetActorLocation());
+}
 bool AEnemyBase::IsDead_Implementation() const
 {
 	return IDamageable::IsDead_Implementation();
