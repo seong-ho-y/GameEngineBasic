@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "NiagaraSystem.h"
 #include "GameEngineBasic/Components/public/Attack.h"
 #include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameFramework/Pawn.h"
@@ -50,7 +51,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Movement")
 	float Deceleration = 1.2f;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Vfx")
+	UNiagaraSystem* ExplosionVfx;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vfx")
+	UNiagaraSystem* DamagedVfx;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 public:	
@@ -63,8 +69,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void ApplyDamage_Implementation(float DamageAmount, AController* InstigatorController, AActor* DamageCauser, FVector HitLoc, TSubclassOf<UDamageType> DamageType) override;
+	float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
+	                 AActor* DamageCauser);
 
 	virtual void Die_Implementation(AActor* Killer) override;
+	void SpawnVfx(UNiagaraSystem* Vfx);
 
 	virtual bool IsDead_Implementation() const override;
 

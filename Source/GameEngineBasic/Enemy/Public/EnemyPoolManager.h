@@ -44,7 +44,9 @@ public:
 	AEnemyBase* SpawnEnemy(const FEnemySpawnProfile& Profile, const FVector& Location, const FRotator& Rotation);
 	void ReturnEnemy(AEnemyBase* Enemy);
 
-
+	UFUNCTION(BlueprintCallable, Category = "Enemy Pool")
+	void SpawnEnemiesAtSpawnPoints();
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
