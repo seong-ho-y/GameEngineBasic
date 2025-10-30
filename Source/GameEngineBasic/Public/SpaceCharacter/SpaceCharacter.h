@@ -8,6 +8,8 @@
 #include "InputAction.h"
 #include "SpaceCharacter.generated.h"
 
+class UShooterComp;
+
 UCLASS()
 class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
 {
@@ -16,12 +18,16 @@ class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
 public:
 	ASpaceCharacter();
 
-private:
+protected:
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class UCameraComponent* FollowCamera;
+
+	// Component
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UShooterComp* Shooter;
 
 	// ют╥б
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -42,6 +48,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* FireAction;
 
+	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float MaxFuel = 100.f;
 
@@ -72,6 +79,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void FireTriggered(const FInputActionValue& Value); 
+	void FireStarted(const FInputActionValue& Value);
 private:
 	bool bIsAiming = false;
 	bool bIsFlyingMode = false;

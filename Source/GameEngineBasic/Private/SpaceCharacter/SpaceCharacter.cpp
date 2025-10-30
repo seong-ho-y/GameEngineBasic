@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
 #include <sstream>
 
 // Sets default values
@@ -33,6 +34,8 @@ ASpaceCharacter::ASpaceCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
 	GetCharacterMovement()->JumpZVelocity = 600.0f;
 	GetCharacterMovement()->AirControl = 0.2f;
+
+	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 }
 
 void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -54,6 +57,11 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		{
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartAim);
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopAim);
+		}
+		if(FireAction)
+		{
+			EnhancedInput->BindAction(FireAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::FireTriggered);
+			EnhancedInput->BindAction(FireAction, ETriggerEvent::Started, this, &ASpaceCharacter::FireStarted);
 		}
 		if (FlyAction)
 		{
@@ -91,10 +99,21 @@ void ASpaceCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		const FRotator ControlRotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, ControlRotation.Yaw, 0);
+		FVector ForwardDir, RightDir;
 
-		const FVector ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		if (bIsFlyingMode)
+		{
+			// 비행 중일 때는 Pitch도 포함
+			ForwardDir = ControlRotation.Vector(); // 전체 회전 방향
+			RightDir = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::Y);
+		}
+		else
+		{
+			// 걷기 모드에서는 평면 기준 이동
+			const FRotator YawRotation(0, ControlRotation.Yaw, 0);
+			ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+			RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		}
 
 		AddMovementInput(ForwardDir, MoveValue.Y);
 		AddMovementInput(RightDir, MoveValue.X);
@@ -121,6 +140,12 @@ void ASpaceCharacter::StartJump()
 void ASpaceCharacter::StopJump()
 {
 	StopJumping();
+}
+
+void ASpaceCharacter::FireTriggered(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("FireTriggered"));
+	if (Shooter) Shooter->TryFire(); // 쿨다운이 끝났을 때만 실제 발사됨
 }
 
 void ASpaceCharacter::StartAim()
