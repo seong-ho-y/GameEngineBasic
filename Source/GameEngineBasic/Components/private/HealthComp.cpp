@@ -23,6 +23,12 @@ void UHealthComp::BeginPlay()
 	LastDamageTime = -FLT_MAX;
 }
 
+void UHealthComp::InitStats()
+{
+	CurrentHealth = MaxHealth;
+	CurrentShield = (bUseShield ? MaxShield : 0);
+	BroadcastChanged();
+}
 
 // Called every frame
 void UHealthComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -54,87 +60,102 @@ void UHealthComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComp
 	}
 }
 
-void UHealthComp::InitStats()
+bool UHealthComp::IsInvincible() const
 {
-	CurrentHealth = MaxHealth;
-	CurrentShield = MaxShield;
-	BroadcastChanged();
+	if (!bUseInvincibleFrame) return false;
+	float Now = GetWorld()->GetTimeSeconds();
+	return (Now - LastDamageTime < InvincibleDuration);
 }
 
-void UHealthComp::TakeDamage()
+void UHealthComp::TakeDamage(int32 DamageAmount)
 {
-	// 피격 시각 갱신 및 재생 시작점 재설정
+	if (DamageAmount <= 0) return;
 
-	const float Now = GetWorld()->GetTimeSeconds();
-	const float InvincibleDuration = 0.3f; // 무적시간 (초)
-
-	if (Now - LastDamageTime < InvincibleDuration)
-	{
-		// 아직 무적시간 중이라면 데미지 무시
+	// 무적 체크
+	if (IsInvincible())
 		return;
-	}
 
-	float Elapsed = Now - LastDamageTime;
-	float RemainingInvincible = FMath::Max(0.f, InvincibleDuration - Elapsed);
+	LastDamageTime = GetWorld()->GetTimeSeconds();
+	OnDamageTaken.Broadcast(GetOwner());
 
-	// 남은 무적시간 출력
-	if (GEngine)
+	// 쉴드 우선
+	if (bUseShield && CurrentShield > 0)
 	{
-		FString Msg = FString::Printf(TEXT("무적 남은 시간: %.2f초"), RemainingInvincible);
-		GEngine->AddOnScreenDebugMessage(97, 1.0f, FColor::Yellow, Msg);
-	}
-
-
-	LastDamageTime = Now;
-	NextRegenTime = Now + ShieldRegenDelay;
-
-	// 우선 실드 1 감소, 실드가 없으면 체력 1 감소
-	if (CurrentShield > 0)
-	{
-		ApplyShieldDamage(1);
+		ApplyShieldDamage(DamageAmount);
 	}
 	else
 	{
-		ApplyHealthDamage(1);
+		ApplyHealthDamage(DamageAmount);
 	}
-	std::stringstream ss;
 
-	ss << "CurrentShield: " << CurrentShield << ' ' << "CurrentHealth: " << CurrentHealth;
-	if (GEngine) GEngine->AddOnScreenDebugMessage(95, 1.0f, FColor::Blue, ss.str().c_str());
+	// 쉴드 회복 시작 예약
+	if (bUseShieldRegen && bUseShield)
+	{
+		StopShieldRegenTimer();
+		GetWorld()->GetTimerManager().SetTimer(
+			ShieldRegenTimerHandle,
+			this,
+			&UHealthComp::StartShieldRegenTimer,
+			ShieldRegenDelay,
+			false
+		);
+	}
 
+	// 디버그
+	if (bDebugHealthLog && GEngine)
+	{
+		std::stringstream ss;
+		ss << "HP:" << CurrentHealth << " SHIELD:" << CurrentShield;
+		GEngine->AddOnScreenDebugMessage(97, 1.5f, FColor::Cyan, ss.str().c_str());
+	}
+}
+void UHealthComp::StartShieldRegenTimer()
+{
+	if (!bUseShieldRegen || !bUseShield) return;
+	if (CurrentShield >= MaxShield) return;
+
+	GetWorld()->GetTimerManager().SetTimer(
+		ShieldRegenTimerHandle,
+		[this]()
+		{
+			if (CurrentShield >= MaxShield)
+			{
+				StopShieldRegenTimer();
+				return;
+			}
+			RestoreShield(1);
+		},
+		ShieldRegenDelay,
+		true
+	);
 }
 
+void UHealthComp::StopShieldRegenTimer()
+{
+	GetWorld()->GetTimerManager().ClearTimer(ShieldRegenTimerHandle);
+}
 void UHealthComp::RestoreShield(int Amount)
 {
-	if (Amount <= 0) return;
+	if (!bUseShield || Amount <= 0) return;
 
-	const int OldShield = CurrentShield;
+	int32 OldShield = CurrentShield;
 	CurrentShield = FMath::Clamp(CurrentShield + Amount, 0, MaxShield);
 
-	// 가득 차면 재생 타이머는 멈춤
 	if (CurrentShield >= MaxShield)
-	{
-		NextRegenTime = -FLT_MAX;
-	}
+		StopShieldRegenTimer();
 
-	// 변경 브로드캐스트
 	if (CurrentShield != OldShield)
-	{
 		BroadcastChanged();
-	}
 }
 
 void UHealthComp::ApplyShieldDamage(int Amount)
 {
-	if (Amount <= 0 || CurrentShield <= 0) return;
+	if (!bUseShield || Amount <= 0 || CurrentShield <= 0) return;
 
 	CurrentShield = FMath::Clamp(CurrentShield - Amount, 0, MaxShield);
 
 	if (CurrentShield == 0)
-	{
 		OnShieldBroken.Broadcast(GetOwner());
-	}
-
 
 	BroadcastChanged();
 }
@@ -146,14 +167,12 @@ void UHealthComp::ApplyHealthDamage(int Amount)
 	CurrentHealth = FMath::Clamp(CurrentHealth - Amount, 0, MaxHealth);
 
 	if (CurrentHealth == 0)
-	{
 		OnDeath.Broadcast(GetOwner());
-	}
 
 	BroadcastChanged();
 }
 
-void UHealthComp::BroadcastChanged()
+void UHealthComp::BroadcastChanged() const
 {
-	OnHealthChanged.Broadcast(GetOwner(), (float)CurrentHealth, (float)CurrentShield);
+	OnHealthChanged.Broadcast(GetOwner(), CurrentHealth, CurrentShield);
 }
