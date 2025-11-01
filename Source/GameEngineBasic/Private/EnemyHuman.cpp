@@ -6,6 +6,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 
 // Sets default values
@@ -19,7 +20,13 @@ AEnemyHuman::AEnemyHuman()
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
 
 	PawnSensingComp->bOnlySensePlayers = true;
-	PawnSensingComp->SensingInterval = 0.1f;	
+	PawnSensingComp->SensingInterval = 0.1f;
+
+	//몸체 자체 회전 끄기
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로만 몸 돌림
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f); // 원하는 회전 속도
 }
 
 // Called when the game starts or when spawned
