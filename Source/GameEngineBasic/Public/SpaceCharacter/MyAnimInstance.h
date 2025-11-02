@@ -29,6 +29,9 @@ protected:
     float YawDelta;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    float Direction;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     bool bIsInAir;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")

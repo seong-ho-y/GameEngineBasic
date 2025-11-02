@@ -38,6 +38,7 @@ AProjectile::AProjectile()
 	// Vfx
 	Vfx = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VFXComp"));
 	Vfx->SetupAttachment(RootComponent);
+
 }
 
 // Called when the game starts or when spawned
@@ -45,6 +46,18 @@ void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (TrailEffect)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			TrailEffect,
+			RootComponent,
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
+	}
 }
 
 // Called every frame
@@ -79,6 +92,16 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 			nullptr);
 	}
 	
+	if (ImpactEffect)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			ImpactEffect,
+			GetActorLocation(),
+			GetActorRotation(),
+			true
+		);
+	}
 	// 2. 물리 시뮬레이션 중인 다른 오브젝트에 대한 기존 로직도 유지
 	if (Hit.GetComponent() != nullptr && Hit.GetComponent()->IsSimulatingPhysics())
 	{
