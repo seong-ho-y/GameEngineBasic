@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
 #include "SpaceCharacter.generated.h"
@@ -20,10 +22,10 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	class USpringArmComponent* CameraBoom;
+	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	class UCameraComponent* FollowCamera;
+	UCameraComponent* FollowCamera;
 
 	// Component
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -48,6 +50,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* FireAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* BoostAction;
+
+	UPROPERTY(EditAnywhere, Category = "Animation|Combat")
+	UAnimMontage* FireMontage;
+
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float MaxFuel = 100.f;
@@ -59,9 +67,22 @@ protected:
 	float FuelConsumeRate = 12.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelRechargeRate = 6.f;
+	float FuelRechargeRate = 6.f;          
+
+	// Boost
+	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
+	float BoostStrength = 1000.f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
+	float BoostDuration = 0.3f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
+	float BoostCooldown = 1.5f;
+
+
 protected:
 	virtual void BeginPlay() override;
+	void Boost(const FInputActionValue& Value);
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -71,10 +92,13 @@ protected:
 
 	void StartAim();
 	void StopAim();
+	void UpdateCameraTransition(float DeltaTime);
 
 	void ToggleFlyingMode();
 	void ConsumeFuel(float DeltaTime);
 	void RechargeFuel(float DeltaTime);
+
+	void PlayFireMontage();
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -82,8 +106,21 @@ public:
 	void FireTriggered(const FInputActionValue& Value); 
 	void FireStarted(const FInputActionValue& Value);
 private:
+	FTimerHandle BoostHandle;
+	bool bIsBoosting = false;
+	bool bCanBoost = true;
+	float BoostFuelCost = 20.f;
+
 	bool bIsAiming = false;
+	bool bIsCameraTransitioning = false;
+
 	bool bIsFlyingMode = false;
 
-	
+	float DefaultArmLength = 300.f;
+	float AimedArmLength = 180.f;
+
+	FVector DefaultSocketOffset = FVector::ZeroVector;
+	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
+
+	float CameraInterpSpeed = 600.f;
 };

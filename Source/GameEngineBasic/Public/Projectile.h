@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 #include "Projectile.generated.h"
 
 class USphereComponent;
@@ -32,6 +34,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = VFX)
 	UNiagaraComponent* Vfx;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Cascade")
+	UParticleSystem* TrailEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Cascade")
+	UParticleSystem* ImpactEffect;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
