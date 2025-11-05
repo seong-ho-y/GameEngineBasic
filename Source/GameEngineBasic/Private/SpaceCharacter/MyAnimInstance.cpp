@@ -5,6 +5,7 @@
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include <KismetAnimationLibrary.h>
 
 void UMyAnimInstance::NativeInitializeAnimation()
 {
@@ -29,6 +30,7 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsInAir = OwningCharacter->GetCharacterMovement()->IsFalling();
 		bisAccelerating = OwningCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
 		bIsFlying = OwningCharacter->GetCharacterMovement()->MovementMode == MOVE_Flying;
+		Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, OwningCharacter->GetActorRotation());
 
 		FRotator ActorRot = OwningCharacter->GetActorRotation();
 		FRotator VelRot = UKismetMathLibrary::MakeRotFromX(Velocity);
