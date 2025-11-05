@@ -81,12 +81,12 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 	{
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr;
 		// 나중에 데미지는 무기 컴포넌트에서 가져와서 DamageAmount에 넣어줄거임
-		constexpr float DamageAmount = 5.0f; // 이 프로젝타일의 기본 데미지
+		const float AppliedDamage = DamageAmount; // 이 프로젝타일의 기본 데미지
 		
 
 		UGameplayStatics::ApplyDamage(
 			OtherActor,
-			DamageAmount,
+			AppliedDamage,
 			InstigatorController,
 			this,
 			nullptr);

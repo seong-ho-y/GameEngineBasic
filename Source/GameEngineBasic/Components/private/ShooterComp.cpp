@@ -109,8 +109,21 @@ void UShooterComp::Fire_Implementation()
 	SpawnParams.Instigator = MyOwner->GetInstigator(); // Set MyOwner's Instigator to Projectile's Instigator
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
-	
+	AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
+		ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
+
+	if (Projectile)
+	{
+		Projectile->DamageAmount = PendingDamage;
+		Projectile->SetActorScale3D(FVector(PendingScale));
+
+		if (Projectile->GetProjectileMovement())
+		{
+			Projectile->GetProjectileMovement()->Velocity =
+				FireDirection * Projectile->GetProjectileMovement()->InitialSpeed;
+		}
+	}
+
 	//Play VFX and Sound
 	if (MuzzleFlashEffect)
 	{
