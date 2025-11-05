@@ -21,10 +21,10 @@ public:
 	ASpaceCharacter();
 
 protected:
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
 	// Component
@@ -53,8 +53,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* BoostAction;
 
-	UPROPERTY(EditAnywhere, Category = "Animation|Combat")
+	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlypreMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* BoostMontage;
 
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
@@ -71,18 +77,18 @@ protected:
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
-	float BoostStrength = 1000.f;
+	float BoostStrength = 2000.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
-	float BoostDuration = 0.3f;
+	float BoostDuration = 2.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
-	float BoostCooldown = 1.5f;
-
+	float BoostCooldown = 5.f;
 
 protected:
 	virtual void BeginPlay() override;
-	void Boost(const FInputActionValue& Value);
+	void Boost();
+	void EndBoost();
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -99,19 +105,24 @@ protected:
 	void RechargeFuel(float DeltaTime);
 
 	void PlayFireMontage();
+	void ActivateFlyingMode();
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void FireTriggered(const FInputActionValue& Value); 
 	void FireStarted(const FInputActionValue& Value);
+
+public:
+	bool bIsBoosting = false;
+	bool bIsAiming = false;
+
 private:
 	FTimerHandle BoostHandle;
-	bool bIsBoosting = false;
-	bool bCanBoost = true;
+	FTimerHandle FlightDelayHandle;
+	
 	float BoostFuelCost = 20.f;
 
-	bool bIsAiming = false;
 	bool bIsCameraTransitioning = false;
 
 	bool bIsFlyingMode = false;
@@ -122,5 +133,5 @@ private:
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	float CameraInterpSpeed = 600.f;
+	float CameraInterpSpeed = 1000.f;
 };

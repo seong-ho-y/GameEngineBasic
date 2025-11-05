@@ -9,8 +9,12 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
+
+#include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "TimerManager.h"
+
 #include <sstream>
 
 // Sets default values
@@ -116,13 +120,11 @@ void ASpaceCharacter::Move(const FInputActionValue& Value)
 
 		if (bIsFlyingMode)
 		{
-			// ∫Ò«‡ ¡ﬂ¿œ ∂ß¥¬ Pitchµµ ∆˜«‘
-			ForwardDir = ControlRotation.Vector(); // ¿¸√º »∏¿¸ πÊ«‚
+			ForwardDir = ControlRotation.Vector(); 
 			RightDir = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::Y);
 		}
 		else
 		{
-			// ∞»±‚ ∏µÂø°º≠¥¬ ∆Ú∏È ±‚¡ÿ ¿Ãµø
 			const FRotator YawRotation(0, ControlRotation.Yaw, 0);
 			ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 			RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
@@ -168,41 +170,103 @@ void ASpaceCharacter::FireTriggered(const FInputActionValue& Value)
 
 void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
 {
-	
+	const float TargetLength = bIsAiming ? AimedArmLength : DefaultArmLength;
+	const FVector TargetOffset = bIsAiming ? AimedSocketOffset : DefaultSocketOffset;
+
+// Ïñ∏Î¶¨Ïñº ÎÇ¥Ïû• Î≥¥Í∞Ñ Ìï®Ïàò
+	CameraBoom->TargetArmLength = UKismetMathLibrary::FInterpTo_Constant(
+	CameraBoom->TargetArmLength, TargetLength, DeltaTime, CameraInterpSpeed);
+
+	CameraBoom->SocketOffset = UKismetMathLibrary::VInterpTo_Constant(
+	CameraBoom->SocketOffset, TargetOffset, DeltaTime, CameraInterpSpeed);
+
+// Í±∞Ïùò ÎèÑÎã¨ÌïòÎ©¥ Ï†ïÏßÄ
+	if (FMath::IsNearlyEqual(CameraBoom->TargetArmLength, TargetLength, 0.1f) &&
+		CameraBoom->SocketOffset.Equals(TargetOffset, 0.1f))
+	{
+	CameraBoom->TargetArmLength = TargetLength;
+	CameraBoom->SocketOffset = TargetOffset;
+	bIsCameraTransitioning = false;
+	}
 }
 
 void ASpaceCharacter::StartAim()
 {
 	bIsAiming = true;
 	bIsCameraTransitioning = true;
+
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	bUseControllerRotationYaw = true;
 }
 
 void ASpaceCharacter::StopAim()
 {
 	bIsAiming = false;
 	bIsCameraTransitioning = true;
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	bUseControllerRotationYaw = false;
 }
 
 void ASpaceCharacter::ToggleFlyingMode()
 {
-	// ¿ÃπÃ ∫Ò«‡ ¡ﬂ¿Ã∏È «ÿ¡¶
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Try to fly!"));
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+
 	if (bIsFlyingMode)
 	{
 		bIsFlyingMode = false;
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		Move->SetMovementMode(MOVE_Walking);
+		Move->GravityScale = 1.0f;            
+		Move->BrakingFrictionFactor = 2.0f;   
+		Move->AirControl = 0.2f;
+		Move->MaxWalkSpeed = 600.f;
 		return;
 	}
-	
-	// ∫Ò«‡ Ω√¿€: ø¨∑·∞° ¿œ¡§∑Æ ¿ÃªÛ ¿÷æÓæﬂ «‘
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		if (FlypreMontage)
+			AnimInstance->Montage_Play(FlypreMontage);
+	}
+
 	if (CurrentFuel > 5.f)
 	{
-		bIsFlyingMode = true;
-		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-
-		auto* Move = GetCharacterMovement();
-		Move->BrakingFrictionFactor = 0.2f;
-		Move->MaxFlySpeed = 900.f; 
+		if (!GetWorldTimerManager().IsTimerActive(FlightDelayHandle))
+		{
+			GetWorldTimerManager().SetTimer(
+				FlightDelayHandle,
+				this,
+				&ASpaceCharacter::ActivateFlyingMode,
+				1.0f,
+				false
+			);
+		}
 	}
+}
+
+void ASpaceCharacter::ActivateFlyingMode()
+{
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("fly!"));
+
+	if (CurrentFuel <= 5.f)
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Not enough fuel to fly!"));
+		return;
+	}
+
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	bIsFlyingMode = true;
+
+	Move->SetMovementMode(MOVE_Flying);
+	Move->GravityScale = 0.05f;
+	Move->BrakingFrictionFactor = 0.0f;
+	Move->AirControl = 1.0f;
+	Move->MaxFlySpeed = 1500.f;
+
 }
 
 void ASpaceCharacter::ConsumeFuel(float DeltaTime)
@@ -213,7 +277,6 @@ void ASpaceCharacter::ConsumeFuel(float DeltaTime)
 	ss << "Current Fuel: " << CurrentFuel << "\n";
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Yellow, ss.str().c_str());
-	// ø¨∑· ∞Ì∞• Ω√ ¡ÔΩ√ ∫Ò«‡ «ÿ¡¶
 	if (CurrentFuel <= 0.f)
 	{
 		bIsFlyingMode = false;
@@ -237,49 +300,35 @@ void ASpaceCharacter::PlayFireMontage()
 	}
 }
 
-void ASpaceCharacter::Boost(const FInputActionValue& Value)
+void ASpaceCharacter::Boost()
 {
-	if (!bIsFlyingMode || !bCanBoost || CurrentFuel < BoostFuelCost)
+	if (CurrentFuel < BoostFuelCost || !bIsFlyingMode)
 		return;
 
-	const FVector2D InputValue = Value.Get<FVector2D>();
-	const FRotator ControlRot = Controller->GetControlRotation();
+	
+	FVector InputDir = GetLastMovementInputVector();
 
-	FVector BoostDir = FVector::ZeroVector;
-	const FVector ForwardDir = UKismetMathLibrary::GetForwardVector(ControlRot);
-	const FVector RightDir = UKismetMathLibrary::GetRightVector(ControlRot);
-
-	// πÊ«‚ ¿‘∑¬¿Ã æ¯¿∏∏È ¿¸πÊ Boost
-	if (InputValue.IsNearlyZero())
-	{
-		BoostDir = ForwardDir;
-	}
-	else
-	{
-		BoostDir = (ForwardDir * InputValue.Y + RightDir * InputValue.X).GetSafeNormal();
-	}
-
-	// Boost ¡∂∞« º≥¡§
 	bIsBoosting = true;
-	bCanBoost = false;
-	CurrentFuel = FMath::Max(0.f, CurrentFuel - BoostFuelCost);
 
-	// º¯∞£ ∞°º” (¬™¿∫ Dash ¥¿≥¶)
-	LaunchCharacter(BoostDir * BoostStrength, true, true);
+	FVector BoostDir = InputDir.GetSafeNormal();
 
-	// Boost ¡æ∑· π◊ ∞®º” √≥∏Æ
-	GetWorldTimerManager().SetTimer(BoostHandle, [this]()
-		{
-			bIsBoosting = false;
-			FVector CurrentVel = GetCharacterMovement()->Velocity;
-			GetCharacterMovement()->Velocity = CurrentVel * 0.4f; // ∞®º”
-		}, BoostDuration, false);
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (MoveComp)
+	{
+		MoveComp->AddImpulse(BoostDir * BoostStrength, true);
+	}
 
-	// Boost ƒ≈∏¿” Ω√¿€
-	FTimerHandle CooldownHandle;
-	GetWorldTimerManager().SetTimer(CooldownHandle, [this]()
-		{
-			bCanBoost = true;
-		}, BoostCooldown, false);
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		if (BoostMontage)
+			AnimInstance->Montage_Play(BoostMontage);
+	}
 
+	GetWorldTimerManager().SetTimer(BoostHandle, this, &ASpaceCharacter::EndBoost, BoostDuration, false);
+	CurrentFuel -= BoostFuelCost;
+}
+
+void ASpaceCharacter::EndBoost()
+{
+	bIsBoosting = false;
 }
