@@ -62,7 +62,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
 	void Fire();
 	
+	UFUNCTION(BlueprintCallable)
+	void SetFireDirection(const FVector& NewDir);
+
 private:
+	FVector FireDirection = FVector::ZeroVector;
+	
 	// 연사 속도 제어를 위한 타이머 핸들
 	FTimerHandle FireRateTimerHandle;
 

@@ -16,13 +16,64 @@ class GAMEENGINEBASIC_API UEnemyAnimInstance : public UAnimInstance
 public:
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Aim")
+	float TargetUpperYaw = 0.f;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Aim")
+	float TargetUpperPitch = 0.f;
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	float Speed;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement")
-	bool bIsInAir;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
-	bool bIsAttacking;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	bool bIsGroggy;
+	UPROPERTY(BlueprintReadOnly, Category="Movement")
+	float Direction = 0.f;             // 전/후/좌/우 방향(각도, -180~180)
+
+	UPROPERTY(BlueprintReadOnly, Category="Movement")
+	float ForwardSpeed = 0.f;          // 전/후 성분(+전진, -후진)
+
+	UPROPERTY(BlueprintReadOnly, Category="Movement")
+	float RightSpeed = 0.f;            // 좌/우 성분(+오른쪽, -왼쪽)
+
+	UPROPERTY(BlueprintReadOnly, Category="State")
+	bool bIsInAir = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="State")
+	bool bIsAiming = false;
+
+	UPROPERTY(BlueprintReadOnly, Category="State")
+	bool bIsFiring = false;
+
+	/** ===== 에임(상체) 파라미터 (AimOffset 등) ===== */
+	UPROPERTY(BlueprintReadOnly, Category="Aiming")
+	float AimYaw = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, Category="Aiming")
+	float AimPitch = 0.f;
+
+	/** ===== 몽타주 (에디터에서 지정) ===== */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Montage")
+	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Montage")
+	UAnimMontage* ReloadMontage;
+
+	/** C++에서 외부(Enemy/AI)에서 호출할 헬퍼 */
+	UFUNCTION(BlueprintCallable, Category="Anim")
+	void SetAiming(bool bNewAiming) { bIsAiming = bNewAiming; }
+
+	UFUNCTION(BlueprintCallable, Category="Anim")
+	void SetFiring(bool bNewFiring) { bIsFiring = bNewFiring; }
+
+	UFUNCTION(BlueprintCallable, Category="Anim")
+	void PlayFireMontage();
+
+	UFUNCTION(BlueprintCallable, Category="Anim")
+	void PlayReloadMontage();
+
+private:
+	/** 내부 계산용 */
+	UPROPERTY(Transient)
+	ACharacter* OwnerChar = nullptr;
+
+	void UpdateLocomotionParams(float DeltaSeconds);
+	void UpdateAimParams(float DeltaSeconds);
 };

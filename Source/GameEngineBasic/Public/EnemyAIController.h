@@ -18,12 +18,15 @@ public:
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 
+	virtual void Tick(float DeltaSeconds) override;
+	
 private:
 	UPROPERTY()
 	UBlackboardComponent* BB;
 
 	UFUNCTION()
 	void OnSeePawn(APawn* SeenPawn);
+	void OnLostSight() const;
 
 	TWeakObjectPtr<class AEnemyHuman> CachedEnemy;
 };
