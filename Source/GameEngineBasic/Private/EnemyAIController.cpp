@@ -3,8 +3,10 @@
 
 #include "EnemyAIController.h"
 
+#include "EnemyAnimInstance.h"
 #include "EnemyHuman.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AEnemyAIController::AEnemyAIController()
 {
@@ -36,13 +38,53 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	}
 }
 
+void AEnemyAIController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (!CachedEnemy.IsValid()) return;
+
+	const bool bHasLOS = BB->GetValueAsBool(TEXT("HasLOS"));
+	auto* Mesh = CachedEnemy->GetMesh();
+	if (!Mesh) return;
+	
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(Mesh->GetAnimInstance()))
+	{
+		if (bHasLOS)
+		{
+			if (APawn* Target = Cast<APawn>(BB->GetValueAsObject(TEXT("TargetActor"))))
+			{
+				const FVector Dir = Target->GetActorLocation() - CachedEnemy->GetActorLocation();
+				const FRotator LookRot = Dir.Rotation();
+				const FRotator MyRot   = CachedEnemy->GetActorRotation();
+
+				const FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(LookRot, MyRot);
+
+				Anim->TargetUpperYaw   = DeltaRot.Yaw;
+				Anim->TargetUpperPitch = DeltaRot.Pitch;
+			}
+		}
+		else
+		{
+			Anim->TargetUpperYaw   = 0.f;
+			Anim->TargetUpperPitch = 0.f;
+		}
+	}
+}
+
 void AEnemyAIController::OnSeePawn(APawn* SeenPawn)
 {
 	BB->SetValueAsObject(TEXT("TargetActor"), SeenPawn);
-	BB->SetValueAsVector(TEXT("LastKnownPos"), SeenPawn->GetActorLocation());
+	BB->SetValueAsVector(TEXT("TargetLocation"), SeenPawn->GetActorLocation());
 	BB->SetValueAsBool(TEXT("HasLOS"), true);
 	BB->SetValueAsFloat(TEXT("LastSeenTime"), GetWorld()->GetTimeSeconds());
 	BB->SetValueAsInt(TEXT("State"), 2); // Combat
 
-	SetFocus(SeenPawn); // 전투 진입 시 시선 고정(원한다면)
+	SetFocalPoint(SeenPawn->GetActorLocation());
+}
+void AEnemyAIController::OnLostSight() const
+{
+	if (Blackboard)
+	{
+		Blackboard->ClearValue("TargetActor");
+	}
 }

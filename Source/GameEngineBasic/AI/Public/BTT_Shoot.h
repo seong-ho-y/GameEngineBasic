@@ -20,4 +20,7 @@ protected:
 	FBlackboardKeySelector TargetActorKey;
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Muzzle")
+	FName MuzzleName;
 };
