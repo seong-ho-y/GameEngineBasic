@@ -35,10 +35,19 @@ protected:
     bool bIsInAir;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
-    bool bisAccelerating;
+    bool bIsAiming;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
-    bool bIsFlying;
+    bool bisAccelerating = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    bool bIsFlying = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    bool bIsBoosting = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
+    bool bCanBoost = true;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     FRotator MovementRotation;
@@ -48,7 +57,6 @@ protected:
 
     UPROPERTY(Transient)
     class ASpaceCharacter* OwningCharacter;
-
 public:
     virtual void NativeInitializeAnimation() override;
     virtual void NativeUpdateAnimation(float DeltaSeconds) override;
