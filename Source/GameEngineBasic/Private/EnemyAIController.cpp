@@ -74,10 +74,17 @@ void AEnemyAIController::Tick(float DeltaSeconds)
 void AEnemyAIController::OnSeePawn(APawn* SeenPawn)
 {
 	BB->SetValueAsObject(TEXT("TargetActor"), SeenPawn);
-	BB->SetValueAsVector(TEXT("LastKnownPos"), SeenPawn->GetActorLocation());
+	BB->SetValueAsVector(TEXT("TargetLocation"), SeenPawn->GetActorLocation());
 	BB->SetValueAsBool(TEXT("HasLOS"), true);
 	BB->SetValueAsFloat(TEXT("LastSeenTime"), GetWorld()->GetTimeSeconds());
 	BB->SetValueAsInt(TEXT("State"), 2); // Combat
 
 	SetFocalPoint(SeenPawn->GetActorLocation());
+}
+void AEnemyAIController::OnLostSight() const
+{
+	if (Blackboard)
+	{
+		Blackboard->ClearValue("TargetActor");
+	}
 }

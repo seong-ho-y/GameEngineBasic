@@ -37,13 +37,17 @@ void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
 bool UShooterComp::TryFire()
 {
-	if (CanFire())
+	if (!CanFire())
 	{
-		Fire();
-		return true;
+		return false;
 	}
-	// 발사 실패 사운드
-	return false;
+	Fire();
+	return true;
+}
+
+void UShooterComp::SetFireDirection(const FVector& NewDir)
+{
+	FireDirection = NewDir.GetSafeNormal();
 }
 
 bool UShooterComp::CanFire_Implementation() const
@@ -64,6 +68,7 @@ bool UShooterComp::CanFire_Implementation() const
 
 void UShooterComp::Fire_Implementation()
 {
+	UE_LOG(LogTemp, Warning, TEXT("FireDirection: %s"), *FireDirection.ToString());
 	// 0. Check IsValid
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner || !ProjectileClass)
@@ -81,9 +86,35 @@ void UShooterComp::Fire_Implementation()
 		FireRate,
 		false);
 	// 3. Calculate Spawn Loc & Rot
-	USceneComponent* MuzzleSocket = MyOwner->FindComponentByClass<UStaticMeshComponent>();
+	USceneComponent* MuzzleSocket = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
+	if (MuzzleSocket)
+	{
+		MuzzleSocket = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
+	}
+	else if (MyOwner->FindComponentByClass<UStaticMeshComponent>())
+	{
+		MuzzleSocket = MyOwner->FindComponentByClass<UStaticMeshComponent>();
+	}
 	const FVector SpawnLocation = MuzzleSocket ? MuzzleSocket->GetSocketLocation(MuzzleSocketName): MyOwner->GetActorLocation();
-	const FRotator SpawnRotation = MuzzleSocket ? MuzzleSocket->GetSocketRotation(MuzzleSocketName): MyOwner->GetActorRotation();
+
+	// Set Projectile SpawnRotation
+	// if there is any external rotation, it will use first
+	// next is Muzzle Rotation, last is ActorRot
+	// You can Set FireDirection by Calling SetFireDirection
+	FRotator SpawnRotation;
+
+	if (!FireDirection.IsNearlyZero())
+	{
+		SpawnRotation = FireDirection.Rotation();
+	}
+	else if (MuzzleSocket)
+	{
+		SpawnRotation = MuzzleSocket->GetSocketRotation(MuzzleSocketName);
+	}
+	else
+	{
+		SpawnRotation = MyOwner->GetActorRotation();
+	}
 
 	// 4. Projectile Spawn
 	FActorSpawnParameters SpawnParams;
