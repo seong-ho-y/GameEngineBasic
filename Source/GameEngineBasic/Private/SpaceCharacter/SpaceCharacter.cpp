@@ -338,7 +338,6 @@ void ASpaceCharacter::ActivateFlyingMode()
 	Move->BrakingFrictionFactor = 0.0f;
 	Move->AirControl = 1.0f;
 	Move->MaxFlySpeed = 1500.f;
-
 }
 
 void ASpaceCharacter::ConsumeFuel(float DeltaTime)
@@ -374,15 +373,16 @@ void ASpaceCharacter::PlayFireMontage()
 
 void ASpaceCharacter::Boost()
 {
-	if (CurrentFuel < BoostFuelCost || !bIsFlyingMode)
+	if (CurrentFuel < BoostFuelCost)
 		return;
+
+	if (!bIsFlyingMode)
+		ActivateFlyingMode();
 
 	
 	FVector InputDir = GetLastMovementInputVector();
 	FVector BoostDir = InputDir.GetSafeNormal();
 	bIsBoosting = true;
-
-	
 
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (MoveComp)

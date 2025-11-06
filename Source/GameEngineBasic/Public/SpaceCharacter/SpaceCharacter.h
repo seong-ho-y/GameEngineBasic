@@ -63,6 +63,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* BoostMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlyUpMontage;
+
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float MaxFuel = 100.f;
@@ -132,6 +135,7 @@ public:
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
+
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Charge")
