@@ -3,6 +3,8 @@
 
 #include "EnemyHuman.h"
 
+#include "EnemyAnimInstance.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
@@ -79,6 +81,65 @@ void AEnemyHuman::OnDie()
 {
 }
 
+void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale)
+{
+	if (bIsBoosting) return;
+	bIsBoosting = true;
+
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!Move) { bIsBoosting = false; return; }
+
+	// 캐시
+	BoostElapsed           = 0.f;
+	BoostDurationCached    = Duration;
+	BoostSpeedCached       = Speed;
+	GlideDecelRateCached   = Decel;
+	BoostDirCached         = Direction.GetSafeNormal2D();
+	OriginalGravityScale   = Move->GravityScale;
+
+	// 물리 세팅
+	Move->GravityScale = GravityScale;
+	Move->Velocity     = BoostDirCached * BoostSpeedCached;
+
+	// 애니메이션/이펙트
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->PlayBoostMontage();
+	}
+	if (BoostVfx)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			BoostVfx, GetMesh(), "BoostSocket",
+			FVector::ZeroVector, GetActorRotation(),
+			EAttachLocation::SnapToTarget, true);
+	}
+
+	// 타이머 시작 (지속 갱신)
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_BoostTick, this, &AEnemyHuman::OnBoostTick, BoostTickInterval, true);
+}
+
+void AEnemyHuman::EndBoost()
+{
+	if (!bIsBoosting) return;
+	bIsBoosting = false;
+
+	// 타이머 해제
+	GetWorldTimerManager().ClearTimer(TimerHandle_BoostTick);
+
+	// 물리 원복
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->GravityScale = OriginalGravityScale;
+	}
+
+	// 애니메이션 복귀(상태 표현)
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->AnimState = EEnemyAnimState::Idle;
+	}
+}
 // Called every frame
 void AEnemyHuman::Tick(float DeltaTime)
 {
@@ -91,5 +152,35 @@ void AEnemyHuman::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+}
+
+void AEnemyHuman::OnBoostTick()
+{
+	UWorld* World = GetWorld();
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!World || !Move)
+	{
+		EndBoost();
+		return;
+	}
+
+	const float DeltaSeconds = World->GetDeltaSeconds();
+	BoostElapsed += DeltaSeconds;
+
+	if (BoostElapsed < BoostDurationCached)
+	{
+		// ⛽ 부스트 유지 구간: 계속 같은 속도로 민다
+		Move->Velocity = BoostDirCached * BoostSpeedCached;
+		return;
+	}
+
+	// 🪂 글라이드/감속 구간: 속도를 0으로 서서히 보간
+	Move->Velocity = FMath::VInterpTo(Move->Velocity, FVector::ZeroVector, DeltaSeconds, GlideDecelRateCached);
+
+	// 종료 조건
+	if (Move->Velocity.SizeSquared2D() < 10.f)
+	{
+		EndBoost();
+	}
 }
 

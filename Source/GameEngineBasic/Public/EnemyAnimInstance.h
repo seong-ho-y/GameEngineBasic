@@ -9,13 +9,31 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class EEnemyAnimState : uint8
+{
+	Idle,
+	Walk,
+	Boost,
+	Shoot,
+	Reload,
+	Knock,
+	Dead
+};
+
 UCLASS()
 class GAMEENGINEBASIC_API UEnemyAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(BlueprintReadOnly, Category = "AnimState")
+	EEnemyAnimState AnimState = EEnemyAnimState::Idle;
+	bool bIsDead;
+	bool bShooting;
+
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+	void UpdateState();
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Aim")
 	float TargetUpperYaw = 0.f;
@@ -42,6 +60,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="State")
 	bool bIsFiring = false;
 
+	UPROPERTY(BlueprintReadOnly, Category = "State")
+	bool bIsBoosting;
+	
 	/** ===== 에임(상체) 파라미터 (AimOffset 등) ===== */
 	UPROPERTY(BlueprintReadOnly, Category="Aiming")
 	float AimYaw = 0.f;
@@ -56,18 +77,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Montage")
 	UAnimMontage* ReloadMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+	UAnimMontage* BoostMontage;
+
 	/** C++에서 외부(Enemy/AI)에서 호출할 헬퍼 */
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void SetAiming(bool bNewAiming) { bIsAiming = bNewAiming; }
 
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void SetFiring(bool bNewFiring) { bIsFiring = bNewFiring; }
-
+public:
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void PlayFireMontage();
 
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void PlayReloadMontage();
+
+	UFUNCTION(BlueprintCallable, Category = "Anim")
+	void PlayBoostMontage();
 
 private:
 	/** 내부 계산용 */

@@ -27,12 +27,14 @@ protected:
 
 	void EntryGroggyState(FName Name);
 	void OnDie();
+
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
+	void StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale);
+	void EndBoost();
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -46,9 +48,30 @@ public:
 	float AlertHoldSeconds = 3.0f; // 마지막으로 본 뒤 이 시간 동안 Alert 유지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="AI")
 	UBehaviorTree* BehaviorTreeAsset;
+	bool        bIsBoosting = false;
+	float       BoostTickInterval = 0.016f;
+	float       BoostElapsed = 0.f;
+	float       BoostDurationCached = 0.f;
+	float       BoostSpeedCached = 0.f;
+	float       GlideDecelRateCached = 0.f;
+	float       OriginalGravityScale = 1.f;
+	FVector     BoostDirCached = FVector::ZeroVector;
+
+	FTimerHandle TimerHandle_BoostTick;
+
+	void OnBoostTick(); // ← 타이머 콜백
+
 protected:
 	float CurrentHealth;
 	float MaxHealth;
 	TMap<FName,float> BodyPartDamage;
 	TMap<FName, float> GroggyThreshold;
+
+	UPROPERTY(EditAnywhere, Category = "Vfx")
+	UNiagaraSystem* BoostVfx;
+
+	UPROPERTY(EditAnywhere, Category = "Vfx")
+	USoundBase* BoostSound;
+private:
+	FTimerHandle TimerHandle_BoostEnd;
 };

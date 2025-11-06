@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
+
 void UEnemyAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
@@ -20,18 +21,28 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (!OwnerChar)
 	{
 		OwnerChar = Cast<ACharacter>(TryGetPawnOwner());
-		if (!OwnerChar) return;
+		if (!OwnerChar || !OwnerChar->GetCharacterMovement()) return;
 	}
 
 	UpdateLocomotionParams(DeltaSeconds);
 	UpdateAimParams(DeltaSeconds);
 }
 
+void UEnemyAnimInstance::UpdateState()
+{
+	if (!OwnerChar) return;
+	if (bIsDead) {AnimState = EEnemyAnimState::Dead; }
+	else if (bIsBoosting) { AnimState = EEnemyAnimState::Boost; }
+	else if (bShooting) {AnimState = EEnemyAnimState::Shoot; }
+	else if (Speed > 10.f) { AnimState = EEnemyAnimState::Walk; }
+	else {AnimState = EEnemyAnimState::Idle; }
+}
 void UEnemyAnimInstance::PlayFireMontage()
 {
 	if (FireMontage && !Montage_IsPlaying(FireMontage))
 	{
-		Montage_Play(FireMontage, 1.0f);
+		AnimState = EEnemyAnimState::Shoot;
+		Montage_Play(FireMontage);
 		// 필요시 섹션 이동: Montage_JumpToSection(FName("Loop"), FireMontage);
 	}
 }
@@ -41,6 +52,15 @@ void UEnemyAnimInstance::PlayReloadMontage()
 	if (ReloadMontage && !Montage_IsPlaying(ReloadMontage))
 	{
 		Montage_Play(ReloadMontage, 1.0f);
+	}
+}
+
+void UEnemyAnimInstance::PlayBoostMontage()
+{
+	if (BoostMontage)
+	{
+		AnimState = EEnemyAnimState::Boost;
+		Montage_Play(BoostMontage);
 	}
 }
 

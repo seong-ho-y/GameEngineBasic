@@ -24,6 +24,8 @@ protected:
 	FBlackboardKeySelector TargetLocKey;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BlackBoard")
 	FBlackboardKeySelector DistanceToTargetKey;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BlackBoard")
+	FBlackboardKeySelector DistanceToTarget2DKey;
 
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };
