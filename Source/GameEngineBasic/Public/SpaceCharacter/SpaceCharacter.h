@@ -11,6 +11,7 @@
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
+class AProjectile;
 
 UCLASS()
 class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
@@ -62,6 +63,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* BoostMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlyUpMontage;
+
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float MaxFuel = 100.f;
@@ -85,6 +89,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
 	float BoostCooldown = 5.f;
 
+	// Projectile
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	TSubclassOf<AProjectile>  BaseProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	float MaxChargeTime = 6.0f; 
+
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	UParticleSystem* ChargingEffect;
+
+	UPROPERTY()
+	UParticleSystemComponent* ActiveChargeEffect;
+
 protected:
 	virtual void BeginPlay() override;
 	void Boost();
@@ -100,38 +117,53 @@ protected:
 	void StopAim();
 	void UpdateCameraTransition(float DeltaTime);
 
+	void StartCharge();
+	void ReleaseCharge();
+	void UpdateChargeTime();
+
+	void PlayFireMontage();
+
+	void ActivateFlyingMode();
 	void ToggleFlyingMode();
 	void ConsumeFuel(float DeltaTime);
 	void RechargeFuel(float DeltaTime);
-
-	void PlayFireMontage();
-	void ActivateFlyingMode();
+	
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	void FireTriggered(const FInputActionValue& Value); 
-	void FireStarted(const FInputActionValue& Value);
 
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
 
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Charge")
+	void SetChargeLevel(int32 NewLevel);
+
 private:
 	FTimerHandle BoostHandle;
 	FTimerHandle FlightDelayHandle;
-	
+	FTimerHandle ChargeTickHandle;
+
+	// 비행 관련 변수
 	float BoostFuelCost = 20.f;
-
-	bool bIsCameraTransitioning = false;
-
 	bool bIsFlyingMode = false;
 
+	// 카메라 기본 거리
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
+	// Aim 시 카메라 위치 오프셋
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
+	// 카메라 변수
 	float CameraInterpSpeed = 1000.f;
+	bool bIsCameraTransitioning = false;
+
+	// Charge 변수
+	bool bIsCharging = false;
+	float ChargeStartTime = 0.f;
+	float CurrentChargeTime = 0.f;
 };
