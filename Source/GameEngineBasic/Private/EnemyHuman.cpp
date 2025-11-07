@@ -152,7 +152,7 @@ void AEnemyHuman::EndBoost()
 	// 애니메이션 복귀(상태 표현)
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		SetLowerBodyState(ELowerBodyState::Idle);
+		SetLowerBodyState(ELowerBodyState::WalkBlendSpace);
 	}
 }
 // Called every frame

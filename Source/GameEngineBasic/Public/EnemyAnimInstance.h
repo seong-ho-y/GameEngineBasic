@@ -12,13 +12,11 @@
 UENUM(BlueprintType)
 enum class ELowerBodyState : uint8
 {
-	Idle,
-	Walk,
+	WalkBlendSpace,
 	Boost,
 	Knock,
 	Jump,
-	Land,
-	Dead
+	Land
 };
 
 UENUM(BlueprintType)
@@ -29,7 +27,7 @@ enum class EUpperBodyState : uint8
 	Shoot,
 	Reload,
 	Melee,
-	Dead
+	Knock
 };
 
 UENUM(BlueprintType)
@@ -47,7 +45,7 @@ class GAMEENGINEBASIC_API UEnemyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	ELowerBodyState LowerBodyState = ELowerBodyState::Idle;
+	ELowerBodyState LowerBodyState = ELowerBodyState::WalkBlendSpace;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	EUpperBodyState UpperBodyState = EUpperBodyState::Idle;
