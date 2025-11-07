@@ -106,12 +106,24 @@ void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, flo
 	{
 		Anim->PlayBoostMontage();
 	}
+	/* Niagara 에셋 괜찮은거 없어서 보류
 	if (BoostVfx)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAttached(
 			BoostVfx, GetMesh(), "BoostSocket",
 			FVector::ZeroVector, GetActorRotation(),
 			EAttachLocation::SnapToTarget, true);
+	}
+	*/
+	if (BoostPS)
+	{
+		ActiveBoostPSC = UGameplayStatics::SpawnEmitterAttached(BoostPS,
+			GetMesh(),
+			FName("BoostSocket"),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true);
 	}
 
 	// 타이머 시작 (지속 갱신)
@@ -134,6 +146,12 @@ void AEnemyHuman::EndBoost()
 		Move->GravityScale = OriginalGravityScale;
 	}
 
+	if (ActiveBoostPSC)
+	{
+		ActiveBoostPSC->Deactivate();
+		ActiveBoostPSC->DestroyComponent();
+		 ActiveBoostPSC = nullptr;
+	}
 	// 애니메이션 복귀(상태 표현)
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{

@@ -16,6 +16,7 @@ enum class EEnemyAnimState : uint8
 	Walk,
 	Boost,
 	Shoot,
+	MeleeAttack,
 	Reload,
 	Knock,
 	Dead

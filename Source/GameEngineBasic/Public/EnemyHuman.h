@@ -7,6 +7,8 @@
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameFramework/Character.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "EnemyHuman.generated.h"
@@ -24,7 +26,7 @@ protected:
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+		
 	void EntryGroggyState(FName Name);
 	void OnDie();
 
@@ -72,6 +74,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Vfx")
 	USoundBase* BoostSound;
+
+	UPROPERTY(EditAnywhere, Category = "VFX")
+	UParticleSystem* BoostPS;
+
+	UPROPERTY()
+	UParticleSystemComponent* ActiveBoostPSC = nullptr;
 private:
 	FTimerHandle TimerHandle_BoostEnd;
 };
