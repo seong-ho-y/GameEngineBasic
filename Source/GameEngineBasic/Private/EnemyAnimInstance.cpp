@@ -31,37 +31,40 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 void UEnemyAnimInstance::UpdateState()
 {
 	if (!OwnerChar) return;
-	if (bIsDead) {AnimState = EEnemyAnimState::Dead; }
-	else if (bIsBoosting) { AnimState = EEnemyAnimState::Boost; }
-	else if (bShooting) {AnimState = EEnemyAnimState::Shoot; }
-	else if (Speed > 10.f) { AnimState = EEnemyAnimState::Walk; }
-	else {AnimState = EEnemyAnimState::Idle; }
-}
-void UEnemyAnimInstance::PlayFireMontage()
-{
-	if (FireMontage && !Montage_IsPlaying(FireMontage))
-	{
-		AnimState = EEnemyAnimState::Shoot;
-		Montage_Play(FireMontage);
-		// 필요시 섹션 이동: Montage_JumpToSection(FName("Loop"), FireMontage);
-	}
-}
 
-void UEnemyAnimInstance::PlayReloadMontage()
-{
-	if (ReloadMontage && !Montage_IsPlaying(ReloadMontage))
+	// --- 전신 상태 우선 (가장 높은 우선순위) ---
+	if (bIsDead)
 	{
-		Montage_Play(ReloadMontage, 1.0f);
+		FullBodyState = EFullBodyState::Dead;
+		return;
 	}
-}
+	else if (bIsKnocked)
+	{
+		FullBodyState = EFullBodyState::Knock;
+		return;
+	}
+	else
+	{
+		FullBodyState = EFullBodyState::Default;
+	}
 
-void UEnemyAnimInstance::PlayBoostMontage()
-{
-	if (BoostMontage)
-	{
-		AnimState = EEnemyAnimState::Boost;
-		Montage_Play(BoostMontage);
-	}
+	// --- 하체 상태 ---
+	if (bIsBoosting)
+		LowerBodyState = ELowerBodyState::Boost;
+	else if (Speed > 10.f)
+		LowerBodyState = ELowerBodyState::Walk;
+	else
+		LowerBodyState = ELowerBodyState::Idle;
+
+	// --- 상체 상태 ---
+	if (bShooting)
+		UpperBodyState = EUpperBodyState::Shoot;
+	else if (bReloading)
+		UpperBodyState = EUpperBodyState::Reload;
+	else if (bAiming)
+		UpperBodyState = EUpperBodyState::Aim;
+	else
+		UpperBodyState = EUpperBodyState::Idle;
 }
 
 void UEnemyAnimInstance::UpdateLocomotionParams(float DeltaSeconds)

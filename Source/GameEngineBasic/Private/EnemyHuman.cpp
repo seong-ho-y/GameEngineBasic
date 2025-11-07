@@ -77,10 +77,6 @@ void AEnemyHuman::EntryGroggyState(FName Bone)
 	//Broadcast로 하는게 좋을듯 <- 맞나?
 }
 
-void AEnemyHuman::OnDie()
-{
-}
-
 void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale)
 {
 	if (bIsBoosting) return;
@@ -104,7 +100,8 @@ void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, flo
 	// 애니메이션/이펙트
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		Anim->PlayBoostMontage();
+		Anim->LowerBodyState = ELowerBodyState::Boost;
+		PlayAnimMontage(BoostMontage);
 	}
 	/* Niagara 에셋 괜찮은거 없어서 보류
 	if (BoostVfx)
@@ -155,7 +152,7 @@ void AEnemyHuman::EndBoost()
 	// 애니메이션 복귀(상태 표현)
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		Anim->AnimState = EEnemyAnimState::Idle;
+		SetLowerBodyState(ELowerBodyState::Idle);
 	}
 }
 // Called every frame
@@ -187,18 +184,48 @@ void AEnemyHuman::OnBoostTick()
 
 	if (BoostElapsed < BoostDurationCached)
 	{
-		// ⛽ 부스트 유지 구간: 계속 같은 속도로 민다
+		// Keep going Boost
 		Move->Velocity = BoostDirCached * BoostSpeedCached;
 		return;
 	}
 
-	// 🪂 글라이드/감속 구간: 속도를 0으로 서서히 보간
+	// Interp Velocity to 0 slowly
 	Move->Velocity = FMath::VInterpTo(Move->Velocity, FVector::ZeroVector, DeltaSeconds, GlideDecelRateCached);
 
-	// 종료 조건
+	// Fin
 	if (Move->Velocity.SizeSquared2D() < 10.f)
 	{
 		EndBoost();
 	}
 }
 
+void AEnemyHuman::OnKnock(FName Bone)
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->FullBodyState = EFullBodyState::Knock;
+		Anim->Montage_Play(KnockMontage);
+	}
+}
+
+void AEnemyHuman::OnDie()
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->FullBodyState = EFullBodyState::Dead;
+		Anim->Montage_Play(DeathMontage);
+	}
+}
+
+void AEnemyHuman::SetLowerBodyState(ELowerBodyState NewState)
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+		Anim->LowerBodyState = NewState;
+}
+
+// 상체 전용 상태 변경
+void AEnemyHuman::SetUpperBodyState(EUpperBodyState NewState)
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+		Anim->UpperBodyState = NewState;
+}

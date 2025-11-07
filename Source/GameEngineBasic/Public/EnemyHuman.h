@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnemyAnimInstance.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
@@ -29,6 +30,10 @@ protected:
 		
 	void EntryGroggyState(FName Name);
 	void OnDie();
+	UFUNCTION(BlueprintCallable)
+	void SetLowerBodyState(ELowerBodyState NewState);
+	UFUNCTION(BlueprintCallable)
+	void SetUpperBodyState(EUpperBodyState NewState);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -62,6 +67,7 @@ public:
 	FTimerHandle TimerHandle_BoostTick;
 
 	void OnBoostTick(); // ← 타이머 콜백
+	void OnKnock(FName Bone);
 
 protected:
 	float CurrentHealth;
@@ -80,6 +86,25 @@ protected:
 
 	UPROPERTY()
 	UParticleSystemComponent* ActiveBoostPSC = nullptr;
+
+
+	// ==== Animation Montages ====
+	UPROPERTY(EditAnywhere, Category="Animation|Montage")
+	UAnimMontage* BoostMontage;
+
+	UPROPERTY(EditAnywhere, Category="Animation|Montage")
+	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditAnywhere, Category="Animation|Montage")
+	UAnimMontage* ReloadMontage;
+
+	UPROPERTY(EditAnywhere, Category="Animation|Montage")
+	UAnimMontage* KnockMontage;
+
+	UPROPERTY(EditAnywhere, Category="Animation|Montage")
+	UAnimMontage* DeathMontage;
+
 private:
 	FTimerHandle TimerHandle_BoostEnd;
+	
 };

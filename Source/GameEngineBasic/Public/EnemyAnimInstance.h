@@ -10,27 +10,56 @@
  * 
  */
 UENUM(BlueprintType)
-enum class EEnemyAnimState : uint8
+enum class ELowerBodyState : uint8
 {
 	Idle,
 	Walk,
 	Boost,
+	Knock,
+	Jump,
+	Land,
+	Dead
+};
+
+UENUM(BlueprintType)
+enum class EUpperBodyState : uint8
+{
+	Idle,
+	Aim,
 	Shoot,
-	MeleeAttack,
 	Reload,
+	Melee,
+	Dead
+};
+
+UENUM(BlueprintType)
+enum class EFullBodyState : uint8
+{
+	Default,
 	Knock,
 	Dead
 };
+
 
 UCLASS()
 class GAMEENGINEBASIC_API UEnemyAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(BlueprintReadOnly, Category = "AnimState")
-	EEnemyAnimState AnimState = EEnemyAnimState::Idle;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	ELowerBodyState LowerBodyState = ELowerBodyState::Idle;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	EUpperBodyState UpperBodyState = EUpperBodyState::Idle;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	EFullBodyState FullBodyState = EFullBodyState::Default;
+	
 	bool bIsDead;
 	bool bShooting;
+	bool bIsKnocked;
+	bool bReloading;
+	bool bAiming;
 
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
@@ -87,15 +116,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void SetFiring(bool bNewFiring) { bIsFiring = bNewFiring; }
-public:
-	UFUNCTION(BlueprintCallable, Category="Anim")
-	void PlayFireMontage();
-
-	UFUNCTION(BlueprintCallable, Category="Anim")
-	void PlayReloadMontage();
-
-	UFUNCTION(BlueprintCallable, Category = "Anim")
-	void PlayBoostMontage();
 
 private:
 	/** 내부 계산용 */
