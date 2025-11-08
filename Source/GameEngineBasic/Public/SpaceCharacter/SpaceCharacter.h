@@ -102,6 +102,8 @@ protected:
 	UPROPERTY()
 	UParticleSystemComponent* ActiveChargeEffect;
 
+
+
 protected:
 	virtual void BeginPlay() override;
 	void Boost();
