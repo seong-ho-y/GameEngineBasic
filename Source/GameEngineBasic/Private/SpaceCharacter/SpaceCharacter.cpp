@@ -269,6 +269,11 @@ void ASpaceCharacter::StartAim()
 
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	bUseControllerRotationYaw = true;
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->StopAllMontages(0.8f); // 0.2초 페이드 아웃
+	}
 }
 
 void ASpaceCharacter::StopAim()
@@ -373,7 +378,7 @@ void ASpaceCharacter::PlayFireMontage()
 
 void ASpaceCharacter::Boost()
 {
-	if (CurrentFuel < BoostFuelCost)
+	if (CurrentFuel < BoostFuelCost || bIsAiming)
 		return;
 
 	if (!bIsFlyingMode)
