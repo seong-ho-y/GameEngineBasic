@@ -9,13 +9,59 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class ELowerBodyState : uint8
+{
+	WalkBlendSpace,
+	Boost,
+	Knock,
+	Jump,
+	Land
+};
+
+UENUM(BlueprintType)
+enum class EUpperBodyState : uint8
+{
+	Idle,
+	Aim,
+	Shoot,
+	Reload,
+	Melee,
+	Knock
+};
+
+UENUM(BlueprintType)
+enum class EFullBodyState : uint8
+{
+	Default,
+	Knock,
+	Dead
+};
+
+
 UCLASS()
 class GAMEENGINEBASIC_API UEnemyAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	ELowerBodyState LowerBodyState = ELowerBodyState::WalkBlendSpace;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	EUpperBodyState UpperBodyState = EUpperBodyState::Idle;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	EFullBodyState FullBodyState = EFullBodyState::Default;
+	
+	bool bIsDead;
+	bool bShooting;
+	bool bIsKnocked;
+	bool bReloading;
+	bool bAiming;
+
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+	void UpdateState();
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category="Aim")
 	float TargetUpperYaw = 0.f;
@@ -42,6 +88,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="State")
 	bool bIsFiring = false;
 
+	UPROPERTY(BlueprintReadOnly, Category = "State")
+	bool bIsBoosting;
+	
 	/** ===== 에임(상체) 파라미터 (AimOffset 등) ===== */
 	UPROPERTY(BlueprintReadOnly, Category="Aiming")
 	float AimYaw = 0.f;
@@ -56,18 +105,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Montage")
 	UAnimMontage* ReloadMontage;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Montage")
+	UAnimMontage* BoostMontage;
+
 	/** C++에서 외부(Enemy/AI)에서 호출할 헬퍼 */
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void SetAiming(bool bNewAiming) { bIsAiming = bNewAiming; }
 
 	UFUNCTION(BlueprintCallable, Category="Anim")
 	void SetFiring(bool bNewFiring) { bIsFiring = bNewFiring; }
-
-	UFUNCTION(BlueprintCallable, Category="Anim")
-	void PlayFireMontage();
-
-	UFUNCTION(BlueprintCallable, Category="Anim")
-	void PlayReloadMontage();
 
 private:
 	/** 내부 계산용 */

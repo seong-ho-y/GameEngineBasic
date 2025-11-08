@@ -23,11 +23,13 @@ void UBTS_FindPlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMem
 
 	AActor* Target = Self->GetWorld()->GetFirstPlayerController()->GetPawn();
 	if (!Target) return;
+	const float Distance2D = FVector::Dist2D(Self->GetActorLocation(), Target->GetActorLocation());
 	const float Distance = FVector::Dist(Self->GetActorLocation(), Target->GetActorLocation());
 	if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
 	{
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, Target);
 		BB->SetValueAsVector(TargetLocKey.SelectedKeyName, Target->GetActorLocation());
+		BB->SetValueAsFloat(DistanceToTarget2DKey.SelectedKeyName, Distance2D);
 		BB->SetValueAsFloat(DistanceToTargetKey.SelectedKeyName, Distance);
 	}
 } 

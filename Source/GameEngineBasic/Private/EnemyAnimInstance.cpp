@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
+
 void UEnemyAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
@@ -20,28 +21,53 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (!OwnerChar)
 	{
 		OwnerChar = Cast<ACharacter>(TryGetPawnOwner());
-		if (!OwnerChar) return;
+		if (!OwnerChar || !OwnerChar->GetCharacterMovement()) return;
 	}
 
 	UpdateLocomotionParams(DeltaSeconds);
 	UpdateAimParams(DeltaSeconds);
 }
 
-void UEnemyAnimInstance::PlayFireMontage()
+void UEnemyAnimInstance::UpdateState()
 {
-	if (FireMontage && !Montage_IsPlaying(FireMontage))
-	{
-		Montage_Play(FireMontage, 1.0f);
-		// 필요시 섹션 이동: Montage_JumpToSection(FName("Loop"), FireMontage);
-	}
-}
+	if (!OwnerChar) return;
 
-void UEnemyAnimInstance::PlayReloadMontage()
-{
-	if (ReloadMontage && !Montage_IsPlaying(ReloadMontage))
+	// --- 전신 상태 우선 (가장 높은 우선순위) ---
+	if (bIsDead)
 	{
-		Montage_Play(ReloadMontage, 1.0f);
+		FullBodyState = EFullBodyState::Dead;
+		return;
 	}
+	else if (bIsKnocked)
+	{
+		FullBodyState = EFullBodyState::Knock;
+		return;
+	}
+	else
+	{
+		FullBodyState = EFullBodyState::Default;
+	}
+
+	// --- 하체 상태 ---
+	if (bIsKnocked)
+		LowerBodyState = ELowerBodyState::Knock;
+	else if (bIsBoosting)
+		LowerBodyState = ELowerBodyState::Boost;
+	else
+		LowerBodyState = ELowerBodyState::WalkBlendSpace;
+
+
+	// --- 상체 상태 ---
+	if (bIsKnocked)
+		UpperBodyState = EUpperBodyState::Knock;
+	else if (bShooting)
+		UpperBodyState = EUpperBodyState::Shoot;
+	else if (bReloading)
+		UpperBodyState = EUpperBodyState::Reload;
+	else if (bAiming)
+		UpperBodyState = EUpperBodyState::Aim;
+	else
+		UpperBodyState = EUpperBodyState::Idle;
 }
 
 void UEnemyAnimInstance::UpdateLocomotionParams(float DeltaSeconds)
@@ -49,32 +75,29 @@ void UEnemyAnimInstance::UpdateLocomotionParams(float DeltaSeconds)
 	const FVector Velocity = OwnerChar->GetVelocity();
 	const FVector HorizontalVel = FVector(Velocity.X, Velocity.Y, 0.f);
 
-	float NewSpeed = HorizontalVel.Size();
-	float SmoothSpeed = NewSpeed;
+	const float StopThreshold = 8.0f;
+	
+	// ===== Interp Speed =====
+	float TargetSpeed = HorizontalVel.Size();
+	if (TargetSpeed < StopThreshold) TargetSpeed = 0.f;
 
-	const float StopThreshold = 5.0f;
+	Speed = FMath::FInterpTo(Speed, TargetSpeed, DeltaSeconds, 5.f);
 
-	if (NewSpeed < StopThreshold)
-	{
-		SmoothSpeed = FMath::FInterpTo(Speed, 0.f, DeltaSeconds, 5.f);
-	}
-	else
-	{
-		SmoothSpeed = FMath::FInterpTo(Speed, NewSpeed, DeltaSeconds, 10.f);
-	}
-	Speed   = SmoothSpeed;
-	bIsInAir = OwnerChar->GetCharacterMovement()->IsFalling();
-
-	// 전/측면 분해: 캐릭터 기준 전/우 벡터에 투영
+	// ---- Standard Vector ----
 	const FRotator ActorRot = OwnerChar->GetActorRotation();
 	const FVector Forward = UKismetMathLibrary::GetForwardVector(ActorRot);
-	const FVector Right   = UKismetMathLibrary::GetRightVector(ActorRot);
+	const FVector Right = UKismetMathLibrary::GetRightVector(ActorRot);
 
-	ForwardSpeed = FVector::DotProduct(HorizontalVel, Forward); // +전진 / -후진
-	RightSpeed   = FVector::DotProduct(HorizontalVel, Right);   // +오른쪽 / -왼쪽
+	// === Calculate RightSpeed ===
+	float TargetRightSpeed = FVector::DotProduct(HorizontalVel, Right);
 
-	// 방향(각도)도 필요하면: -180~180
-	Direction = UKismetAnimationLibrary::CalculateDirection(HorizontalVel, ActorRot);
+	// Small value -> 0 value
+	if (FMath::Abs(TargetRightSpeed) < 5.f || TargetSpeed == 0.f) TargetRightSpeed = 0.f;
+
+	// Interp Smoothly
+	RightSpeed = FMath::FInterpTo(RightSpeed, TargetRightSpeed, DeltaSeconds, 5.f);
+
+	bIsInAir = OwnerChar->GetCharacterMovement()->IsFalling();
 }
 
 void UEnemyAnimInstance::UpdateAimParams(float DeltaSeconds)

@@ -3,6 +3,8 @@
 
 #include "EnemyHuman.h"
 
+#include "EnemyAnimInstance.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
@@ -75,10 +77,84 @@ void AEnemyHuman::EntryGroggyState(FName Bone)
 	//Broadcast로 하는게 좋을듯 <- 맞나?
 }
 
-void AEnemyHuman::OnDie()
+void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale)
 {
+	if (bIsBoosting) return;
+	bIsBoosting = true;
+
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!Move) { bIsBoosting = false; return; }
+
+	// 캐시
+	BoostElapsed           = 0.f;
+	BoostDurationCached    = Duration;
+	BoostSpeedCached       = Speed;
+	GlideDecelRateCached   = Decel;
+	BoostDirCached         = Direction.GetSafeNormal2D();
+	OriginalGravityScale   = Move->GravityScale;
+
+	// 물리 세팅
+	Move->GravityScale = GravityScale;
+	Move->Velocity     = BoostDirCached * BoostSpeedCached;
+
+	// 애니메이션/이펙트
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->LowerBodyState = ELowerBodyState::Boost;
+		PlayAnimMontage(BoostMontage);
+	}
+	/* Niagara 에셋 괜찮은거 없어서 보류
+	if (BoostVfx)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			BoostVfx, GetMesh(), "BoostSocket",
+			FVector::ZeroVector, GetActorRotation(),
+			EAttachLocation::SnapToTarget, true);
+	}
+	*/
+	if (BoostPS)
+	{
+		ActiveBoostPSC = UGameplayStatics::SpawnEmitterAttached(BoostPS,
+			GetMesh(),
+			FName("BoostSocket"),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true);
+	}
+
+	// 타이머 시작 (지속 갱신)
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_BoostTick, this, &AEnemyHuman::OnBoostTick, BoostTickInterval, true);
 }
 
+void AEnemyHuman::EndBoost()
+{
+	if (!bIsBoosting) return;
+	bIsBoosting = false;
+
+	// 타이머 해제
+	GetWorldTimerManager().ClearTimer(TimerHandle_BoostTick);
+
+	// 물리 원복
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->GravityScale = OriginalGravityScale;
+	}
+
+	if (ActiveBoostPSC)
+	{
+		ActiveBoostPSC->Deactivate();
+		ActiveBoostPSC->DestroyComponent();
+		 ActiveBoostPSC = nullptr;
+	}
+	// 애니메이션 복귀(상태 표현)
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		SetLowerBodyState(ELowerBodyState::WalkBlendSpace);
+	}
+}
 // Called every frame
 void AEnemyHuman::Tick(float DeltaTime)
 {
@@ -93,3 +169,63 @@ void AEnemyHuman::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 }
 
+void AEnemyHuman::OnBoostTick()
+{
+	UWorld* World = GetWorld();
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!World || !Move)
+	{
+		EndBoost();
+		return;
+	}
+
+	const float DeltaSeconds = World->GetDeltaSeconds();
+	BoostElapsed += DeltaSeconds;
+
+	if (BoostElapsed < BoostDurationCached)
+	{
+		// Keep going Boost
+		Move->Velocity = BoostDirCached * BoostSpeedCached;
+		return;
+	}
+
+	// Interp Velocity to 0 slowly
+	Move->Velocity = FMath::VInterpTo(Move->Velocity, FVector::ZeroVector, DeltaSeconds, GlideDecelRateCached);
+
+	// Fin
+	if (Move->Velocity.SizeSquared2D() < 10.f)
+	{
+		EndBoost();
+	}
+}
+
+void AEnemyHuman::OnKnock(FName Bone)
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->FullBodyState = EFullBodyState::Knock;
+		Anim->Montage_Play(KnockMontage);
+	}
+}
+
+void AEnemyHuman::OnDie()
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->FullBodyState = EFullBodyState::Dead;
+		Anim->Montage_Play(DeathMontage);
+	}
+}
+
+void AEnemyHuman::SetLowerBodyState(ELowerBodyState NewState)
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+		Anim->LowerBodyState = NewState;
+}
+
+// 상체 전용 상태 변경
+void AEnemyHuman::SetUpperBodyState(EUpperBodyState NewState)
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+		Anim->UpperBodyState = NewState;
+}
