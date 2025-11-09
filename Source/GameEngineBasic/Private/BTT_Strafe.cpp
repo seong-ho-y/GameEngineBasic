@@ -30,7 +30,6 @@ EBTNodeResult::Type UBTT_Strafe::ExecuteTask(UBehaviorTreeComponent& OwnerComp, 
 	StrafeSpeed = 600.f;
 
 	return EBTNodeResult::InProgress;
-	
 }
 
 void UBTT_Strafe::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
