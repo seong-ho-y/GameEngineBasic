@@ -66,10 +66,12 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartAim);
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopAim);
 		}
-
-		EnhancedInput->BindAction(FireAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartCharge);
-		EnhancedInput->BindAction(FireAction, ETriggerEvent::Completed, this, &ASpaceCharacter::ReleaseCharge);
-
+		if (FireAction) 
+		{
+			EnhancedInput->BindAction(FireAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartCharge);
+			EnhancedInput->BindAction(FireAction, ETriggerEvent::Completed, this, &ASpaceCharacter::ReleaseCharge);
+		}
+		
 		if (FlyAction)
 		{
 			EnhancedInput->BindAction(FlyAction, ETriggerEvent::Started, this, &ASpaceCharacter::ToggleFlyingMode);
@@ -140,12 +142,42 @@ void ASpaceCharacter::Look(const FInputActionValue& Value)
 
 void ASpaceCharacter::StartJump()
 {
+	if (bIsFlyingMode)
+	{
+		const float UpLaunchPower = 2000.f;
+
+		LaunchCharacter(FVector::UpVector * UpLaunchPower, false, false);
+
+		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+		{
+			if (FlyUpMontage)
+				Anim->Montage_Play(FlyUpMontage);
+		}
+		GetWorldTimerManager().SetTimer(
+			FlightDelayHandle,
+			this,
+			&ASpaceCharacter::ActivateFlyingMode,
+			0.5f,
+			false
+		);
+
+		return;
+	}
+
 	Jump();
 }
 
 void ASpaceCharacter::StopJump()
 {
 	StopJumping();
+
+	if (bIsFlyingMode)
+	{
+		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+		{
+			Anim->Montage_Stop(0.1f, FlyUpMontage);
+		}
+	}
 }
 
 void ASpaceCharacter::StartCharge()
@@ -272,7 +304,7 @@ void ASpaceCharacter::StartAim()
 
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->StopAllMontages(0.8f); // 0.2초 페이드 아웃
+		AnimInstance->StopAllMontages(0.8f);
 	}
 }
 
@@ -342,7 +374,7 @@ void ASpaceCharacter::ActivateFlyingMode()
 	Move->GravityScale = 0.05f;
 	Move->BrakingFrictionFactor = 0.0f;
 	Move->AirControl = 1.0f;
-	Move->MaxFlySpeed = 1500.f;
+	Move->MaxFlySpeed = 150000.f;
 }
 
 void ASpaceCharacter::ConsumeFuel(float DeltaTime)
@@ -353,6 +385,7 @@ void ASpaceCharacter::ConsumeFuel(float DeltaTime)
 	ss << "Current Fuel: " << CurrentFuel << "\n";
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Yellow, ss.str().c_str());
+
 	if (CurrentFuel <= 0.f)
 	{
 		bIsFlyingMode = false;
