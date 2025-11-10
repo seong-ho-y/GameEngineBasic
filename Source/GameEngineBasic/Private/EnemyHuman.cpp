@@ -38,8 +38,6 @@ void AEnemyHuman::BeginPlay()
 	
 }
 
-
-
 float AEnemyHuman::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                               class AController* EventInstigator, AActor* DamageCauser)
 {
@@ -59,12 +57,14 @@ float AEnemyHuman::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 		FinalDamage *= 1.5f;
 	}
 
+	/*
 	// Groggy 시스템
 	BodyPartDamage[Bone] += FinalDamage;
 	if (BodyPartDamage[Bone] > GroggyThreshold[Bone])
 	{
 		EntryGroggyState(Bone);
 	}
+	*/
 
 	CurrentHealth -= FinalDamage;
 	if (CurrentHealth<=0) OnDie();

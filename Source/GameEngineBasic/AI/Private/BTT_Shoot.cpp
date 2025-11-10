@@ -1,389 +1,161 @@
 #include "../Public/BTT_Shoot.h"
-
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
-#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
 #include "TimerManager.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
 
 UBTT_Shoot::UBTT_Shoot()
 {
-	NodeName = TEXT("Shoot");
-	bCreateNodeInstance = true;
+    NodeName = TEXT("Shoot (Unified)");
+    bCreateNodeInstance = true;
 }
 
 EBTNodeResult::Type UBTT_Shoot::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	AAIController* AI = OwnerComp.GetAIOwner();
-	APawn* Self = AI ? AI->GetPawn() : nullptr;
-	if (!Self) return EBTNodeResult::Failed;
+    AAIController* AI = OwnerComp.GetAIOwner();
+    APawn* Self = AI ? AI->GetPawn() : nullptr;
+    if (!Self) return EBTNodeResult::Failed;
 
-	UShooterComp* ShooterComp = Self->FindComponentByClass<UShooterComp>();
-	if (!ShooterComp) return EBTNodeResult::Failed;
+    UShooterComp* ShooterComp = Self->FindComponentByClass<UShooterComp>();
+    if (!ShooterComp) return EBTNodeResult::Failed;
 
-	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
-	AActor* Target = BB ? Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName)) : nullptr;
-	if (!Target) return EBTNodeResult::Failed;
+    UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
+    AActor* Target = BB ? Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName)) : nullptr;
+    if (!Target) return EBTNodeResult::Failed;
+    // 호밍 타입 지정
+    ShooterComp->bUseArcHoming = ShootOption.ArcHoming;
+    
+    ShooterComp->CurrentTarget = Target;
+    ShooterComp->CurrentProjectileType = ProjectileType;
 
-	USkeletalMeshComponent* Mesh = Self->FindComponentByClass<USkeletalMeshComponent>();
-	FVector MuzzleLoc = Mesh ? Mesh->GetSocketLocation(MuzzleName) : Self->GetActorLocation();
+    // 🔸 기존 타이머 클리어
+    ClearTimers(Self);
 
-	// 패턴 랜덤 선택
-	if (ShootPattern == EShootPattern::RandomPattern)
-	{
-		// AreaRandom~Volley 포함해서 랜덤 (원하면 범위 조절)
-		ShootPattern = static_cast<EShootPattern>(FMath::RandRange(0, static_cast<int32>(EShootPattern::Volley)));
-	}
+    // 첫 번째 사격 시작
+    StartFire(&OwnerComp, Self, ShooterComp, Target, 0);
 
-	// 기본 조준
-	const FVector BaseDir = (Target->GetActorLocation() - MuzzleLoc).GetSafeNormal();
-	ShooterComp->SetFireDirection(BaseDir);
-
-	bool bUsingTimer = false;
-
-	switch (ShootPattern)
-	{
-	case EShootPattern::Single:
-		bUsingTimer = FireSingleType(Self, ShooterComp, MuzzleLoc, Target, OwnerComp);
-		break;
-
-	case EShootPattern::Predictive:
-		bUsingTimer = FirePredictiveType(Self, ShooterComp, MuzzleLoc, Target, OwnerComp);
-		break;
-
-	case EShootPattern::Spread:
-		bUsingTimer = FireSpreadType(Self, ShooterComp, MuzzleLoc, Target, OwnerComp);
-		break;
-
-	case EShootPattern::AreaRandom:
-		// 여기에도 원하면 BurstCount 적용 가능하지만, 기본은 즉시형 포격
-		FireAreaRandom(ShooterComp, MuzzleLoc, Target);
-		// PostFireDelay 적용 원하면 아래 두 줄 사용:
-		if (PostFireDelay > 0.f)
-		{
-			StartPostFireDelay(OwnerComp, Self);
-			return EBTNodeResult::InProgress;
-		}
-		break;
-
-	case EShootPattern::Sweep:
-		bUsingTimer = FireSweep(Self, ShooterComp, MuzzleLoc, Target, OwnerComp);
-		break;
-
-	case EShootPattern::Volley:
-		bUsingTimer = FireVolley(Self, ShooterComp, MuzzleLoc, Target, OwnerComp);
-		break;
-
-	default:
-		break;
-	}
-
-	return bUsingTimer ? EBTNodeResult::InProgress : EBTNodeResult::Succeeded;
+    return EBTNodeResult::InProgress;
 }
 
-//
-// 공통 헬퍼: 마지막 샷 이후 PostFireDelay 처리
-//
-void UBTT_Shoot::StartPostFireDelay(UBehaviorTreeComponent& OwnerComp, APawn* Self) const
+EBTNodeResult::Type UBTT_Shoot::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
-	if (!Self || PostFireDelay <= 0.f)
-	{
-		// 쿨다운 없음: 즉시 종료
-		const_cast<UBTT_Shoot*>(this)->FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-		return;
-	}
+    Super::AbortTask(OwnerComp, NodeMemory);
 
-	FTimerHandle Handle;
-	Self->GetWorldTimerManager().SetTimer(
-		Handle,
-		FTimerDelegate::CreateLambda([this, &OwnerComp]()
-		{
-			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-		}),
-		PostFireDelay,
-		false
-	);
+    AAIController* AI = OwnerComp.GetAIOwner();
+    APawn* Self = AI ? AI->GetPawn() : nullptr;
+    if (Self)
+        ClearTimers(Self);
+
+    return EBTNodeResult::Aborted;
 }
 
-//
-// Single / Predictive / Spread: BurstCount / BurstInterval / PostFireDelay 적용
-//
-
-bool UBTT_Shoot::FireSingleType(APawn* Self, UShooterComp* ShooterComp, const FVector& MuzzleLoc, AActor* Target, UBehaviorTreeComponent& OwnerComp)
+void UBTT_Shoot::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult)
 {
-	if (!Self || !ShooterComp) return false;
+    Super::OnTaskFinished(OwnerComp, NodeMemory, TaskResult);
 
-	const int32 Count = FMath::Max(BurstCount, 1);
-	const bool bUseBurst = (Count > 1);
-	const bool bUseCooldown = (PostFireDelay > 0.f);
-
-	// 완전 즉발형 (단발 + 쿨다운 없음)
-	if (!bUseBurst && !bUseCooldown)
-	{
-		ShooterComp->TryFire();
-		return false;
-	}
-
-	// Burst 또는 쿨다운이 있으면 타이머 기반 비동기 처리
-	for (int32 i = 0; i < Count; ++i)
-	{
-		const float Delay = i * BurstInterval;
-
-		FTimerHandle Handle;
-		Self->GetWorldTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([this, &OwnerComp, ShooterComp, Self, i, Count]()
-			{
-				if (ShooterComp)
-				{
-					ShooterComp->TryFire();
-				}
-
-				if (i == Count - 1)
-				{
-					StartPostFireDelay(OwnerComp, Self);
-				}
-			}),
-			Delay,
-			false
-		);
-	}
-
-	return true;
+    AAIController* AI = OwnerComp.GetAIOwner();
+    APawn* Self = AI ? AI->GetPawn() : nullptr;
+    if (Self)
+        ClearTimers(Self);
 }
 
-bool UBTT_Shoot::FirePredictiveType(APawn* Self, UShooterComp* ShooterComp, const FVector& MuzzleLoc, AActor* Target, UBehaviorTreeComponent& OwnerComp)
+void UBTT_Shoot::ClearTimers(APawn* Self)
 {
-	if (!Self || !ShooterComp || !Target) return false;
-
-	const int32 Count = FMath::Max(BurstCount, 1);
-	const bool bUseBurst = (Count > 1);
-	const bool bUseCooldown = (PostFireDelay > 0.f);
-
-	if (!bUseBurst && !bUseCooldown)
-	{
-		// 즉시 1발 예측샷
-		FVector TargetVel = Target->GetVelocity();
-		const float Distance = FVector::Dist(MuzzleLoc, Target->GetActorLocation());
-		const float TimeToHit = Distance / ProjectileSpeed;
-		const FVector Predicted = Target->GetActorLocation() + TargetVel * TimeToHit;
-
-		const FVector Dir = (Predicted - MuzzleLoc).GetSafeNormal();
-		ShooterComp->SetFireDirection(Dir);
-		ShooterComp->TryFire();
-		return false;
-	}
-
-	// Burst/쿨다운 포함 예측샷
-	for (int32 i = 0; i < Count; ++i)
-	{
-		const float Delay = i * BurstInterval;
-
-		FTimerHandle Handle;
-		Self->GetWorldTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([this, &OwnerComp, ShooterComp, Self, Target, MuzzleLoc, i, Count]()
-			{
-				if (ShooterComp && Target)
-				{
-					const FVector TargetVel = Target->GetVelocity();
-					const float Distance = FVector::Dist(MuzzleLoc, Target->GetActorLocation());
-					const float TimeToHit = Distance / ProjectileSpeed;
-					const FVector Predicted = Target->GetActorLocation() + TargetVel * TimeToHit;
-
-					const FVector Dir = (Predicted - MuzzleLoc).GetSafeNormal();
-					ShooterComp->SetFireDirection(Dir);
-					ShooterComp->TryFire();
-				}
-
-				if (i == Count - 1)
-				{
-					StartPostFireDelay(OwnerComp, Self);
-				}
-			}),
-			Delay,
-			false
-		);
-	}
-
-	return true;
+    if (!Self) return;
+    FTimerManager& TM = Self->GetWorldTimerManager();
+    TM.ClearTimer(BurstTimerHandle);
+    TM.ClearTimer(DelayTimerHandle);
 }
 
-bool UBTT_Shoot::FireSpreadType(APawn* Self, UShooterComp* ShooterComp, const FVector& MuzzleLoc, AActor* Target, UBehaviorTreeComponent& OwnerComp)
+void UBTT_Shoot::StartFire(UBehaviorTreeComponent* OwnerComp, APawn* Self, UShooterComp* ShooterComp, AActor* Target, int32 CurrentBurstIndex)
 {
-	if (!Self || !ShooterComp || !Target) return false;
+    if (!ShooterComp || !Target || !OwnerComp || !Self)
+        return;
+    
+    
+    // 🔸 방향 계산
+    USkeletalMeshComponent* Mesh = Self->FindComponentByClass<USkeletalMeshComponent>();
+    const FVector MuzzleLoc = Mesh ? Mesh->GetSocketLocation(MuzzleName) : Self->GetActorLocation();
+    ShooterComp->MuzzleSocketName = MuzzleName;
+    FVector BaseDir = (Target->GetActorLocation() - MuzzleLoc).GetSafeNormal();
 
-	const int32 Count = FMath::Max(BurstCount, 1);
-	const bool bUseBurst = (Count > 1);
-	const bool bUseCooldown = (PostFireDelay > 0.f);
+    // 예측 사격
+    if (ShootOption.bUsePredictive)
+    {
+        const FVector TargetVel = Target->GetVelocity();
+        const float Distance = FVector::Dist(MuzzleLoc, Target->GetActorLocation());
+        const float TimeToHit = Distance / FMath::Max(ShootOption.ProjectileSpeed, 1.0f);
+        const FVector PredictedLoc = Target->GetActorLocation() + TargetVel * TimeToHit;
+        BaseDir = (PredictedLoc - MuzzleLoc).GetSafeNormal();
+    }
 
-	if (!bUseBurst && !bUseCooldown)
-	{
-		// 즉시 1회 스프레드(SpreadCount발)
-		const FVector BaseDir = (Target->GetActorLocation() - MuzzleLoc).GetSafeNormal();
-		const FRotator BaseRot = BaseDir.Rotation();
+    // 랜덤 오프셋
+    if (ShootOption.bUseRandomTargetOffset)
+    {
+        const FVector RandomOffset(
+            FMath::FRandRange(-ShootOption.RandomAreaRadius, ShootOption.RandomAreaRadius),
+            FMath::FRandRange(-ShootOption.RandomAreaRadius, ShootOption.RandomAreaRadius),
+            FMath::FRandRange(-ShootOption.RandomAreaRadius * 0.3f, ShootOption.RandomAreaRadius * 0.3f)
+        );
+        BaseDir = (Target->GetActorLocation() + RandomOffset - MuzzleLoc).GetSafeNormal();
+    }
 
-		for (int32 s = 0; s < SpreadCount; ++s)
-		{
-			FRotator R = BaseRot;
-			R.Pitch += FMath::FRandRange(-SpreadAngle, SpreadAngle);
-			R.Yaw   += FMath::FRandRange(-SpreadAngle, SpreadAngle);
+    // Spread 처리
+    FRotator SpreadRot = BaseDir.Rotation();
+    if (ShootOption.SpreadCount > 1)
+    {
+        SpreadRot.Yaw += FMath::FRandRange(-ShootOption.SpreadAngle, ShootOption.SpreadAngle);
+        SpreadRot.Pitch += FMath::FRandRange(-ShootOption.SpreadAngle, ShootOption.SpreadAngle);
+    }
 
-			const FVector Dir = R.Vector();
-			ShooterComp->SetFireDirection(Dir);
-			ShooterComp->TryFire();
-		}
-		return false;
-	}
+    const FVector FinalDir = SpreadRot.Vector();
+    ShooterComp->SetFireDirection(FinalDir);
 
-	// Burst/쿨다운 포함 스프레드
-	for (int32 i = 0; i < Count; ++i)
-	{
-		const float Delay = i * BurstInterval;
+    // 🔹 실제 발사
+    const bool bFired = ShooterComp->TryFire();
+    //UE_LOG(LogTemp, Warning, TEXT("Burst[%d] Fired=%d"), CurrentBurstIndex, bFired);
 
-		FTimerHandle Handle;
-		Self->GetWorldTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([this, &OwnerComp, ShooterComp, Self, Target, MuzzleLoc, i, Count]()
-			{
-				if (ShooterComp && Target)
-				{
-					const FVector BaseDir = (Target->GetActorLocation() - MuzzleLoc).GetSafeNormal();
-					const FRotator BaseRot = BaseDir.Rotation();
+    // 🔹 다음 Burst 예약
+    if (CurrentBurstIndex + 1 < ShootOption.BurstCount)
+    {
+        const int32 NextIndex = CurrentBurstIndex + 1;
 
-					for (int32 s = 0; s < SpreadCount; ++s)
-					{
-						FRotator R = BaseRot;
-						R.Pitch += FMath::FRandRange(-SpreadAngle, SpreadAngle);
-						R.Yaw   += FMath::FRandRange(-SpreadAngle, SpreadAngle);
+        FTimerDelegate NextFireDelegate;
+        NextFireDelegate.BindLambda([this, OwnerComp, Self, ShooterComp, Target, NextIndex]()
+        {
+            StartFire(OwnerComp, Self, ShooterComp, Target, NextIndex);
+        });
 
-						const FVector Dir = R.Vector();
-						ShooterComp->SetFireDirection(Dir);
-						ShooterComp->TryFire();
-					}
-				}
+        Self->GetWorldTimerManager().ClearTimer(BurstTimerHandle);
+        Self->GetWorldTimerManager().SetTimer(
+            BurstTimerHandle,
+            NextFireDelegate,
+            ShootOption.BurstInterval,
+            false);
+    }
+    else
+    {
+        // 🔹 Burst 끝 → Delay 후 Task 종료
+        if (ShootOption.ShootDelay > 0.f)
+        {
+            FTimerDelegate EndDelegate;
+            EndDelegate.BindLambda([this, OwnerComp]()
+            {
+                if (OwnerComp)
+                    FinishLatentTask(*OwnerComp, EBTNodeResult::Succeeded);
+            });
 
-				if (i == Count - 1)
-				{
-					StartPostFireDelay(OwnerComp, Self);
-				}
-			}),
-			Delay,
-			false
-		);
-	}
-
-	return true;
-}
-
-//
-// AreaRandom: 즉시 포격 1회 (원하면 여기에도 BurstCount 적용 가능)
-//
-
-void UBTT_Shoot::FireAreaRandom(UShooterComp* ShooterComp, const FVector& MuzzleLoc, AActor* Target)
-{
-	if (!ShooterComp || !Target) return;
-
-	const FVector Center = Target->GetActorLocation();
-	const FVector RandomPoint = Center + FVector(
-		FMath::FRandRange(-AreaRadius, AreaRadius),
-		FMath::FRandRange(-AreaRadius, AreaRadius),
-		FMath::FRandRange(-AreaRadius * 0.3f, AreaRadius * 0.3f)
-	);
-
-	const FVector Dir = (RandomPoint - MuzzleLoc).GetSafeNormal();
-	ShooterComp->SetFireDirection(Dir);
-	ShooterComp->TryFire();
-}
-
-//
-// Sweep: 일정 각도 범위로 훑으면서 발사
-//
-
-bool UBTT_Shoot::FireSweep(APawn* Self, UShooterComp* ShooterComp, const FVector& MuzzleLoc, AActor* Target, UBehaviorTreeComponent& OwnerComp)
-{
-	if (!Self || !ShooterComp || !Target) return false;
-
-	const FVector BaseDir = (Target->GetActorLocation() - MuzzleLoc).GetSafeNormal();
-	const FRotator BaseRot = BaseDir.Rotation();
-
-	const int32 Steps = FMath::Max(SweepSteps, 1);
-	const float StepAngle = (Steps > 1) ? (SweepAngle / (Steps - 1)) : 0.f;
-	const float StepInterval = BurstInterval > 0.f ? BurstInterval : 0.08f;
-
-	for (int32 i = 0; i < Steps; ++i)
-	{
-		const float Offset = -SweepAngle * 0.5f + StepAngle * i;
-		const float Delay = i * StepInterval;
-
-		FTimerHandle Handle;
-		Self->GetWorldTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([this, &OwnerComp, ShooterComp, Self, BaseRot, Offset, i, Steps]()
-			{
-				if (ShooterComp)
-				{
-					FRotator Rot = BaseRot;
-					Rot.Yaw += Offset;
-
-					const FVector Dir = Rot.Vector();
-					ShooterComp->SetFireDirection(Dir);
-					ShooterComp->TryFire();
-				}
-
-				if (i == Steps - 1)
-				{
-					StartPostFireDelay(OwnerComp, Self);
-				}
-			}),
-			Delay,
-			false
-		);
-	}
-
-	return true;
-}
-
-//
-// Volley: 다발 포격 / 미사일
-//
-
-bool UBTT_Shoot::FireVolley(APawn* Self, UShooterComp* ShooterComp, const FVector& MuzzleLoc, AActor* Target, UBehaviorTreeComponent& OwnerComp)
-{
-	if (!Self || !ShooterComp || !Target) return false;
-
-	const int32 Count = FMath::Max(VolleyCount, 1);
-
-	for (int32 i = 0; i < Count; ++i)
-	{
-		const float Delay = i * VolleyInterval;
-
-		FTimerHandle Handle;
-		Self->GetWorldTimerManager().SetTimer(
-			Handle,
-			FTimerDelegate::CreateLambda([this, &OwnerComp, ShooterComp, Self, Target, MuzzleLoc, i, Count]()
-			{
-				if (ShooterComp && Target)
-				{
-					const FVector Forward = (Target->GetActorLocation() - MuzzleLoc).GetSafeNormal();
-					FRotator Rot = Forward.Rotation();
-					Rot.Yaw   += FMath::FRandRange(-6.f, 6.f);
-					Rot.Pitch += FMath::FRandRange(-3.f, 3.f);
-
-					const FVector Dir = Rot.Vector();
-					ShooterComp->SetFireDirection(Dir);
-					ShooterComp->TryFire();
-				}
-
-				if (i == Count - 1)
-				{
-					StartPostFireDelay(OwnerComp, Self);
-				}
-			}),
-			Delay,
-			false
-		);
-	}
-
-	return true;
+            Self->GetWorldTimerManager().ClearTimer(DelayTimerHandle);
+            Self->GetWorldTimerManager().SetTimer(
+                DelayTimerHandle,
+                EndDelegate,
+                ShootOption.ShootDelay,
+                false);
+        }
+        else
+        {
+            FinishLatentTask(*OwnerComp, EBTNodeResult::Succeeded);
+        }
+    }
 }
