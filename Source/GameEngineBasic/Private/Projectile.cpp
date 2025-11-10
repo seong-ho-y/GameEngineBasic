@@ -38,6 +38,7 @@ AProjectile::AProjectile()
 	// Vfx
 	Vfx = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VFXComp"));
 	Vfx->SetupAttachment(RootComponent);
+
 }
 
 // Called when the game starts or when spawned
@@ -45,6 +46,18 @@ void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	if (TrailEffect)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			TrailEffect,
+			RootComponent,
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
+	}
 }
 
 // Called every frame
@@ -68,17 +81,27 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 	{
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr;
 		// 나중에 데미지는 무기 컴포넌트에서 가져와서 DamageAmount에 넣어줄거임
-		constexpr float DamageAmount = 5.0f; // 이 프로젝타일의 기본 데미지
+		const float AppliedDamage = DamageAmount; // 이 프로젝타일의 기본 데미지
 		
 
 		UGameplayStatics::ApplyDamage(
 			OtherActor,
-			DamageAmount,
+			AppliedDamage,
 			InstigatorController,
 			this,
 			nullptr);
 	}
 	
+	if (ImpactEffect)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			ImpactEffect,
+			GetActorLocation(),
+			GetActorRotation(),
+			true
+		);
+	}
 	// 2. 물리 시뮬레이션 중인 다른 오브젝트에 대한 기존 로직도 유지
 	if (Hit.GetComponent() != nullptr && Hit.GetComponent()->IsSimulatingPhysics())
 	{

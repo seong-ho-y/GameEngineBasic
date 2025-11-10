@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
 #include "Projectile.generated.h"
 
 class USphereComponent;
@@ -30,8 +32,19 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float DamageAmount = 5.0f;
+
+	// VFX
 	UPROPERTY(EditDefaultsOnly, Category = VFX)
 	UNiagaraComponent* Vfx;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Cascade")
+	UParticleSystem* TrailEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX|Cascade")
+	UParticleSystem* ImpactEffect;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

@@ -27,6 +27,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
 	float FireRate = 0.1f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	float PendingDamage = 5.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
+	float PendingScale = 1.f;
+
 	// 탄약
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shoot|Data")
 	int32 MaxAmmo;
@@ -46,11 +52,9 @@ public:
 	USoundBase* FireSound;
 
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
@@ -62,7 +66,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Combat")
 	void Fire();
 	
+	UFUNCTION(BlueprintCallable)
+	void SetFireDirection(const FVector& NewDir);
+
 private:
+	FVector FireDirection = FVector::ZeroVector;
+	
 	// 연사 속도 제어를 위한 타이머 핸들
 	FTimerHandle FireRateTimerHandle;
 
@@ -71,4 +80,7 @@ private:
 
 	// 쿨다운이 끝나면 bIsReadyToFire를 true로 되돌리는 함수
 	void ResetFireReady();
+
+public:
+	
 };

@@ -4,9 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
 #include "SpaceCharacter.generated.h"
+
+class UShooterComp;
+class AProjectile;
 
 UCLASS()
 class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
@@ -16,12 +21,17 @@ class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
 public:
 	ASpaceCharacter();
 
-private:
-	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	class USpringArmComponent* CameraBoom;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	USpringArmComponent* CameraBoom;
 
+	// Camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+	UCameraComponent* FollowCamera;
+
+	// Component
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UShooterComp* Shooter;
 
 	// 입력
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -42,6 +52,22 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* FireAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* BoostAction;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlypreMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* BoostMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlyUpMontage;
+
+	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float MaxFuel = 100.f;
 
@@ -52,9 +78,37 @@ private:
 	float FuelConsumeRate = 12.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelRechargeRate = 6.f;
+	float FuelRechargeRate = 6.f;          
+
+	// Boost
+	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
+	float BoostStrength = 2000.f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
+	float BoostDuration = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
+	float BoostCooldown = 5.f;
+
+	// Projectile
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	TSubclassOf<AProjectile>  BaseProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	float MaxChargeTime = 6.0f; 
+
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	UParticleSystem* ChargingEffect;
+
+	UPROPERTY()
+	UParticleSystemComponent* ActiveChargeEffect;
+
+
+
 protected:
 	virtual void BeginPlay() override;
+	void Boost();
+	void EndBoost();
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -64,17 +118,55 @@ protected:
 
 	void StartAim();
 	void StopAim();
+	void UpdateCameraTransition(float DeltaTime);
 
+	void StartCharge();
+	void ReleaseCharge();
+	void UpdateChargeTime();
+
+	void PlayFireMontage();
+
+	void ActivateFlyingMode();
 	void ToggleFlyingMode();
 	void ConsumeFuel(float DeltaTime);
 	void RechargeFuel(float DeltaTime);
+	
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-private:
+public:
+	bool bIsBoosting = false;
 	bool bIsAiming = false;
+
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Charge")
+	void SetChargeLevel(int32 NewLevel);
+
+private:
+	FTimerHandle BoostHandle;
+	FTimerHandle FlightDelayHandle;
+	FTimerHandle ChargeTickHandle;
+
+	// ���� ���� ����
+	float BoostFuelCost = 20.f;
 	bool bIsFlyingMode = false;
 
-	
+	// ī�޶� �⺻ �Ÿ�
+	float DefaultArmLength = 300.f;
+	float AimedArmLength = 180.f;
+
+	// Aim �� ī�޶� ��ġ ������
+	FVector DefaultSocketOffset = FVector::ZeroVector;
+	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
+
+	// ī�޶� ����
+	float CameraInterpSpeed = 1000.f;
+	bool bIsCameraTransitioning = false;
+
+	// Charge ����
+	bool bIsCharging = false;
+	float ChargeStartTime = 0.f;
+	float CurrentChargeTime = 0.f;
 };

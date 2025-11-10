@@ -1,21 +1,119 @@
 // EnemyAnimInstance.cpp
 #include "EnemyAnimInstance.h"
+
+#include "KismetAnimationLibrary.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+
 
 void UEnemyAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
+	OwnerChar = Cast<ACharacter>(TryGetPawnOwner());
 }
 
 void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
+	
+	if (!OwnerChar)
+	{
+		OwnerChar = Cast<ACharacter>(TryGetPawnOwner());
+		if (!OwnerChar || !OwnerChar->GetCharacterMovement()) return;
+	}
 
-	auto Owner = Cast<ACharacter>(TryGetPawnOwner());
-	if (!Owner) return;
+	UpdateLocomotionParams(DeltaSeconds);
+	UpdateAimParams(DeltaSeconds);
+}
 
-	Speed = Owner->GetVelocity().Size();
-	bIsInAir = Owner->GetCharacterMovement()->IsFalling();
+void UEnemyAnimInstance::UpdateState()
+{
+	if (!OwnerChar) return;
+
+	// --- 전신 상태 우선 (가장 높은 우선순위) ---
+	if (bIsDead)
+	{
+		FullBodyState = EFullBodyState::Dead;
+		return;
+	}
+	else if (bIsKnocked)
+	{
+		FullBodyState = EFullBodyState::Knock;
+		return;
+	}
+	else
+	{
+		FullBodyState = EFullBodyState::Default;
+	}
+
+	// --- 하체 상태 ---
+	if (bIsKnocked)
+		LowerBodyState = ELowerBodyState::Knock;
+	else if (bIsBoosting)
+		LowerBodyState = ELowerBodyState::Boost;
+	else
+		LowerBodyState = ELowerBodyState::WalkBlendSpace;
+
+
+	// --- 상체 상태 ---
+	if (bIsKnocked)
+		UpperBodyState = EUpperBodyState::Knock;
+	else if (bShooting)
+		UpperBodyState = EUpperBodyState::Shoot;
+	else if (bReloading)
+		UpperBodyState = EUpperBodyState::Reload;
+	else if (bAiming)
+		UpperBodyState = EUpperBodyState::Aim;
+	else
+		UpperBodyState = EUpperBodyState::Idle;
+}
+
+void UEnemyAnimInstance::UpdateLocomotionParams(float DeltaSeconds)
+{
+	const FVector Velocity = OwnerChar->GetVelocity();
+	const FVector HorizontalVel = FVector(Velocity.X, Velocity.Y, 0.f);
+
+	const float StopThreshold = 8.0f;
+	
+	// ===== Interp Speed =====
+	float TargetSpeed = HorizontalVel.Size();
+	if (TargetSpeed < StopThreshold) TargetSpeed = 0.f;
+
+	Speed = FMath::FInterpTo(Speed, TargetSpeed, DeltaSeconds, 5.f);
+
+	// ---- Standard Vector ----
+	const FRotator ActorRot = OwnerChar->GetActorRotation();
+	const FVector Forward = UKismetMathLibrary::GetForwardVector(ActorRot);
+	const FVector Right = UKismetMathLibrary::GetRightVector(ActorRot);
+
+	// === Calculate RightSpeed ===
+	float TargetRightSpeed = FVector::DotProduct(HorizontalVel, Right);
+
+	// Small value -> 0 value
+	if (FMath::Abs(TargetRightSpeed) < 5.f || TargetSpeed == 0.f) TargetRightSpeed = 0.f;
+
+	// Interp Smoothly
+	RightSpeed = FMath::FInterpTo(RightSpeed, TargetRightSpeed, DeltaSeconds, 5.f);
+
+	bIsInAir = OwnerChar->GetCharacterMovement()->IsFalling();
+}
+
+void UEnemyAnimInstance::UpdateAimParams(float DeltaSeconds)
+{
+	const FRotator ActorRot = OwnerChar->GetActorRotation();
+
+	FRotator ViewRot = ActorRot;
+	if (APawn* Pawn = Cast<APawn>(OwnerChar))
+	{
+		if (AController* C = Pawn->GetController())
+		{
+			ViewRot = C->GetControlRotation();
+		}
+	}
+
+	FRotator Delta = UKismetMathLibrary::NormalizedDeltaRotator(ViewRot, ActorRot);
+	AimYaw = Delta.Yaw;
+	AimPitch = Delta.Pitch;
 }

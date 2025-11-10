@@ -1,19 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 
 #include "GameEngineBasic/Components/public/ShooterComp.h"
-
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
-// Sets default values for this component's properties
 UShooterComp::UShooterComp()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
 
 
@@ -21,9 +13,6 @@ UShooterComp::UShooterComp()
 void UShooterComp::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
-	
 }
 
 
@@ -31,19 +20,21 @@ void UShooterComp::BeginPlay()
 void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 bool UShooterComp::TryFire()
 {
-	if (CanFire())
+	if (!CanFire())
 	{
-		Fire();
-		return true;
+		return false;
 	}
-	// 발사 실패 사운드
-	return false;
+	Fire();
+	return true;
+}
+
+void UShooterComp::SetFireDirection(const FVector& NewDir)
+{
+	FireDirection = NewDir.GetSafeNormal();
 }
 
 bool UShooterComp::CanFire_Implementation() const
@@ -64,6 +55,7 @@ bool UShooterComp::CanFire_Implementation() const
 
 void UShooterComp::Fire_Implementation()
 {
+	UE_LOG(LogTemp, Warning, TEXT("FireDirection: %s"), *FireDirection.ToString());
 	// 0. Check IsValid
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner || !ProjectileClass)
@@ -81,9 +73,35 @@ void UShooterComp::Fire_Implementation()
 		FireRate,
 		false);
 	// 3. Calculate Spawn Loc & Rot
-	USceneComponent* MuzzleSocket = MyOwner->FindComponentByClass<UStaticMeshComponent>();
+	USceneComponent* MuzzleSocket = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
+	if (MuzzleSocket)
+	{
+		MuzzleSocket = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
+	}
+	else if (MyOwner->FindComponentByClass<UStaticMeshComponent>())
+	{
+		MuzzleSocket = MyOwner->FindComponentByClass<UStaticMeshComponent>();
+	}
 	const FVector SpawnLocation = MuzzleSocket ? MuzzleSocket->GetSocketLocation(MuzzleSocketName): MyOwner->GetActorLocation();
-	const FRotator SpawnRotation = MuzzleSocket ? MuzzleSocket->GetSocketRotation(MuzzleSocketName): MyOwner->GetActorRotation();
+
+	// Set Projectile SpawnRotation
+	// if there is any external rotation, it will use first
+	// next is Muzzle Rotation, last is ActorRot
+	// You can Set FireDirection by Calling SetFireDirection
+	FRotator SpawnRotation;
+
+	if (!FireDirection.IsNearlyZero())
+	{
+		SpawnRotation = FireDirection.Rotation();
+	}
+	else if (MuzzleSocket)
+	{
+		SpawnRotation = MuzzleSocket->GetSocketRotation(MuzzleSocketName);
+	}
+	else
+	{
+		SpawnRotation = MyOwner->GetActorRotation();
+	}
 
 	// 4. Projectile Spawn
 	FActorSpawnParameters SpawnParams;
@@ -91,8 +109,21 @@ void UShooterComp::Fire_Implementation()
 	SpawnParams.Instigator = MyOwner->GetInstigator(); // Set MyOwner's Instigator to Projectile's Instigator
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	GetWorld()->SpawnActor<AProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
-	
+	AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
+		ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
+
+	if (Projectile)
+	{
+		Projectile->DamageAmount = PendingDamage;
+		Projectile->SetActorScale3D(FVector(PendingScale));
+
+		if (Projectile->GetProjectileMovement())
+		{
+			Projectile->GetProjectileMovement()->Velocity =
+				FireDirection * Projectile->GetProjectileMovement()->InitialSpeed;
+		}
+	}
+
 	//Play VFX and Sound
 	if (MuzzleFlashEffect)
 	{
