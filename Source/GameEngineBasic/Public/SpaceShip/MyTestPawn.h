@@ -38,10 +38,10 @@ protected:
 	UStaticMeshComponent* ShipMesh;
 
 	// 컴포넌트
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	USphereComponent* ShieldComp = nullptr;
 
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UHealthComp* HealthComp = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -49,6 +49,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UShooterComp* Shooter;
+
+	
 
 
 	// 입력

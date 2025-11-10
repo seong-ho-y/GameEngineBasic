@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -63,7 +63,10 @@ public:
 	bool bDebugHealthLog = false;
 
 	// ========== STATE ==========
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	int32 CurrentHealth = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield")
 	int32 CurrentShield = 4;
 	float LastDamageTime = -FLT_MAX;
 
