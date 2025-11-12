@@ -4,13 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "SpaceCharacter/SpaceCharacter.h"
 #include "MyAnimInstance.generated.h"
+
 
 UCLASS()
 class GAMEENGINEBASIC_API UMyAnimInstance : public UAnimInstance
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 protected:
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
@@ -24,9 +26,6 @@ protected:
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Yaw;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
-    float YawDelta;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Direction;

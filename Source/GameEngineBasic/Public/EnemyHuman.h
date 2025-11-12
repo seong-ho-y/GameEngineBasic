@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "EnemyAnimInstance.h"
+#include "EnemyShieldComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "GameEngineBasic/Components/public/Damageable.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameFramework/Character.h"
@@ -29,7 +31,8 @@ protected:
 	virtual void BeginPlay() override;
 		
 	void EntryGroggyState(FName Name);
-	void OnDie();
+	UFUNCTION()
+	void OnDie(AActor* DeadActor);
 	UFUNCTION(BlueprintCallable)
 	void SetLowerBodyState(ELowerBodyState NewState);
 	UFUNCTION(BlueprintCallable)
@@ -51,6 +54,8 @@ public:
 	UShooterComp*  ShooterComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UHealthComp* HealthComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UEnemyShieldComponent* ShieldComp;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="AI")
 	float AlertHoldSeconds = 3.0f; // 마지막으로 본 뒤 이 시간 동안 Alert 유지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="AI")
@@ -67,8 +72,10 @@ public:
 	FTimerHandle TimerHandle_BoostTick;
 
 	void OnBoostTick(); // ← 타이머 콜백
-	void OnKnock(FName Bone);
+	UFUNCTION()
+	void OnKnock();
 
+	
 protected:
 	float CurrentHealth;
 	float MaxHealth;

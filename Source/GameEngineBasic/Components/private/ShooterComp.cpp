@@ -1,6 +1,6 @@
-#include "GameEngineBasic/Components/public/ShooterComp.h"
-
+﻿
 #include "HomingMissileProjectile.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -11,15 +11,20 @@ UShooterComp::UShooterComp()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
+
+// Called when the game starts
 void UShooterComp::BeginPlay()
 {
 	Super::BeginPlay();
+
 	//UE_LOG(LogTemp, Warning, TEXT("[%s] BeginPlay CurrentAmmo = %d"), *GetOwner()->GetName(), CurrentAmmo);
 	/*UE_LOG(LogTemp, Warning, TEXT("[%s] ShooterComp BeginPlay: bUseArcHoming=%d"),
 		*GetOwner()->GetName(), bUseArcHoming);
 	 */
 }
 
+
+// Called every frame
 void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -31,7 +36,6 @@ bool UShooterComp::TryFire()
 	{
 		return false;
 	}
-	//UE_LOG(LogTemp, Warning, TEXT("TryFire called! CanFire Succeeded"));
 	Fire();
 	return true;
 }
@@ -43,15 +47,14 @@ void UShooterComp::SetFireDirection(const FVector& NewDir)
 
 bool UShooterComp::CanFire() const
 {
+	// 1. Check Ammo
 	if (CurrentAmmo <= 0)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("CanFire: Ammo empty!"));
 		return false;
 	}
-
+	// 2. Check Cooldown
 	if (!bIsReadyToFire)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("CanFire: Not ready to fire (cooldown)!"));
 		return false;
 	}
 
@@ -61,31 +64,29 @@ bool UShooterComp::CanFire() const
 		return false;
 	}
 	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
+
 	return true;
 }
-
 
 void UShooterComp::Fire_Implementation()
 {
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner)
 	{
-		//UE_LOG(LogTemp, Error, TEXT("Fire: No Owner"));
 		return;
 	}
 
-	// 🔸 Projectile 자동 설정
 	SetProjectile();
-	
+
 	if (!ProjectileClass)
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("ShooterComp: No ProjectileClass found for type %d"), (int32)CurrentProjectileType);
 		return;
 	}
-	// 🔸 탄약 감소
+	// 탄약감소
 	CurrentAmmo--;
 
-	// 🔸 쿨다운 타이머 시작
+	// 쿨다운
 	bIsReadyToFire = false;
 	GetWorld()->GetTimerManager().SetTimer(
 		FireRateTimerHandle,
@@ -93,8 +94,7 @@ void UShooterComp::Fire_Implementation()
 		&UShooterComp::ResetFireReady,
 		FireRate,
 		false);
-
-	// 🔸 총구 위치 계산
+	// 총구 위치 계산
 	USceneComponent* MuzzleComp = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
 	if (!MuzzleComp)
 	{
@@ -106,6 +106,7 @@ void UShooterComp::Fire_Implementation()
 		: MyOwner->GetActorLocation();
 
 	FRotator SpawnRot;
+
 	if (!FireDirection.IsNearlyZero())
 	{
 		SpawnRot = FireDirection.Rotation();
@@ -119,11 +120,12 @@ void UShooterComp::Fire_Implementation()
 		SpawnRot = MyOwner->GetActorRotation();
 	}
 
-	// 🔸 Projectile 스폰
+	// Projectile 스폰
 	FActorSpawnParameters Params;
 	Params.Owner = MyOwner;
 	Params.Instigator = MyOwner->GetInstigator();
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
 
 	AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
 		ProjectileClass,
@@ -140,6 +142,7 @@ void UShooterComp::Fire_Implementation()
 		   *Projectile->GetName(),
 		   *SpawnLoc.ToString());
 	*/
+
 	if (Projectile)
 	{
 		Projectile->DamageAmount = PendingDamage;
@@ -155,14 +158,15 @@ void UShooterComp::Fire_Implementation()
 				Direction * Projectile->GetProjectileMovement()->InitialSpeed;
 		}
 	}
+
 	// 프로젝타일이 호밍미사일일 경우 (2가지 케이스 나누어서 전달)
 	if (AHomingMissileProjectile* Missile = Cast<AHomingMissileProjectile>(Projectile))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Missile Projectile Mode Start"));
+		//UE_LOG(LogTemp, Log, TEXT("Missile Projectile Mode Start"));
 		Missile->SetHomingTarget(CurrentTarget);
 		Missile->SetHomingType(bUseArcHoming ? EHomingType::ArcHoming : EHomingType::DirectHoming);
 	}
-	// 🔸 비주얼 / 사운드 효과
+	// 비주얼 / 사운드 효과
 	if (MuzzleFlashEffect)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
@@ -171,7 +175,6 @@ void UShooterComp::Fire_Implementation()
 			SpawnLoc,
 			SpawnRot);
 	}
-
 	if (FireSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLoc);

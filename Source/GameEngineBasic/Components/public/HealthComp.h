@@ -32,7 +32,7 @@ protected:
 public:
 	// ======== CONFIG ========
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Health")
-	int32 MaxHealth = 1;
+	int32 MaxHealth = 60;
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Shield")
 	int32 MaxShield = 5;
@@ -63,8 +63,10 @@ public:
 	bool bDebugHealthLog = false;
 
 	// ========== STATE ==========
-	int32 CurrentHealth = 1;
-	int32 CurrentShield = 4;
+	UPROPERTY(EditAnywhere, Category = "Stat")
+	float CurrentHealth = 60;
+	UPROPERTY(EditAnywhere, Category = "Stat")
+	float CurrentShield = 4;
 	float LastDamageTime = -FLT_MAX;
 
 	FTimerHandle ShieldRegenTimerHandle;
@@ -88,7 +90,7 @@ public:
 	void ApplyShieldDamage(int Amount);
 
 	UFUNCTION(BlueprintCallable)
-	void ApplyHealthDamage(int Amount);
+	void ApplyHealthDamage(float Amount);
 
 	// ========== DELEGATES ==========
 	UPROPERTY(BlueprintAssignable)
