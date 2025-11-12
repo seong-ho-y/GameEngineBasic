@@ -55,7 +55,7 @@ void AHomingMissileProjectile::InitializeHomingMode()
             false);
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("Missile Projectile Mode Start (HomingType=%d)"), (int32)HomingType);
+    //UE_LOG(LogTemp, Warning, TEXT("Missile Projectile Mode Start (HomingType=%d)"), (int32)HomingType);
 }
 
 void AHomingMissileProjectile::Tick(float DeltaSeconds)

@@ -160,7 +160,7 @@ void UHealthComp::ApplyShieldDamage(int Amount)
 	BroadcastChanged();
 }
 
-void UHealthComp::ApplyHealthDamage(int Amount)
+void UHealthComp::ApplyHealthDamage(float Amount)
 {
 	if (Amount <= 0 || CurrentHealth <= 0) return;
 
@@ -169,6 +169,7 @@ void UHealthComp::ApplyHealthDamage(int Amount)
 	if (CurrentHealth == 0)
 		OnDeath.Broadcast(GetOwner());
 
+	UE_LOG(LogTemp, Warning, TEXT("[Enemy] Health Take Damaged : %f | Current Health : %f"),Amount, CurrentHealth);
 	BroadcastChanged();
 }
 
