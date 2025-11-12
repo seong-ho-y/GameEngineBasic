@@ -76,9 +76,9 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 	{
 		return;
 	}
+	//UE_LOG(LogTemp, Warning, TEXT("Projectile Hit Checked"))
 	// 1. 부딪힌 대상이 IDamageable인지 확인
-	if (OtherActor->GetClass()->ImplementsInterface(UDamageable::StaticClass()))
-	{
+
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr;
 		// 나중에 데미지는 무기 컴포넌트에서 가져와서 DamageAmount에 넣어줄거임
 		const float AppliedDamage = DamageAmount; // 이 프로젝타일의 기본 데미지
@@ -90,7 +90,6 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 			InstigatorController,
 			this,
 			nullptr);
-	}
 	
 	if (ImpactEffect)
 	{

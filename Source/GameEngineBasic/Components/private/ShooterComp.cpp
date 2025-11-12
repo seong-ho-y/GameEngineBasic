@@ -158,7 +158,7 @@ void UShooterComp::Fire_Implementation()
 	// 프로젝타일이 호밍미사일일 경우 (2가지 케이스 나누어서 전달)
 	if (AHomingMissileProjectile* Missile = Cast<AHomingMissileProjectile>(Projectile))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Missile Projectile Mode Start"));
+		//UE_LOG(LogTemp, Log, TEXT("Missile Projectile Mode Start"));
 		Missile->SetHomingTarget(CurrentTarget);
 		Missile->SetHomingType(bUseArcHoming ? EHomingType::ArcHoming : EHomingType::DirectHoming);
 	}
