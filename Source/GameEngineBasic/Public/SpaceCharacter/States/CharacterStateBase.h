@@ -12,7 +12,7 @@ class ASpaceCharacter;
 UCLASS(Abstract, Blueprintable, EditInlineNew, DefaultToInstanced)
 class GAMEENGINEBASIC_API UCharacterStateBase : public UObject
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
 

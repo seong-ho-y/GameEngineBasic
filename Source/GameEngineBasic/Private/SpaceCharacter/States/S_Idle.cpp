@@ -10,30 +10,39 @@ void US_Idle::Enter_Implementation(ASpaceCharacter* Character)
 {
     if (!Character) return;
     UCharacterMovementComponent* Move = Character->GetCharacterMovement();
+
+    Character->bIsAiming = false;
+    Character->GetCharacterMovement()->bOrientRotationToMovement = true;
+    Character->bUseControllerRotationYaw = false;
+
+    // 카메라 줌 아웃을 위해 트랜지션 시작
+    if (Character->GetCameraBoom()->TargetArmLength != Character->DefaultArmLength ||
+        Character->GetCameraBoom()->SocketOffset != Character->DefaultSocketOffset)
+    {
+        Character->bIsCameraTransitioning = true;
+    }
+
     if (Move)
     {
         Move->SetMovementMode(MOVE_Walking);
-        Move->bOrientRotationToMovement = true;
     }
 }
 
 void US_Idle::Tick_Implementation(ASpaceCharacter* Character, float DeltaTime)
 {
-    if (!Character) return;
 
-    // 속도 기반 이동
-    FVector Velocity = Character->GetVelocity();
-    Velocity.Z = 0.f;
-
-    // Sprint 여부에 따른 속도 조정
-    UCharacterMovementComponent* Move = Character->GetCharacterMovement();
-    if (Character->bIsSprinting)
-        Move->MaxWalkSpeed = Character->RunSpeed;
-    else
-        Move->MaxWalkSpeed = Character->WalkSpeed;
 }
 
 void US_Idle::Exit_Implementation(ASpaceCharacter* Character)
 {
-    // 필요 시 정리 로직
+    if (!Character) return;
+
+    Character->bIsAiming = false;
+
+    UCharacterMovementComponent* Move = Character->GetCharacterMovement();
+    if (Move)
+    {
+        Move->SetMovementMode(MOVE_Walking);
+        Move->bOrientRotationToMovement = true;
+    }
 }

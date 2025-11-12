@@ -1,3 +1,6 @@
+// It's a component defines weapon. It has a Logic for Fire. Also, you can assign a projectile class.
+// Enemy and Player(Actor that has shoot weapon) should have this component
+// You can override CanFire() and Fire() in BluePrint.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,12 +11,12 @@
 UENUM(BlueprintType)
 enum class EProjectileType : uint8
 {
-	Rifle      UMETA(DisplayName="Rifle"),
-	Missile    UMETA(DisplayName="Missile"),
-	Laser      UMETA(DisplayName="Laser")
+	Rifle      UMETA(DisplayName = "Rifle"),
+	Missile    UMETA(DisplayName = "Missile"),
+	Laser      UMETA(DisplayName = "Laser")
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
 {
 	GENERATED_BODY()
@@ -26,10 +29,6 @@ protected:
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	// =====================
-	// 기본 발사 기능
-	// =====================
 
 	UFUNCTION(BlueprintCallable)
 	bool TryFire();
@@ -46,54 +45,57 @@ public:
 	UFUNCTION()
 	void ResetFireReady();
 
-	// =====================
-	// Projectile 설정
-	// =====================
 
 	UFUNCTION()
 	void SetProjectile(); // ProjectileMap에서 자동 선택
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	TMap<EProjectileType, TSubclassOf<AProjectile>> ProjectileMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	EProjectileType CurrentProjectileType = EProjectileType::Rifle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	TSubclassOf<AProjectile> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FName MuzzleSocketName = "Muzzle";
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	float FireRate = 0.01f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 CurrentAmmo = 999;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	float PendingDamage = 10.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	float PendingScale = 1.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	UNiagaraSystem* MuzzleFlashEffect;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	USoundBase* FireSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FVector FireDirection = FVector::ZeroVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon|Homing")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Homing")
 	bool bUseArcHoming = true;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Weapon|Target")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Target")
 	AActor* CurrentTarget = nullptr;
+
 private:
 	UPROPERTY()
 	bool bIsReadyToFire = true;
 
 	FTimerHandle FireRateTimerHandle;
+
+public:
+
 };

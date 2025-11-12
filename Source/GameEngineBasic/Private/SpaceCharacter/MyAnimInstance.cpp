@@ -19,10 +19,13 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
+	if (!OwningCharacter)
+	{
+		OwningCharacter = Cast<ASpaceCharacter>(TryGetPawnOwner());
+	}
+
 	if (OwningCharacter)
 	{
-		AnimState = OwningCharacter->GetCurrentState();
-
 		FVector Velocity = OwningCharacter->GetVelocity();
 		Velocity.Z = 0.f;
 		Speed = Velocity.Size();
@@ -42,7 +45,7 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		FRotator VelRot = UKismetMathLibrary::MakeRotFromX(Velocity);
 		Direction = UKismetAnimationLibrary::CalculateDirection(Velocity, ActorRot);
 		MovementRotation = UKismetMathLibrary::NormalizedDeltaRotator(VelRot, ActorRot);
-		
+
 
 		bIsBoosting = OwningCharacter->bIsBoosting;
 		bIsAiming = OwningCharacter->bIsAiming;

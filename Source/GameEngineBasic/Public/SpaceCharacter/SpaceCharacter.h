@@ -14,12 +14,12 @@
 
 class UShooterComp;
 class AProjectile;
+class US_Charging;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
 {
-	Idle,
-	Walking,
+	Locomotion,
 	Aiming,
 	Charging,
 	Flying,
@@ -43,19 +43,36 @@ protected:
 	UCharacterStateBase* CurrentStateObject = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	ECharacterState CurrentState = ECharacterState::Idle;
+	ECharacterState CurrentState = ECharacterState::Locomotion;
 
+	// --- Sprint용 ---
+	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
+	UParticleSystem* SprintEffect;
+
+	UPROPERTY(VisibleAnywhere, Category = "VFX|Sprint")
+	TArray<UParticleSystemComponent*> ActiveSprintEffects;
+
+	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
+	float SprintInterpSpeed = 5.0f;
+
+	// --- Flying용 ---
+	UPROPERTY(EditAnywhere, Category = "VFX|Flying")
+	UParticleSystem* FlyingEffect;
+
+	UPROPERTY(VisibleAnywhere, Category = "VFX|Flying")
+	TArray<UParticleSystemComponent*> ActiveFlyingEffects;
+
+	// Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
-	// Component
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UShooterComp* Shooter;
 
-	// 입력
+	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* JumpAction;
 
@@ -93,12 +110,23 @@ protected:
 	UAnimMontage* FlyUpMontage;
 
 public:
+	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
+
+	FORCEINLINE class UCameraComponent* GetFollowCameraComponent() const { return FollowCamera; }
+
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+public:
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float WalkSpeed = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 750.f;
+
+
+
+
 
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
@@ -111,7 +139,7 @@ public:
 	float FuelConsumeRate = 12.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelRechargeRate = 6.f;          
+	float FuelRechargeRate = 6.f;
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
@@ -127,8 +155,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Projectile")
 	TSubclassOf<AProjectile>  BaseProjectileClass;
 
+	// Charge
+	UPROPERTY(EditAnywhere, Category = "State")
+	TSubclassOf<US_Charging> ChargingStateClass;
+
 	UPROPERTY(EditAnywhere, Category = "Charge")
-	float MaxChargeTime = 6.0f; 
+	float ChargeStartDelay = 0.2f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Charge")
+	bool bIsCharging = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Charge")
+	float CurrentChargeTime = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	float MaxChargeTime = 6.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Charge")
 	UParticleSystem* ChargingEffect;
@@ -136,9 +177,12 @@ public:
 	UPROPERTY()
 	UParticleSystemComponent* ActiveChargeEffect;
 
-protected:
-	void ChangeState(ECharacterState NewState);
-	
+public:
+
+	void SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray);
+	void StopEffectArray(TArray<UParticleSystemComponent*>& ActiveArray);
+
+
 	virtual void BeginPlay() override;
 	void Boost();
 	void EndBoost();
@@ -153,23 +197,24 @@ protected:
 	void StopAim();
 	void UpdateCameraTransition(float DeltaTime);
 
-	void StartCharge();
-	void ReleaseCharge();
-	void UpdateChargeTime();
-
+	void OnFireStarted(const struct FInputActionInstance& Instance);
+	void OnFireCompleted(const struct FInputActionInstance& Instance);
 	void PlayFireMontage();
 
 	void ActivateFlyingMode();
 	void ToggleFlyingMode();
 	void ConsumeFuel(float DeltaTime);
 	void RechargeFuel(float DeltaTime);
-	
 
-public:	
+
+	void StartCharge();
+
+public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void SetState(ECharacterState NewState);
+	void ChangeState(ECharacterState NewState);
 
 	void StartSprint();
 	void StopSprint();
@@ -180,15 +225,12 @@ public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
 	bool bIsSprinting = false;
-
+	float ChargeStartTime = 0.f;
+	float TargetSpeed = 0.f;
 public:
-	UFUNCTION(BlueprintCallable, Category = "Charge")
-	void SetChargeLevel(int32 NewLevel);
-
-private:
 	FTimerHandle BoostHandle;
 	FTimerHandle FlightDelayHandle;
-	FTimerHandle ChargeTickHandle;
+	FTimerHandle ChargeDelayHandle;
 
 	// 비행 관련 변수
 	float BoostFuelCost = 20.f;
@@ -205,9 +247,4 @@ private:
 	// 카메라 변수
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
-
-	// Charge 변수
-	bool bIsCharging = false;
-	float ChargeStartTime = 0.f;
-	float CurrentChargeTime = 0.f;
 };

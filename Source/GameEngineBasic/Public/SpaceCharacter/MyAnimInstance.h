@@ -11,12 +11,9 @@
 UCLASS()
 class GAMEENGINEBASIC_API UMyAnimInstance : public UAnimInstance
 {
-	GENERATED_BODY()
-	
-protected:
+    GENERATED_BODY()
 
-    UPROPERTY(BlueprintReadOnly, Category = "Character")
-    ECharacterState AnimState;
+protected:
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Speed;
@@ -29,9 +26,6 @@ protected:
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Yaw;
-
-    UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
-    float YawDelta;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Direction;

@@ -7,13 +7,13 @@
 #include "S_Idle.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class GAMEENGINEBASIC_API US_Idle : public UCharacterStateBase
 {
 	GENERATED_BODY()
-	
+
 
 public:
 	virtual void Enter_Implementation(ASpaceCharacter* Character) override;

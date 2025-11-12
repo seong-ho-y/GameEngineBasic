@@ -7,11 +7,11 @@
 #include "S_Boost.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class GAMEENGINEBASIC_API US_Boost : public UCharacterStateBase
 {
 	GENERATED_BODY()
-	
+
 };

@@ -16,6 +16,9 @@
 #include "TimerManager.h"
 
 #include <sstream>
+#include <SpaceCharacter/States/S_Idle.h>
+#include <SpaceCharacter/States/S_Aim.h>
+#include <SpaceCharacter/States/S_Charging.h>
 
 ASpaceCharacter::ASpaceCharacter()
 {
@@ -23,8 +26,8 @@ ASpaceCharacter::ASpaceCharacter()
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("DefaultBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; 
-	CameraBoom->bUsePawnControlRotation = true; 
+	CameraBoom->TargetArmLength = 300.0f;
+	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->SocketOffset = FVector::ZeroVector;
 
 	DefaultArmLength = CameraBoom->TargetArmLength;
@@ -32,7 +35,7 @@ ASpaceCharacter::ASpaceCharacter()
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("DefaultCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->bUsePawnControlRotation = false; 
+	FollowCamera->bUsePawnControlRotation = false;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -44,6 +47,7 @@ ASpaceCharacter::ASpaceCharacter()
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
+
 }
 
 void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -73,12 +77,12 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartAim);
 			EnhancedInput->BindAction(AimAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopAim);
 		}
-		if (FireAction) 
+		if (FireAction)
 		{
-			EnhancedInput->BindAction(FireAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartCharge);
-			EnhancedInput->BindAction(FireAction, ETriggerEvent::Completed, this, &ASpaceCharacter::ReleaseCharge);
+			EnhancedInput->BindAction(FireAction, ETriggerEvent::Started, this, &ASpaceCharacter::OnFireStarted);
+			EnhancedInput->BindAction(FireAction, ETriggerEvent::Completed, this, &ASpaceCharacter::OnFireCompleted);
 		}
-		
+
 		if (FlyAction)
 		{
 			EnhancedInput->BindAction(FlyAction, ETriggerEvent::Started, this, &ASpaceCharacter::ToggleFlyingMode);
@@ -88,11 +92,6 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 			EnhancedInput->BindAction(BoostAction, ETriggerEvent::Started, this, &ASpaceCharacter::Boost);
 		}
 	}
-}
-
-void ASpaceCharacter::SetChargeLevel(int32 NewLevel)
-{
-
 }
 
 void ASpaceCharacter::ChangeState(ECharacterState NewState)
@@ -118,7 +117,20 @@ void ASpaceCharacter::BeginPlay()
 	Super::BeginPlay();
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
-	bIsAiming = false;
+	if (StateMap.Num() == 0)
+	{
+		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
+		StateMap.Add(ECharacterState::Aiming, NewObject<US_Aim>(this));
+		if (ChargingStateClass) {
+			StateMap.Add(ECharacterState::Charging, NewObject<US_Charging>(this, ChargingStateClass));
+		}
+
+	}
+
+	// 기본 상태 설정
+	ChangeState(ECharacterState::Locomotion);
+	TargetSpeed = WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
@@ -131,6 +143,13 @@ void ASpaceCharacter::Tick(float DeltaTime)
 	if (bIsCameraTransitioning)
 		UpdateCameraTransition(DeltaTime);
 
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		float CurrentSpeed = Move->MaxWalkSpeed;
+		float NewSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, SprintInterpSpeed);
+		Move->MaxWalkSpeed = NewSpeed;
+	}
+
 	if (bIsFlyingMode)
 		ConsumeFuel(DeltaTime);
 	else
@@ -140,15 +159,106 @@ void ASpaceCharacter::Tick(float DeltaTime)
 void ASpaceCharacter::StartSprint()
 {
 	bIsSprinting = true;
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	TargetSpeed = RunSpeed; // 목표 속도만 설정 (즉시 변경 X)
+	SpawnEffectArray(SprintEffect, ActiveSprintEffects);
 }
 
 void ASpaceCharacter::StopSprint()
 {
 	bIsSprinting = false;
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	TargetSpeed = WalkSpeed; // 감속 목표 설정
+	StopEffectArray(ActiveSprintEffects);
 }
 
+void ASpaceCharacter::SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray)
+{
+	if (!Effect || !GetMesh()) return;
+
+	// 기존 효과 제거
+	StopEffectArray(ActiveArray);
+
+	// 날개 좌우에 부착
+	ActiveArray.Add(
+		UGameplayStatics::SpawnEmitterAttached(
+			Effect,
+			GetMesh(),
+			TEXT("Wing_L"),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true
+		)
+	);
+
+	ActiveArray.Add(
+		UGameplayStatics::SpawnEmitterAttached(
+			Effect,
+			GetMesh(),
+			TEXT("Wing_R"),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true
+		)
+	);
+}
+
+void ASpaceCharacter::StopEffectArray(TArray<UParticleSystemComponent*>& ActiveArray)
+{
+	for (auto* Comp : ActiveArray)
+	{
+		if (Comp)
+			Comp->DeactivateSystem();
+	}
+	ActiveArray.Empty();
+}
+
+void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
+{
+	if (CurrentState != ECharacterState::Aiming)
+		return;
+
+	// [수정] 즉시 상태를 바꾸는 대신, ChargeStartDelay 이후에 StartCharge 함수를
+	// 실행하도록 타이머를 설정합니다.
+	GetWorldTimerManager().SetTimer(
+		ChargeDelayHandle,
+		this,
+		&ASpaceCharacter::StartCharge,
+		ChargeStartDelay,
+		false
+	);
+}
+
+void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
+{
+	// 1. "탭 발사" (버튼을 0.2초 안에 뗌)
+	// 만약 ChargeDelayHandle 타이머가 여전히 활성화 상태라면 (즉, StartCharge가 호출되기 전)
+	if (GetWorldTimerManager().IsTimerActive(ChargeDelayHandle))
+	{
+		// 타이머를 취소해서 Charge 상태로 들어가지 않도록 합니다.
+		GetWorldTimerManager().ClearTimer(ChargeDelayHandle);
+
+		// 여기가 "탭 발사" 로직입니다.
+		// (산탄총, 단발권총 등)
+		if (Shooter && CurrentState == ECharacterState::Aiming)
+		{
+			Shooter->SetFireDirection(FollowCamera->GetForwardVector());
+			Shooter->TryFire();
+			PlayFireMontage(); // 필요시 발사 몽타주 재생
+		}
+	}
+	// 2. "차지 발사" (버튼을 0.2초 이상 누르다 뗌)
+	// 만약 현재 상태가 Charging이라면 (즉, StartCharge가 이미 호출됨)
+	else if (CurrentState == ECharacterState::Charging)
+	{
+		// Aiming 상태로 복귀시킵니다.
+		// 이 호출이 S_Charging::Exit_Implementation을 트리거하여
+		// 충전된 발사체를 발사하게 됩니다.
+		ChangeState(ECharacterState::Aiming);
+		PlayFireMontage();
+
+	}
+}
 
 void ASpaceCharacter::SetState(ECharacterState NewState)
 {
@@ -182,7 +292,7 @@ void ASpaceCharacter::Move(const FInputActionValue& Value)
 
 		if (bIsFlyingMode)
 		{
-			ForwardDir = ControlRotation.Vector(); 
+			ForwardDir = ControlRotation.Vector();
 			RightDir = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::Y);
 		}
 		else
@@ -243,141 +353,34 @@ void ASpaceCharacter::StopJump()
 	}
 }
 
-void ASpaceCharacter::StartCharge()
-{
-	if (!bIsAiming || bIsCharging) return;
-
-	bIsCharging = true;
-	ChargeStartTime = GetWorld()->GetTimeSeconds();
-	CurrentChargeTime = 0.f;
-
-	FVector MuzzleLoc = GetMesh()->GetSocketLocation(TEXT("Muzzle"));
-	FRotator MuzzleRot = GetMesh()->GetSocketRotation(TEXT("Muzzle"));
-
-	if (ChargingEffect)
-	{
-		ActiveChargeEffect = UGameplayStatics::SpawnEmitterAttached(
-			ChargingEffect,
-			GetMesh(),
-			TEXT("Muzzle"),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::SnapToTarget,
-			true
-		);
-	}
-
-	GetWorldTimerManager().SetTimer(
-		ChargeTickHandle,
-		this,
-		&ASpaceCharacter::UpdateChargeTime,
-		0.05f,
-		true
-	);
-}
-
-void ASpaceCharacter::UpdateChargeTime()
-{
-	CurrentChargeTime = GetWorld()->GetTimeSeconds() - ChargeStartTime;
-	const float ChargeRatio = FMath::Clamp(CurrentChargeTime / MaxChargeTime, 0.f, 1.f);
-
-	if (ActiveChargeEffect)
-	{
-		const float Scale = FMath::Lerp(0.5f, 3.0f, ChargeRatio);
-		ActiveChargeEffect->SetWorldScale3D(FVector(Scale));
-	}
-}
-
-void ASpaceCharacter::ReleaseCharge()
-{
-	if (!bIsCharging) return;
-	bIsCharging = false;
-	GetWorldTimerManager().ClearTimer(ChargeTickHandle);
-
-	if (ActiveChargeEffect)
-	{
-		ActiveChargeEffect->DeactivateSystem();
-		ActiveChargeEffect = nullptr;
-	}
-
-	const float Elapsed = GetWorld()->GetTimeSeconds() - ChargeStartTime;
-	const float ClampedCharge = FMath::Clamp(Elapsed, 0.f, MaxChargeTime);
-
-	if (ClampedCharge < 0.2f)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Not enough charge!"));
-		return;
-	}
-
-	const float ChargeRatio = ClampedCharge / MaxChargeTime;
-	Shooter->PendingDamage = FMath::Lerp(5.f, 50.f, ChargeRatio);
-	Shooter->PendingScale = FMath::Lerp(1.f, 3.f, ChargeRatio);
-
-
-	// 정확한 조준 방향 계산 (카메라 기준)
-	FVector CameraLoc = FollowCamera->GetComponentLocation();
-	FVector CameraDir = FollowCamera->GetForwardVector();
-	FVector TraceEnd = CameraLoc + (CameraDir * 10000.f);
-
-	FHitResult HitResult;
-	if (GetWorld()->LineTraceSingleByChannel(HitResult, CameraLoc, TraceEnd, ECC_Visibility))
-	{
-		TraceEnd = HitResult.ImpactPoint;
-	}
-
-	FVector MuzzleLoc = GetMesh()->GetSocketLocation(TEXT("Muzzle"));
-	FVector FireDir = (TraceEnd - MuzzleLoc).GetSafeNormal();
-	FRotator CamRot = FollowCamera->GetComponentRotation();
-	SetActorRotation(FRotator(0.f, CamRot.Yaw, 0.f));
-
-	Shooter->ProjectileClass = BaseProjectileClass;
-	Shooter->SetFireDirection(FireDir);
-	Shooter->TryFire();
-
-	PlayFireMontage();
-}
-
 void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
 {
 	const float TargetLength = bIsAiming ? AimedArmLength : DefaultArmLength;
 	const FVector TargetOffset = bIsAiming ? AimedSocketOffset : DefaultSocketOffset;
 
 	CameraBoom->TargetArmLength = UKismetMathLibrary::FInterpTo_Constant(
-	CameraBoom->TargetArmLength, TargetLength, DeltaTime, CameraInterpSpeed);
+		CameraBoom->TargetArmLength, TargetLength, DeltaTime, CameraInterpSpeed);
 
 	CameraBoom->SocketOffset = UKismetMathLibrary::VInterpTo_Constant(
-	CameraBoom->SocketOffset, TargetOffset, DeltaTime, CameraInterpSpeed);
+		CameraBoom->SocketOffset, TargetOffset, DeltaTime, CameraInterpSpeed);
 
 	if (FMath::IsNearlyEqual(CameraBoom->TargetArmLength, TargetLength, 0.1f) &&
 		CameraBoom->SocketOffset.Equals(TargetOffset, 0.1f))
 	{
-	CameraBoom->TargetArmLength = TargetLength;
-	CameraBoom->SocketOffset = TargetOffset;
-	bIsCameraTransitioning = false;
+		CameraBoom->TargetArmLength = TargetLength;
+		CameraBoom->SocketOffset = TargetOffset;
+		bIsCameraTransitioning = false;
 	}
 }
 
 void ASpaceCharacter::StartAim()
 {
-	bIsAiming = true;
-	bIsCameraTransitioning = true;
-
-	GetCharacterMovement()->bOrientRotationToMovement = false;
-	bUseControllerRotationYaw = true;
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		AnimInstance->StopAllMontages(0.8f);
-	}
+	ChangeState(ECharacterState::Aiming);
 }
 
 void ASpaceCharacter::StopAim()
 {
-	bIsAiming = false;
-	bIsCameraTransitioning = true;
-
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	bUseControllerRotationYaw = false;
+	ChangeState(ECharacterState::Locomotion);
 }
 
 void ASpaceCharacter::ToggleFlyingMode()
@@ -390,8 +393,8 @@ void ASpaceCharacter::ToggleFlyingMode()
 	{
 		bIsFlyingMode = false;
 		Move->SetMovementMode(MOVE_Walking);
-		Move->GravityScale = 1.0f;            
-		Move->BrakingFrictionFactor = 2.0f;   
+		Move->GravityScale = 1.0f;
+		Move->BrakingFrictionFactor = 2.0f;
 		Move->AirControl = 0.2f;
 		Move->MaxWalkSpeed = 600.f;
 		return;
@@ -443,7 +446,7 @@ void ASpaceCharacter::ActivateFlyingMode()
 void ASpaceCharacter::ConsumeFuel(float DeltaTime)
 {
 	CurrentFuel = FMath::Max(0.f, CurrentFuel - FuelConsumeRate * DeltaTime);
-	
+
 	std::stringstream ss;
 	ss << "Current Fuel: " << CurrentFuel << "\n";
 	if (GEngine)
@@ -461,12 +464,18 @@ void ASpaceCharacter::RechargeFuel(float DeltaTime)
 	CurrentFuel = FMath::Min(MaxFuel, CurrentFuel + FuelRechargeRate * DeltaTime);
 }
 
+void ASpaceCharacter::StartCharge()
+{
+	ChangeState(ECharacterState::Charging);
+}
+
 void ASpaceCharacter::PlayFireMontage()
 {
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		if (FireMontage)
+		if (FireMontage && !AnimInstance->Montage_IsPlaying(FireMontage))
 		{
+			UE_LOG(LogTemp, Log, TEXT("ASpaceCharacter::PlayFireMontage: --- Playing FireMontage! ---"));
 			AnimInstance->Montage_Play(FireMontage);
 		}
 	}
@@ -480,7 +489,7 @@ void ASpaceCharacter::Boost()
 	if (!bIsFlyingMode)
 		ActivateFlyingMode();
 
-	
+
 	FVector InputDir = GetLastMovementInputVector();
 	FVector BoostDir = InputDir.GetSafeNormal();
 	bIsBoosting = true;
