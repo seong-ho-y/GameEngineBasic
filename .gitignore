@@ -3,6 +3,7 @@ Content/*
 !Content/Share/
 !Content/Cyberp_RPG_UI_5_2
 
+
 # Rider (JetBrains IDE)
 .idea/
 
