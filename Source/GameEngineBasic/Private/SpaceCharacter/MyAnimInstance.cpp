@@ -21,6 +21,8 @@ void UMyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (OwningCharacter)
 	{
+		AnimState = OwningCharacter->GetCurrentState();
+
 		FVector Velocity = OwningCharacter->GetVelocity();
 		Velocity.Z = 0.f;
 		Speed = Velocity.Size();

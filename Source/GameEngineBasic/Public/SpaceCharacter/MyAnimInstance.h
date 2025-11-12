@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "SpaceCharacter/SpaceCharacter.h"
 #include "MyAnimInstance.generated.h"
+
 
 UCLASS()
 class GAMEENGINEBASIC_API UMyAnimInstance : public UAnimInstance
@@ -12,6 +14,9 @@ class GAMEENGINEBASIC_API UMyAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 	
 protected:
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character")
+    ECharacterState AnimState;
 
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Speed;

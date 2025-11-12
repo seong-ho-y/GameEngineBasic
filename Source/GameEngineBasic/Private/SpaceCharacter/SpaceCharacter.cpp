@@ -54,6 +54,13 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	{
 		if (MoveAction)
 			EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Move);
+
+		if (SprintAction)
+		{
+			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartSprint);
+			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopSprint);
+		}
+
 		if (LookAction)
 			EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Look);
 		if (JumpAction)
@@ -88,6 +95,24 @@ void ASpaceCharacter::SetChargeLevel(int32 NewLevel)
 
 }
 
+void ASpaceCharacter::ChangeState(ECharacterState NewState)
+{
+	if (CurrentState == NewState)
+		return;
+
+	if (CurrentStateObject)
+		CurrentStateObject->Exit(this);
+
+	CurrentState = NewState;
+
+	if (StateMap.Contains(NewState))
+	{
+		CurrentStateObject = StateMap[NewState];
+		if (CurrentStateObject)
+			CurrentStateObject->Enter(this);
+	}
+}
+
 void ASpaceCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -100,6 +125,9 @@ void ASpaceCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (CurrentStateObject)
+		CurrentStateObject->Tick(this, DeltaTime);
+
 	if (bIsCameraTransitioning)
 		UpdateCameraTransition(DeltaTime);
 
@@ -108,6 +136,41 @@ void ASpaceCharacter::Tick(float DeltaTime)
 	else
 		RechargeFuel(DeltaTime);
 }
+
+void ASpaceCharacter::StartSprint()
+{
+	bIsSprinting = true;
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+}
+
+void ASpaceCharacter::StopSprint()
+{
+	bIsSprinting = false;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+
+void ASpaceCharacter::SetState(ECharacterState NewState)
+{
+	if (CurrentState == NewState) return;
+
+	switch (NewState)
+	{
+	case ECharacterState::Aiming:
+		bIsAiming = true;
+		break;
+	case ECharacterState::Flying:
+		bIsFlyingMode = true;
+		break;
+	default:
+		bIsAiming = false;
+		bIsFlyingMode = false;
+		break;
+	}
+
+	CurrentState = NewState;
+}
+
 
 void ASpaceCharacter::Move(const FInputActionValue& Value)
 {

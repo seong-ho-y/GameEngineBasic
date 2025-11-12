@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "SpaceCharacter/States/CharacterStateBase.h"
+
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
@@ -12,6 +14,18 @@
 
 class UShooterComp;
 class AProjectile;
+
+UENUM(BlueprintType)
+enum class ECharacterState : uint8
+{
+	Idle,
+	Walking,
+	Aiming,
+	Charging,
+	Flying,
+	Boosting,
+	Jumping
+};
 
 UCLASS()
 class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
@@ -22,6 +36,15 @@ public:
 	ASpaceCharacter();
 
 protected:
+	UPROPERTY(EditAnywhere, Instanced, Category = "State")
+	TMap<ECharacterState, UCharacterStateBase*> StateMap;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "State")
+	UCharacterStateBase* CurrentStateObject = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	ECharacterState CurrentState = ECharacterState::Idle;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
@@ -38,6 +61,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* MoveAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* SprintAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* LookAction;
@@ -65,6 +91,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* FlyUpMontage;
+
+public:
+	// Movement
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
+	float WalkSpeed = 500.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
+	float RunSpeed = 750.f;
 
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
@@ -102,9 +136,9 @@ protected:
 	UPROPERTY()
 	UParticleSystemComponent* ActiveChargeEffect;
 
-
-
 protected:
+	void ChangeState(ECharacterState NewState);
+	
 	virtual void BeginPlay() override;
 	void Boost();
 	void EndBoost();
@@ -130,14 +164,22 @@ protected:
 	void ConsumeFuel(float DeltaTime);
 	void RechargeFuel(float DeltaTime);
 	
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void SetState(ECharacterState NewState);
+
+	void StartSprint();
+	void StopSprint();
+
+	ECharacterState GetCurrentState() const { return CurrentState; }
+
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
-
+	bool bIsSprinting = false;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Charge")
