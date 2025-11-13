@@ -122,11 +122,7 @@ public:
 	float WalkSpeed = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
-	float RunSpeed = 750.f;
-
-
-
-
+	float RunSpeed = 1200.f;
 
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")

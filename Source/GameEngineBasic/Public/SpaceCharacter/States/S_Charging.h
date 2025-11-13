@@ -27,4 +27,10 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Effects")
     UParticleSystem* ExplosionEffect;
+
+    UPROPERTY(EditAnywhere, Category = "Animation")
+    UAnimMontage* LockMontage;
+
+    UPROPERTY(EditAnywhere, Category = "Animation")
+    UAnimMontage* DamagedMontage;
 };
