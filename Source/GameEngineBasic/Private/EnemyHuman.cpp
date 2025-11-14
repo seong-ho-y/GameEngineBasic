@@ -4,6 +4,7 @@
 #include "EnemyHuman.h"
 
 #include "EnemyAnimInstance.h"
+#include "EnemyShieldComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
@@ -20,10 +21,17 @@ AEnemyHuman::AEnemyHuman()
 	PawnSensingComp = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("PawnSensingComp"));
 	ShooterComp = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
-
+	ShieldComp = CreateDefaultSubobject<UEnemyShieldComponent>(TEXT("ShieldComp"));
+	
+	HealthComp->bUseShield = false;
+	HealthComp->bUseShieldRegen = false;
+	
 	PawnSensingComp->bOnlySensePlayers = true;
 	PawnSensingComp->SensingInterval = 0.1f;
-
+	
+	ShieldComp->OnShieldBreak.AddDynamic(this, &AEnemyHuman::OnKnock);
+	HealthComp->OnDeath.AddDynamic(this, &AEnemyHuman::OnDie);
+	
 	//몸체 자체 회전 끄기
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
@@ -35,39 +43,21 @@ AEnemyHuman::AEnemyHuman()
 void AEnemyHuman::BeginPlay()
 {
 	Super::BeginPlay();
+
+
 	
 }
-
-
 
 float AEnemyHuman::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                               class AController* EventInstigator, AActor* DamageCauser)
 {
-	const FPointDamageEvent* PointDamage = static_cast<const FPointDamageEvent*>(&DamageEvent);
-	if (!PointDamage) return 0.f;
-
-	const FHitResult& HitInfo = PointDamage->HitInfo;
-	FName Bone = HitInfo.BoneName;
-
 	float FinalDamage = DamageAmount;
-	if (Bone == "spine_05" || Bone == "lowerarm_r") //몸체, 총이여서 데미지 반감
-	{
-		FinalDamage *= 0.75f;
-	}
-	else if (Bone == "pelvis" || Bone == "spine_02") //급소 데미지 보정
-	{
-		FinalDamage *= 1.5f;
-	}
+	if (ShieldComp)
+		FinalDamage = ShieldComp->ApplyDamage(DamageAmount);
 
-	// Groggy 시스템
-	BodyPartDamage[Bone] += FinalDamage;
-	if (BodyPartDamage[Bone] > GroggyThreshold[Bone])
-	{
-		EntryGroggyState(Bone);
-	}
-
-	CurrentHealth -= FinalDamage;
-	if (CurrentHealth<=0) OnDie();
+	if (HealthComp)
+		HealthComp->ApplyHealthDamage(FinalDamage);
+	
 	return FinalDamage;
 }
 void AEnemyHuman::EntryGroggyState(FName Bone)
@@ -79,7 +69,9 @@ void AEnemyHuman::EntryGroggyState(FName Bone)
 
 void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale)
 {
-	if (bIsBoosting) return;
+	if (bIsBoosting || GetWorldTimerManager().IsTimerActive(TimerHandle_BoostTick))
+		return; // ✅ 중복 방지
+
 	bIsBoosting = true;
 
 	UCharacterMovementComponent* Move = GetCharacterMovement();
@@ -133,10 +125,8 @@ void AEnemyHuman::EndBoost()
 	if (!bIsBoosting) return;
 	bIsBoosting = false;
 
-	// 타이머 해제
 	GetWorldTimerManager().ClearTimer(TimerHandle_BoostTick);
 
-	// 물리 원복
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
 		Move->StopMovementImmediately();
@@ -147,9 +137,9 @@ void AEnemyHuman::EndBoost()
 	{
 		ActiveBoostPSC->Deactivate();
 		ActiveBoostPSC->DestroyComponent();
-		 ActiveBoostPSC = nullptr;
+		ActiveBoostPSC = nullptr;
 	}
-	// 애니메이션 복귀(상태 표현)
+
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
 		SetLowerBodyState(ELowerBodyState::WalkBlendSpace);
@@ -199,8 +189,19 @@ void AEnemyHuman::OnBoostTick()
 	}
 }
 
-void AEnemyHuman::OnKnock(FName Bone)
+void AEnemyHuman::OnKnock()
 {
+	UE_LOG(LogTemp, Error, TEXT("Enemy Got Knocked"));
+	if (bIsBoosting)
+	{
+		EndBoost(); // Boost 중이면 강제 종료
+	}
+
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->FullBodyState = EFullBodyState::Knock;
+		Anim->Montage_Play(KnockMontage);
+	}
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
 		Anim->FullBodyState = EFullBodyState::Knock;
@@ -208,13 +209,20 @@ void AEnemyHuman::OnKnock(FName Bone)
 	}
 }
 
-void AEnemyHuman::OnDie()
+void AEnemyHuman::OnDie(AActor* DeadActor)
 {
+	static bool bDied = false;
+	if (bDied) return;
+	bDied = true;
+
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
 		Anim->FullBodyState = EFullBodyState::Dead;
 		Anim->Montage_Play(DeathMontage);
 	}
+
+	GetCharacterMovement()->DisableMovement();
+	SetLifeSpan(5.f);
 }
 
 void AEnemyHuman::SetLowerBodyState(ELowerBodyState NewState)

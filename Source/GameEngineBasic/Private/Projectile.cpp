@@ -31,9 +31,9 @@ AProjectile::AProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.0f;
-	
+
 	InitialLifeSpan = 10.0f;
-	
+
 
 	// Vfx
 	Vfx = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VFXComp"));
@@ -45,7 +45,7 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (TrailEffect)
 	{
 		UGameplayStatics::SpawnEmitterAttached(
@@ -76,13 +76,13 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 	{
 		return;
 	}
+	//UE_LOG(LogTemp, Warning, TEXT("Projectile Hit Checked"))
 	// 1. 부딪힌 대상이 IDamageable인지 확인
-	if (OtherActor->GetClass()->ImplementsInterface(UDamageable::StaticClass()))
-	{
+
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr;
 		// 나중에 데미지는 무기 컴포넌트에서 가져와서 DamageAmount에 넣어줄거임
 		const float AppliedDamage = DamageAmount; // 이 프로젝타일의 기본 데미지
-		
+
 
 		UGameplayStatics::ApplyDamage(
 			OtherActor,
@@ -90,8 +90,8 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 			InstigatorController,
 			this,
 			nullptr);
-	}
-	
+
+
 	if (ImpactEffect)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(
@@ -107,7 +107,7 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 	{
 		Hit.GetComponent()->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
 	}
-	
+
 	// 충돌 시 파괴
 	Destroy();
 }
