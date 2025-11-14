@@ -1,6 +1,5 @@
-﻿
+﻿#include "../Components/public/ShooterComp.h"
 #include "HomingMissileProjectile.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
