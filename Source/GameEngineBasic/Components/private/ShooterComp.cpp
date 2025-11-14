@@ -1,6 +1,7 @@
 ﻿#include "../Components/public/ShooterComp.h"
 #include "HomingMissileProjectile.h"
 #include "NiagaraFunctionLibrary.h"
+#include "AnimNodes/AnimNode_RandomPlayer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -84,7 +85,8 @@ void UShooterComp::Fire_Implementation()
 	}
 	// 탄약감소
 	CurrentAmmo--;
-
+	OnAmmoChanged.Broadcast(CurrentAmmo, MaxAmmo);
+	
 	// 쿨다운
 	bIsReadyToFire = false;
 	GetWorld()->GetTimerManager().SetTimer(

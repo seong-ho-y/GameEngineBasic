@@ -4,14 +4,18 @@
 #include "TargetingSystemComponent.h"
 
 #include "EngineUtils.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/Image.h"
 #include "Interfaces/IHttpResponse.h"
 
+class UMyPlayerHUD;
 // Sets default values for this component's properties
 UTargetingSystemComponent::UTargetingSystemComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+    PrimaryComponentTick.bCanEverTick = true;
+    PrimaryComponentTick.bStartWithTickEnabled = false;
 
 	// ...
 }
@@ -23,7 +27,7 @@ void UTargetingSystemComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+
 }
 
 
@@ -31,63 +35,99 @@ void UTargetingSystemComponent::BeginPlay()
 void UTargetingSystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Magenta,
+    FString::Printf(TEXT("Viewport: %d × %d"),
+        GEngine->GameViewport->Viewport->GetSizeXY().X,
+        GEngine->GameViewport->Viewport->GetSizeXY().Y
+    ));
+    
+	GEngine->AddOnScreenDebugMessage(-9, 0.f, FColor::Black, TEXT("Ticking..."));
+	AEnemyHuman* NewTarget = FindClosestEnemyInView();
 
-	CurrentTarget = FindClosestEnemyInView();
+	if (NewTarget != CurrentTarget)
+	{
+		GEngine->AddOnScreenDebugMessage(-17, 5.f, FColor::Emerald, TEXT("CurrentTarget Updated"));
+		CurrentTarget = NewTarget;
+		OnTargetChanged.Broadcast(CurrentTarget); // Notify to HUD
+	}
 }
+
 AEnemyHuman* UTargetingSystemComponent::FindClosestEnemyInView()
 {
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
-	if (!OwnerPawn) return nullptr;
+    UWorld* World = GetWorld();
+    if (!World) return nullptr;
 
-	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-	if (!PC) return nullptr;
+    APawn* OwnerPawn = Cast<APawn>(GetOwner());
+    if (!IsValid(OwnerPawn)) return nullptr;
 
-	FVector CamLoc;
-	FRotator CamRot;
-	PC->GetPlayerViewPoint(CamLoc, CamRot);
-	FVector CanForward = CamRot.Vector();
+    APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+    if (!IsValid(PC)) return nullptr;
 
-	AEnemyHuman* Closest = nullptr;
-	float ClosestScreenDist = FLT_MAX;
+    // 1) 뷰포트 크기
+    int32 ViewportX = 0, ViewportY = 0;
+    PC->GetViewportSize(ViewportX, ViewportY);
 
-	for (TActorIterator<AEnemyHuman> It(GetWorld()); It; ++It)
-	{
-		AEnemyHuman* Enemy = *It;
-		if (!Enemy || Enemy->IsPendingKillPending()) continue;
+    // 2) 원 중심 = 화면 중심
+    const FVector2D CircleCenter(
+        ViewportX * 0.5f,
+        ViewportY * 0.5f
+    );
 
-		// 인식 최대 거리 설정
-		FVector ToEnemy = Enemy->GetActorLocation() - CamLoc;
-		float Dist = ToEnemy.Size();
-		if (Dist > MaxDistance) continue;
+    // 3) 원 반지름 = 화면 세로 기준 15%
+    float Radius = ViewportY * 0.15f;
 
-		// 시야각 체크
-		float Dot = FVector::DotProduct(CanForward, ToEnemy.GetSafeNormal());
-		float AngleDeg = FMath::RadiansToDegrees(acosf(Dot));
-		if (AngleDeg > ViewAngle) continue;
+    // 디버그용
+    GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Cyan,
+        FString::Printf(TEXT("[Circle] Center=(%.1f, %.1f) R=%.1f"),
+            CircleCenter.X, CircleCenter.Y, Radius));
 
-		// 화면 중심 기준 거리
-		FVector2D ScreenPos;
-		FVector2D ScreenCenter;
-		if (!UGameplayStatics::ProjectWorldToScreen(PC,Enemy->GetActorLocation(), ScreenPos)) continue;
-		{
-			int32 SX, SY;
-			PC->GetViewportSize(SX,SY);
-			ScreenCenter = FVector2D(SX / 2, SY / 2);
-		}
+    AEnemyHuman* Closest = nullptr;
+    float ClosestDist = FLT_MAX;
 
-		float ScreenDist = FVector2D::Distance(ScreenCenter, ScreenPos);
-		if (ScreenDist < ClosestScreenDist)
-		{
-			// 시야 차폐 라인 트레이스
-			FHitResult Hit;
-			GetWorld()->LineTraceSingleByChannel(Hit, CamLoc, Enemy->GetActorLocation(), ECC_Visibility);
-			if (Hit.GetActor() != Enemy) continue;
+    for (TActorIterator<AEnemyHuman> It(World); It; ++It)
+    {
+        AEnemyHuman* Enemy = *It;
+        if (!IsValid(Enemy)) continue;
 
-			ClosestScreenDist = ScreenDist;
-			Closest = Enemy;
-		}
-	}
+        // 🔹 2) 적 위치를 화면 좌표로 변환
+        FVector2D EnemyScreenPos;
+        if (!UGameplayStatics::ProjectWorldToScreen(PC, Enemy->GetActorLocation(), EnemyScreenPos))
+            continue;
 
-	return Closest;
+        // 디버그
+        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White,
+            FString::Printf(TEXT("[Enemy %s] ScreenPos=(%.1f, %.1f)"),
+                *Enemy->GetName(), EnemyScreenPos.X, EnemyScreenPos.Y));
+
+        // 🔹 3) 원 안에 들어왔는지만 검사
+        const float DistToCenter = FVector2D::Distance(EnemyScreenPos, CircleCenter);
+
+        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue,
+            FString::Printf(TEXT("[Enemy %s] DistToCenter=%.1f (R=%.1f)"),
+                *Enemy->GetName(), DistToCenter, Radius));
+
+        if (DistToCenter > Radius)
+            continue; // 원 밖 → 후보 제외
+
+        // 🔹 4) 가장 중앙에 가까운 적 선택
+        if (DistToCenter < ClosestDist)
+        {
+            ClosestDist = DistToCenter;
+            Closest = Enemy;
+        }
+    }
+
+    if (!Closest)
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red,
+            TEXT("[Targeting] No enemy inside circle"));
+    }
+    else
+    {
+        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green,
+            FString::Printf(TEXT("[Targeting] Final Target = %s"),
+                *Closest->GetName()));
+    }
+
+    return Closest;
 }
-

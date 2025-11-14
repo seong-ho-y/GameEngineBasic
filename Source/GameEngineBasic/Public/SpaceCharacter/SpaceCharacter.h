@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "TargetingSystemComponent.h"
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
@@ -27,6 +28,8 @@ enum class ECharacterState : uint8
 	Jumping
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnEnergyChanged, float, CurrentEN, float, MaxEN);
+
 UCLASS()
 class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
 {
@@ -35,6 +38,8 @@ class GAMEENGINEBASIC_API ASpaceCharacter : public ACharacter
 public:
 	ASpaceCharacter();
 
+	UPROPERTY(BlueprintAssignable)
+	FOnEnergyChanged OnEnergyChanged;
 protected:
 	UPROPERTY(EditAnywhere, Instanced, Category = "State")
 	TMap<ECharacterState, UCharacterStateBase*> StateMap;
@@ -45,7 +50,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
-	// --- Sprint¿ë ---
+	// --- Sprintï¿½ï¿½ ---
 	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
 	UParticleSystem* SprintEffect;
 
@@ -55,7 +60,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
 	float SprintInterpSpeed = 5.0f;
 
-	// --- Flying¿ë ---
+	// --- Flyingï¿½ï¿½ ---
 	UPROPERTY(EditAnywhere, Category = "VFX|Flying")
 	UParticleSystem* FlyingEffect;
 
@@ -71,6 +76,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UShooterComp* Shooter;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UTargetingSystemComponent* TargetingSys;
 
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -124,16 +132,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 750.f;
 
-
-
-
+	
 
 	// Fuel
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float MaxFuel = 100.f;
+	float MaxEN = 100.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float CurrentFuel = 100.f;
+	float CurrentEN = 100.f;
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float FuelConsumeRate = 12.f;
@@ -232,19 +238,21 @@ public:
 	FTimerHandle FlightDelayHandle;
 	FTimerHandle ChargeDelayHandle;
 
-	// ºñÇà °ü·Ã º¯¼ö
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	float BoostFuelCost = 20.f;
 	bool bIsFlyingMode = false;
 
-	// Ä«¸Þ¶ó ±âº» °Å¸®
+	// Ä«ï¿½Þ¶ï¿½ ï¿½âº» ï¿½Å¸ï¿½
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
-	// Aim ½Ã Ä«¸Þ¶ó À§Ä¡ ¿ÀÇÁ¼Â
+	// Aim ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	// Ä«¸Þ¶ó º¯¼ö
+	// Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
+
+	// Add Return Func for UI
 };

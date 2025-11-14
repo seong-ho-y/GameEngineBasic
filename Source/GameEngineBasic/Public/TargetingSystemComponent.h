@@ -7,6 +7,8 @@
 #include "Components/ActorComponent.h"
 #include "TargetingSystemComponent.generated.h"
 
+class UImage;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTargetChanged, AEnemyHuman*, NewTarget);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UTargetingSystemComponent : public UActorComponent
@@ -17,6 +19,10 @@ public:
 	// Sets default values for this component's properties
 	UTargetingSystemComponent();
 
+	// 🔹 크로스헤어 원의 반지름(픽셀 단위)
+	UPROPERTY(EditAnywhere, Category="Targeting|UI")
+	float TargetCircleRadius = 200.f;
+	
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -27,11 +33,17 @@ public:
 
 	AEnemyHuman* GetCurrentTarget() const  {return CurrentTarget; }
 
+	UPROPERTY(BlueprintAssignable, Category = "Targeting")
+	FOnTargetChanged OnTargetChanged;
+
 private:
 	AEnemyHuman* FindClosestEnemyInView();
 
 	UPROPERTY()
-	AEnemyHuman* CurrentTarget; 
+	UImage* TargetCircleWidget;
+	
+	UPROPERTY()
+	AEnemyHuman* CurrentTarget = nullptr; 
 
 	UPROPERTY(EditAnywhere, Category = "Targeting")
 	float ViewAngle = 30.f;
