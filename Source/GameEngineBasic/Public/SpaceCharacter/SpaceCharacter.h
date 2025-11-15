@@ -68,10 +68,10 @@ protected:
 	TArray<UParticleSystemComponent*> ActiveFlyingEffects;
 
 	// Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
@@ -140,6 +140,12 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float CurrentEN = 100.f;
+
+	UFUNCTION(BlueprintCallable, Category = "Flight|Fuel")
+	float GetFuelPercent() const
+	{
+		return (MaxFuel > 0) ? CurrentFuel / MaxFuel : 0.f;
+	}
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
 	float FuelConsumeRate = 12.f;
