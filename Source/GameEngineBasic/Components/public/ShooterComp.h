@@ -16,6 +16,8 @@ enum class EProjectileType : uint8
 	Laser      UMETA(DisplayName = "Laser")
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChanged, int32, CurrentAmmo, int32, MaxAmmo);
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
 {
@@ -24,6 +26,8 @@ class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
 public:
 	UShooterComp();
 
+	UPROPERTY(BlueprintAssignable, Category="Events")
+	FOnAmmoChanged OnAmmoChanged;
 protected:
 	virtual void BeginPlay() override;
 
@@ -68,7 +72,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 CurrentAmmo = 999;
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 MaxAmmo = 999;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	float PendingDamage = 10.f;
 

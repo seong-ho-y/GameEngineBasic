@@ -20,6 +20,8 @@
 #include <SpaceCharacter/States/S_Aim.h>
 #include <SpaceCharacter/States/S_Charging.h>
 
+#include "AnimEncoding.h"
+
 ASpaceCharacter::ASpaceCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -37,6 +39,8 @@ ASpaceCharacter::ASpaceCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	TargetingSys = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingSysComp"));
+
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
@@ -47,7 +51,6 @@ ASpaceCharacter::ASpaceCharacter()
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
-
 }
 
 void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -121,10 +124,10 @@ void ASpaceCharacter::BeginPlay()
 	{
 		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
 		StateMap.Add(ECharacterState::Aiming, NewObject<US_Aim>(this));
-		if (ChargingStateClass) {
+		if (ChargingStateClass)
+		{
 			StateMap.Add(ECharacterState::Charging, NewObject<US_Charging>(this, ChargingStateClass));
 		}
-
 	}
 
 	// 기본 상태 설정
@@ -256,7 +259,6 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		// 충전된 발사체를 발사하게 됩니다.
 		ChangeState(ECharacterState::Aiming);
 		PlayFireMontage();
-
 	}
 }
 
@@ -406,7 +408,7 @@ void ASpaceCharacter::ToggleFlyingMode()
 			AnimInstance->Montage_Play(FlypreMontage);
 	}
 
-	if (CurrentFuel > 5.f)
+	if (CurrentEN > 5.f)
 	{
 		if (!GetWorldTimerManager().IsTimerActive(FlightDelayHandle))
 		{
@@ -426,7 +428,7 @@ void ASpaceCharacter::ActivateFlyingMode()
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("fly!"));
 
-	if (CurrentFuel <= 5.f)
+	if (CurrentEN <= 5.f)
 	{
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Not enough fuel to fly!"));
@@ -445,14 +447,14 @@ void ASpaceCharacter::ActivateFlyingMode()
 
 void ASpaceCharacter::ConsumeFuel(float DeltaTime)
 {
-	CurrentFuel = FMath::Max(0.f, CurrentFuel - FuelConsumeRate * DeltaTime);
+	CurrentEN = FMath::Max(0.f, CurrentEN - FuelConsumeRate * DeltaTime);
 
 	std::stringstream ss;
-	ss << "Current Fuel: " << CurrentFuel << "\n";
+	ss << "Current Fuel: " << CurrentEN << "\n";
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Yellow, ss.str().c_str());
 
-	if (CurrentFuel <= 0.f)
+	if (CurrentEN <= 0.f)
 	{
 		bIsFlyingMode = false;
 		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -461,7 +463,8 @@ void ASpaceCharacter::ConsumeFuel(float DeltaTime)
 
 void ASpaceCharacter::RechargeFuel(float DeltaTime)
 {
-	CurrentFuel = FMath::Min(MaxFuel, CurrentFuel + FuelRechargeRate * DeltaTime);
+	CurrentEN = FMath::Min(MaxEN, CurrentEN + FuelRechargeRate * DeltaTime);
+	OnEnergyChanged.Broadcast(CurrentEN, MaxEN);
 }
 
 void ASpaceCharacter::StartCharge()
@@ -483,7 +486,7 @@ void ASpaceCharacter::PlayFireMontage()
 
 void ASpaceCharacter::Boost()
 {
-	if (CurrentFuel < BoostFuelCost || bIsAiming)
+	if (CurrentEN < BoostFuelCost || bIsAiming)
 		return;
 
 	if (!bIsFlyingMode)
@@ -507,7 +510,7 @@ void ASpaceCharacter::Boost()
 	}
 
 	GetWorldTimerManager().SetTimer(BoostHandle, this, &ASpaceCharacter::EndBoost, BoostDuration, false);
-	CurrentFuel -= BoostFuelCost;
+	CurrentEN -= BoostFuelCost;
 }
 
 void ASpaceCharacter::EndBoost()
