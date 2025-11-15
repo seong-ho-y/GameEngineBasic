@@ -1,41 +1,37 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "SpaceCharacter/States/S_Aim.h"
+#include "SpaceCharacter/States/S_FlyAim.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
-#include "Kismet/KismetMathLibrary.h"
 
-
-void US_Aim::Enter_Implementation(ASpaceCharacter* Character)
+void US_FlyAim::Enter_Implementation(ASpaceCharacter* Character)
 {
     if (!Character) return;
 
-    bTransitioningCamera = true;
     Character->bIsAiming = true;
+    Character->bIsCameraTransitioning = true;
 
     Character->GetCharacterMovement()->bOrientRotationToMovement = false;
     Character->bUseControllerRotationYaw = true;
-
-    Character->bIsCameraTransitioning = true;
-
 }
 
-void US_Aim::Tick_Implementation(ASpaceCharacter* Character, float DeltaTime)
+void US_FlyAim::Tick_Implementation(ASpaceCharacter* Character, float DeltaTime)
 {
     if (!Character) return;
 
-    // 카메라 전환이 끝났는지 체크
+    // 카메라 에임 시 카메라 보간 유지
     if (Character->bIsCameraTransitioning)
         Character->UpdateCameraTransition(DeltaTime);
 }
 
-void US_Aim::Exit_Implementation(ASpaceCharacter* Character)
+void US_FlyAim::Exit_Implementation(ASpaceCharacter* Character)
 {
     if (!Character) return;
-    /*
-    Character->bUseControllerRotationYaw = false;
+
+    Character->bIsAiming = false;
+
     Character->GetCharacterMovement()->bOrientRotationToMovement = true;
-    */
+    Character->bUseControllerRotationYaw = false;
 }

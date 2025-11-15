@@ -15,6 +15,7 @@
 class UShooterComp;
 class AProjectile;
 class US_Charging;
+class UFuelComponent;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -23,8 +24,8 @@ enum class ECharacterState : uint8
 	Aiming,
 	Charging,
 	Flying,
-	Boosting,
-	Jumping
+	FlyAim,
+	FlyCharge
 };
 
 UCLASS()
@@ -72,6 +73,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UShooterComp* Shooter;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UFuelComponent* Fuel;
+
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* JumpAction;
@@ -101,9 +105,6 @@ protected:
 	UAnimMontage* FireMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FlypreMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* BoostMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
@@ -111,6 +112,8 @@ protected:
 
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
+
+	FORCEINLINE class UFuelComponent* GetFuelComponent() const { return Fuel; }
 
 	FORCEINLINE class UCameraComponent* GetFollowCameraComponent() const { return FollowCamera; }
 
@@ -123,19 +126,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 1200.f;
-
-	// Fuel
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float MaxFuel = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float CurrentFuel = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelConsumeRate = 12.f;
-
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelRechargeRate = 6.f;
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
@@ -178,9 +168,16 @@ public:
 	void SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray);
 	void StopEffectArray(TArray<UParticleSystemComponent*>& ActiveArray);
 
-
 	virtual void BeginPlay() override;
-	void Boost();
+
+	void HandleSprintOrBoostInput(const FInputActionValue& Value);
+
+	void StartSprint();
+	void StopSprint();
+	void ToggleFlyingMode();
+
+	void TryBoost();
+	void ExecuteBoost();
 	void EndBoost();
 
 	void Move(const FInputActionValue& Value);
@@ -197,23 +194,15 @@ public:
 	void OnFireCompleted(const struct FInputActionInstance& Instance);
 	void PlayFireMontage();
 
-	void ActivateFlyingMode();
-	void ToggleFlyingMode();
-	void ConsumeFuel(float DeltaTime);
-	void RechargeFuel(float DeltaTime);
-
-
 	void StartCharge();
 
-public:
+	void ChangeState(ECharacterState NewState);
+protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void SetState(ECharacterState NewState);
-	void ChangeState(ECharacterState NewState);
 
-	void StartSprint();
-	void StopSprint();
 
 	ECharacterState GetCurrentState() const { return CurrentState; }
 
@@ -221,16 +210,15 @@ public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
 	bool bIsSprinting = false;
+	bool bIsFlyingMode = false;
+
 	float ChargeStartTime = 0.f;
 	float TargetSpeed = 0.f;
+
 public:
 	FTimerHandle BoostHandle;
 	FTimerHandle FlightDelayHandle;
 	FTimerHandle ChargeDelayHandle;
-
-	// 비행 관련 변수
-	float BoostFuelCost = 20.f;
-	bool bIsFlyingMode = false;
 
 	// 카메라 기본 거리
 	float DefaultArmLength = 300.f;

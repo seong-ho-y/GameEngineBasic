@@ -2,10 +2,13 @@
 
 
 #include "SpaceCharacter/SpaceCharacter.h"
+
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
+#include "Component/FuelComponent.h"
+
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
@@ -19,6 +22,9 @@
 #include <SpaceCharacter/States/S_Idle.h>
 #include <SpaceCharacter/States/S_Aim.h>
 #include <SpaceCharacter/States/S_Charging.h>
+#include <SpaceCharacter/States/S_Fly.h>
+#include <SpaceCharacter/States/S_FlyAim.h>
+#include <SpaceCharacter/States/S_FlyCharge.h>
 
 ASpaceCharacter::ASpaceCharacter()
 {
@@ -47,6 +53,7 @@ ASpaceCharacter::ASpaceCharacter()
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
+	Fuel = CreateDefaultSubobject<UFuelComponent>(TEXT("FuelComponent"));
 
 }
 
@@ -61,12 +68,13 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 		if (SprintAction)
 		{
-			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartSprint);
+			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Started, this, &ASpaceCharacter::HandleSprintOrBoostInput);
 			EnhancedInput->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASpaceCharacter::StopSprint);
 		}
 
 		if (LookAction)
 			EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Look);
+
 		if (JumpAction)
 		{
 			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &ASpaceCharacter::StartJump);
@@ -89,26 +97,8 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		}
 		if (BoostAction)
 		{
-			EnhancedInput->BindAction(BoostAction, ETriggerEvent::Started, this, &ASpaceCharacter::Boost);
+			EnhancedInput->BindAction(BoostAction, ETriggerEvent::Started, this, &ASpaceCharacter::HandleSprintOrBoostInput);
 		}
-	}
-}
-
-void ASpaceCharacter::ChangeState(ECharacterState NewState)
-{
-	if (CurrentState == NewState)
-		return;
-
-	if (CurrentStateObject)
-		CurrentStateObject->Exit(this);
-
-	CurrentState = NewState;
-
-	if (StateMap.Contains(NewState))
-	{
-		CurrentStateObject = StateMap[NewState];
-		if (CurrentStateObject)
-			CurrentStateObject->Enter(this);
 	}
 }
 
@@ -120,11 +110,12 @@ void ASpaceCharacter::BeginPlay()
 	if (StateMap.Num() == 0)
 	{
 		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
-		StateMap.Add(ECharacterState::Aiming, NewObject<US_Aim>(this));
-		if (ChargingStateClass) {
+		StateMap.Add(ECharacterState::Aiming, NewObject<US_Aim>(this)); 
+		if (ChargingStateClass)
 			StateMap.Add(ECharacterState::Charging, NewObject<US_Charging>(this, ChargingStateClass));
-		}
-
+		StateMap.Add(ECharacterState::Flying, NewObject<US_Fly>(this));
+		StateMap.Add(ECharacterState::FlyAim, NewObject<US_FlyAim>(this));
+		StateMap.Add(ECharacterState::FlyCharge, NewObject<US_FlyCharge>(this));
 	}
 
 	// 기본 상태 설정
@@ -149,35 +140,14 @@ void ASpaceCharacter::Tick(float DeltaTime)
 		float NewSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, SprintInterpSpeed);
 		Move->MaxWalkSpeed = NewSpeed;
 	}
-
-	if (bIsFlyingMode)
-		ConsumeFuel(DeltaTime);
-	else
-		RechargeFuel(DeltaTime);
-}
-
-void ASpaceCharacter::StartSprint()
-{
-	bIsSprinting = true;
-	TargetSpeed = RunSpeed; // 목표 속도만 설정 (즉시 변경 X)
-	SpawnEffectArray(SprintEffect, ActiveSprintEffects);
-}
-
-void ASpaceCharacter::StopSprint()
-{
-	bIsSprinting = false;
-	TargetSpeed = WalkSpeed; // 감속 목표 설정
-	StopEffectArray(ActiveSprintEffects);
 }
 
 void ASpaceCharacter::SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray)
 {
 	if (!Effect || !GetMesh()) return;
 
-	// 기존 효과 제거
 	StopEffectArray(ActiveArray);
 
-	// 날개 좌우에 부착
 	ActiveArray.Add(
 		UGameplayStatics::SpawnEmitterAttached(
 			Effect,
@@ -213,53 +183,6 @@ void ASpaceCharacter::StopEffectArray(TArray<UParticleSystemComponent*>& ActiveA
 	ActiveArray.Empty();
 }
 
-void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
-{
-	if (CurrentState != ECharacterState::Aiming)
-		return;
-
-	// [수정] 즉시 상태를 바꾸는 대신, ChargeStartDelay 이후에 StartCharge 함수를
-	// 실행하도록 타이머를 설정합니다.
-	GetWorldTimerManager().SetTimer(
-		ChargeDelayHandle,
-		this,
-		&ASpaceCharacter::StartCharge,
-		ChargeStartDelay,
-		false
-	);
-}
-
-void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
-{
-	// 1. "탭 발사" (버튼을 0.2초 안에 뗌)
-	// 만약 ChargeDelayHandle 타이머가 여전히 활성화 상태라면 (즉, StartCharge가 호출되기 전)
-	if (GetWorldTimerManager().IsTimerActive(ChargeDelayHandle))
-	{
-		// 타이머를 취소해서 Charge 상태로 들어가지 않도록 합니다.
-		GetWorldTimerManager().ClearTimer(ChargeDelayHandle);
-
-		// 여기가 "탭 발사" 로직입니다.
-		// (산탄총, 단발권총 등)
-		if (Shooter && CurrentState == ECharacterState::Aiming)
-		{
-			Shooter->SetFireDirection(FollowCamera->GetForwardVector());
-			Shooter->TryFire();
-			PlayFireMontage(); // 필요시 발사 몽타주 재생
-		}
-	}
-	// 2. "차지 발사" (버튼을 0.2초 이상 누르다 뗌)
-	// 만약 현재 상태가 Charging이라면 (즉, StartCharge가 이미 호출됨)
-	else if (CurrentState == ECharacterState::Charging)
-	{
-		// Aiming 상태로 복귀시킵니다.
-		// 이 호출이 S_Charging::Exit_Implementation을 트리거하여
-		// 충전된 발사체를 발사하게 됩니다.
-		ChangeState(ECharacterState::Aiming);
-		PlayFireMontage();
-
-	}
-}
-
 void ASpaceCharacter::SetState(ECharacterState NewState)
 {
 	if (CurrentState == NewState) return;
@@ -281,6 +204,23 @@ void ASpaceCharacter::SetState(ECharacterState NewState)
 	CurrentState = NewState;
 }
 
+void ASpaceCharacter::ChangeState(ECharacterState NewState)
+{
+	if (CurrentState == NewState)
+		return;
+
+	if (CurrentStateObject)
+		CurrentStateObject->Exit(this);
+
+	CurrentState = NewState;
+
+	if (StateMap.Contains(NewState))
+	{
+		CurrentStateObject = StateMap[NewState];
+		if (CurrentStateObject)
+			CurrentStateObject->Enter(this);
+	}
+}
 
 void ASpaceCharacter::Move(const FInputActionValue& Value)
 {
@@ -290,7 +230,7 @@ void ASpaceCharacter::Move(const FInputActionValue& Value)
 		const FRotator ControlRotation = Controller->GetControlRotation();
 		FVector ForwardDir, RightDir;
 
-		if (bIsFlyingMode)
+		if (CurrentState == ECharacterState::Flying || bIsFlyingMode)
 		{
 			ForwardDir = ControlRotation.Vector();
 			RightDir = FRotationMatrix(ControlRotation).GetUnitAxis(EAxis::Y);
@@ -315,26 +255,22 @@ void ASpaceCharacter::Look(const FInputActionValue& Value)
 
 void ASpaceCharacter::StartJump()
 {
-	if (bIsFlyingMode)
+	if (CurrentState == ECharacterState::Flying || bIsFlyingMode)
 	{
+		UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+
+		if (Anim && FlyUpMontage && Anim->Montage_IsPlaying(FlyUpMontage))
+			return;
+
 		const float UpLaunchPower = 2000.f;
 
 		LaunchCharacter(FVector::UpVector * UpLaunchPower, false, false);
 
-		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-		{
-			if (FlyUpMontage)
-				Anim->Montage_Play(FlyUpMontage);
+		
+		if (FlyUpMontage) {
+			Anim->Montage_Play(FlyUpMontage);
+			return;
 		}
-		GetWorldTimerManager().SetTimer(
-			FlightDelayHandle,
-			this,
-			&ASpaceCharacter::ActivateFlyingMode,
-			0.5f,
-			false
-		);
-
-		return;
 	}
 
 	Jump();
@@ -344,7 +280,7 @@ void ASpaceCharacter::StopJump()
 {
 	StopJumping();
 
-	if (bIsFlyingMode)
+	if (CurrentState == ECharacterState::Flying)
 	{
 		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 		{
@@ -373,100 +309,192 @@ void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
 	}
 }
 
+void ASpaceCharacter::ToggleFlyingMode()
+{
+	if (CurrentState == ECharacterState::Flying)
+	{
+		ChangeState(ECharacterState::Locomotion);
+		return;
+	}
+	if (!Fuel || !Fuel->CanFly())
+	{
+		return;
+	}
+
+	ChangeState(ECharacterState::Flying);
+}
+
+void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
+{
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!Move) return;
+
+	const bool bIsInAir = Move->IsFalling();
+	const bool bIsFlying = (CurrentState == ECharacterState::Flying) || bIsFlyingMode;
+
+	// 공중이거나 비행 중일 때는 Boost 실행
+	if (bIsInAir || bIsFlying)
+	{
+		TryBoost();
+		return;
+	}
+
+	StartSprint();
+}
+
+void ASpaceCharacter::StartSprint()
+{
+	bIsSprinting = true;
+	TargetSpeed = RunSpeed; // 목표 속도만 설정 (즉시 변경 X)
+	SpawnEffectArray(SprintEffect, ActiveSprintEffects);
+}
+
+void ASpaceCharacter::StopSprint()
+{
+	bIsSprinting = false;
+	TargetSpeed = WalkSpeed; // 감속 목표 설정
+	StopEffectArray(ActiveSprintEffects);
+}
+
+
+void ASpaceCharacter::TryBoost()
+{
+	if (bIsBoosting)
+		return;
+	// 공중 또는 Flying 상태인지 체크
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	bool bIsInAir = Move->IsFalling();
+	bool bIsFlying = (CurrentState == ECharacterState::Flying);
+
+	if (!bIsInAir && !bIsFlying)
+		return;     // 지상이면 Boost 금지 → Sprint로 처리됨
+
+	// 연료 체크
+	if (!Fuel->CanBoost())
+		return;
+
+	ExecuteBoost();
+}
+
+void ASpaceCharacter::ExecuteBoost()
+{
+	Fuel->Consume(Fuel->GetBoostCost());
+	bIsBoosting = true;
+
+	FVector InputDir = GetLastMovementInputVector();
+	FVector BoostDir = InputDir.GetSafeNormal();
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->AddImpulse(BoostDir * BoostStrength, true);
+	}
+
+	if (BoostMontage)
+		GetMesh()->GetAnimInstance()->Montage_Play(BoostMontage);
+
+	GetWorldTimerManager().SetTimer(
+		BoostHandle,
+		this,
+		&ASpaceCharacter::EndBoost,
+		BoostDuration,
+		false
+	);
+}
+
+void ASpaceCharacter::EndBoost()
+{
+	bIsBoosting = false;
+}
+
 void ASpaceCharacter::StartAim()
 {
-	ChangeState(ECharacterState::Aiming);
+	bIsAiming = true;
+	bIsCameraTransitioning = true;
+
+	if (CurrentState == ECharacterState::Flying || bIsFlyingMode)
+	{
+		ChangeState(ECharacterState::FlyAim);
+	}
+	else
+	{
+		ChangeState(ECharacterState::Aiming);
+	}
 }
 
 void ASpaceCharacter::StopAim()
 {
-	ChangeState(ECharacterState::Locomotion);
+	bIsAiming = false;
+	bIsCameraTransitioning = true; // 카메라 줌 아웃을 위해 트랜지션 시작
+
+	if (CurrentState == ECharacterState::FlyAim ||
+		CurrentState == ECharacterState::FlyCharge)
+	{
+		ChangeState(ECharacterState::Flying);
+	}
+	else
+	{
+		ChangeState(ECharacterState::Locomotion);
+	}
 }
 
-void ASpaceCharacter::ToggleFlyingMode()
+void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Try to fly!"));
-	UCharacterMovementComponent* Move = GetCharacterMovement();
-
-	if (bIsFlyingMode)
+	// 비행 
+	if (CurrentState == ECharacterState::FlyAim)
 	{
-		bIsFlyingMode = false;
-		Move->SetMovementMode(MOVE_Walking);
-		Move->GravityScale = 1.0f;
-		Move->BrakingFrictionFactor = 2.0f;
-		Move->AirControl = 0.2f;
-		Move->MaxWalkSpeed = 600.f;
+		ChangeState(ECharacterState::FlyCharge);
 		return;
 	}
 
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	// 지상
+	if (CurrentState != ECharacterState::Aiming)
+		return;
+
+	// 지상 Aim에서는 기존처럼 "차지 지연 타이머" 작동
+	GetWorldTimerManager().SetTimer(
+		ChargeDelayHandle,
+		this,
+		&ASpaceCharacter::StartCharge,
+		ChargeStartDelay,
+		false
+	);
+}
+
+void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
+{
+	if (CurrentState == ECharacterState::FlyAim ||
+		CurrentState == ECharacterState::FlyCharge)
 	{
-		if (FlypreMontage)
-			AnimInstance->Montage_Play(FlypreMontage);
+		// 비행에서는 FireCompleted가 의미 없음
+		return;
 	}
 
-	if (CurrentFuel > 5.f)
+	// 만약 ChargeDelayHandle 타이머가 여전히 활성화 상태라면 (즉, StartCharge가 호출되기 전)
+	if (GetWorldTimerManager().IsTimerActive(ChargeDelayHandle))
 	{
-		if (!GetWorldTimerManager().IsTimerActive(FlightDelayHandle))
+		// 타이머를 취소해서 Charge 상태로 들어가지 않도록 합니다.
+		GetWorldTimerManager().ClearTimer(ChargeDelayHandle);
+
+		// 여기가 "탭 발사" 로직입니다.
+		// (산탄총, 단발권총 등)
+		if (Shooter && CurrentState == ECharacterState::Aiming)
 		{
-			GetWorldTimerManager().SetTimer(
-				FlightDelayHandle,
-				this,
-				&ASpaceCharacter::ActivateFlyingMode,
-				1.0f,
-				false
-			);
+			Shooter->SetFireDirection(FollowCamera->GetForwardVector());
+			Shooter->TryFire();
+			PlayFireMontage(); // 필요시 발사 몽타주 재생
 		}
-	}
-}
-
-void ASpaceCharacter::ActivateFlyingMode()
-{
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("fly!"));
-
-	if (CurrentFuel <= 5.f)
-	{
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Not enough fuel to fly!"));
 		return;
 	}
-
-	UCharacterMovementComponent* Move = GetCharacterMovement();
-	bIsFlyingMode = true;
-
-	Move->SetMovementMode(MOVE_Flying);
-	Move->GravityScale = 0.05f;
-	Move->BrakingFrictionFactor = 0.0f;
-	Move->AirControl = 1.0f;
-	Move->MaxFlySpeed = 150000.f;
-}
-
-void ASpaceCharacter::ConsumeFuel(float DeltaTime)
-{
-	CurrentFuel = FMath::Max(0.f, CurrentFuel - FuelConsumeRate * DeltaTime);
-
-	std::stringstream ss;
-	ss << "Current Fuel: " << CurrentFuel << "\n";
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Yellow, ss.str().c_str());
-
-	if (CurrentFuel <= 0.f)
+	// 만약 현재 상태가 Charging이라면 (즉, StartCharge가 이미 호출됨)
+	else if (CurrentState == ECharacterState::Charging)
 	{
-		bIsFlyingMode = false;
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		// Aiming 상태로 복귀시킵니다.
+		// 이 호출이 S_Charging::Exit_Implementation을 트리거하여
+		// 충전된 발사체를 발사하게 됩니다.
+		ChangeState(ECharacterState::Aiming);
+		PlayFireMontage();
+		return;
 	}
-}
-
-void ASpaceCharacter::RechargeFuel(float DeltaTime)
-{
-	CurrentFuel = FMath::Min(MaxFuel, CurrentFuel + FuelRechargeRate * DeltaTime);
-}
-
-void ASpaceCharacter::StartCharge()
-{
-	ChangeState(ECharacterState::Charging);
 }
 
 void ASpaceCharacter::PlayFireMontage()
@@ -481,36 +509,7 @@ void ASpaceCharacter::PlayFireMontage()
 	}
 }
 
-void ASpaceCharacter::Boost()
+void ASpaceCharacter::StartCharge()
 {
-	if (CurrentFuel < BoostFuelCost || bIsAiming)
-		return;
-
-	if (!bIsFlyingMode)
-		ActivateFlyingMode();
-
-
-	FVector InputDir = GetLastMovementInputVector();
-	FVector BoostDir = InputDir.GetSafeNormal();
-	bIsBoosting = true;
-
-	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	if (MoveComp)
-	{
-		MoveComp->AddImpulse(BoostDir * BoostStrength, true);
-	}
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		if (BoostMontage)
-			AnimInstance->Montage_Play(BoostMontage);
-	}
-
-	GetWorldTimerManager().SetTimer(BoostHandle, this, &ASpaceCharacter::EndBoost, BoostDuration, false);
-	CurrentFuel -= BoostFuelCost;
-}
-
-void ASpaceCharacter::EndBoost()
-{
-	bIsBoosting = false;
+	ChangeState(ECharacterState::Charging);
 }

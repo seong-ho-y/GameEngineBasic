@@ -22,6 +22,8 @@ void US_Charging::Enter_Implementation(ASpaceCharacter* Character)
         Character->ChangeState(ECharacterState::Locomotion);
         return;
     }
+    Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+    Character->bUseControllerRotationYaw = true;
 
     bExploded = false;
     bInputLocked = false;
@@ -29,7 +31,6 @@ void US_Charging::Enter_Implementation(ASpaceCharacter* Character)
     ChargeStartTime = Character->GetWorld()->GetTimeSeconds();
     Character->bIsCharging = true;
     Character->CurrentChargeTime = 0.f;
-
 
     if (Character->ChargingEffect)
     {
@@ -104,8 +105,8 @@ void US_Charging::Tick_Implementation(ASpaceCharacter* Character, float DeltaTim
         }
 
         UE_LOG(LogTemp, Warning, TEXT("Player exploded after overcharge!"));
+        Character->bIsAiming = false;
         Character->ChangeState(ECharacterState::Locomotion);
-
     }
 
     if (Elapsed >= Character->MaxChargeTime)
