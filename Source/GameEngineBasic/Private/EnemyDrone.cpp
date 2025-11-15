@@ -6,14 +6,16 @@
 AEnemyDrone::AEnemyDrone()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
 	// 공중 이동 전용 모드
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
-	GetCharacterMovement()->GravityScale = 0.f;
-
-	// Character 회전 기능은 끔
+	DroneMoveComp = CreateDefaultSubobject<UDroneMovementComponent>(TEXT("DroneMoveComp"));
+	// CharacterMovement 제거
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->DestroyComponent();
+	}
 	bUseControllerRotationYaw = false;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+
+
 }
 
 void AEnemyDrone::BeginPlay()

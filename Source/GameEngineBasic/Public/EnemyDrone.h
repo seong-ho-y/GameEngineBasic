@@ -1,5 +1,6 @@
 #pragma once
 #include "CoreMinimal.h"
+#include "DroneMovementComponent.h"
 #include "EnemyHuman.h"
 #include "EnemyDrone.generated.h"
 
@@ -13,8 +14,14 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UDroneMovementComponent* DroneMoveComp;
 
+
+	
 protected:
+
 
 	/* ============ Hover System ============ */
 
