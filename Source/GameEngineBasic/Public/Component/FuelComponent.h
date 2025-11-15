@@ -35,6 +35,10 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Fuel|Boost")
     float BoostCost = 20.f;
 
+    UFUNCTION(BlueprintCallable, Category = "Flight|Fuel")
+    float GetFuelPercent() const
+        return (MaxFuel > 0) ? CurrentFuel / MaxFuel : 0.f;
+
 public:
     float GetFuel() const { return CurrentFuel; }
     float GetMaxFuel() const { return MaxFuel; }
