@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ArcGaugeWidget.h"
 #include "TargetingSystemComponent.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/ProgressBar.h"
@@ -26,39 +27,42 @@ public:
 protected:
 	
 	UPROPERTY(meta = (BindWidget))
-	UProgressBar* EnemyHealthBar;
+	UProgressBar* EnemyHealthGauge;
 
 	UPROPERTY(meta = (BindWidget))
-	UProgressBar* AmmoBar;
+	UProgressBar* EnemyStunGauge;
+
+	UPROPERTY(meta = (BindWidget))
+	UArcGaugeWidget* AmmoGauge;
 	
 	UPROPERTY(meta = (BindWidget))
-	UProgressBar* FuelBar;
+	UArcGaugeWidget* EnergyGauge;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	UImage* CentralCircleImage;
+
+
 	
-private:
+	UPROPERTY()
+	UTargetingSystemComponent* TargetingComp;
+	
 	UPROPERTY()
 	UTargetingSystemComponent* CachedTarget;
-
-	UTargetingSystemComponent* GetTargetingComp();
-	UFUNCTION()
-	void HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
-	UFUNCTION()
-	void HandleEnergyChanged(float CurrentEN, float MaxEN);
 
 	UPROPERTY()
 	APawn* OwningPawn;
 	
 	UPROPERTY()
-	UTargetingSystemComponent* TargetingComp;
-
-	UPROPERTY()
 	UHealthComp* BoundEnemyHealthComp;
 
-	// 보간용 값
+	UPROPERTY()
+	UEnemyShieldComponent* BoundEnemyShieldComp;
+
 	float TargetEnemyHPRatio = 0.f;
 	float DisplayEnemyHPRatio = 0.f;
+	float CurrentStunRatio = 0.f;
+	
+	void CacheReferences();
 
 	UFUNCTION()
 	void HandleTargetChanged(AEnemyHuman* NewTarget);
@@ -66,5 +70,18 @@ private:
 	UFUNCTION()
 	void HandleEnemyHealthChanged(float NewHealth, float MaxHealth);
 
-	void CacheReferences();
+	UFUNCTION()
+	void HandleEnemyShieldDamaged();
+
+	UFUNCTION()
+	void HandleEnemyShieldRestored();
+
+	UFUNCTION()
+	void HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
+
+	UFUNCTION()
+	void HandleEnergyChanged(float CurrentEN, float MaxEN);
+
+public:
+	UTargetingSystemComponent* GetTargetingComp();
 };

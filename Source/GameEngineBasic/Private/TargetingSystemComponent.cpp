@@ -25,8 +25,7 @@ UTargetingSystemComponent::UTargetingSystemComponent()
 void UTargetingSystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
+    PrimaryComponentTick.SetTickFunctionEnable(true);
 
 }
 

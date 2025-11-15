@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AnimNodes/AnimNode_RandomPlayer.h"
 #include "Components/ActorComponent.h"
 #include "EnemyShieldComponent.generated.h"
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnShieldBreak);
@@ -33,6 +34,8 @@ public:
 	bool IsShieldBroken() const {return bIsShieldBroken;}
 	bool CanBeExecuted() const {return bCanExecuted;}
 	float GetShieldRatio() const {return CurrentShield/MaxShield;}
+	float GetCurrentShield() const {return CurrentShield;}
+	float GetMaxShield() const {return MaxShield;}
 
 	/** 쉴드 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category="Shield|Event")
