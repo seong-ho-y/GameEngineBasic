@@ -15,6 +15,9 @@ void US_Idle::Enter_Implementation(ASpaceCharacter* Character)
     Character->GetCharacterMovement()->bOrientRotationToMovement = true;
     Character->bUseControllerRotationYaw = false;
 
+    Character->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+    Character->GetCharacterMovement()->GravityScale = 1.f;
+
     // 카메라 줌 아웃을 위해 트랜지션 시작
     if (Character->GetCameraBoom()->TargetArmLength != Character->DefaultArmLength ||
         Character->GetCameraBoom()->SocketOffset != Character->DefaultSocketOffset)
