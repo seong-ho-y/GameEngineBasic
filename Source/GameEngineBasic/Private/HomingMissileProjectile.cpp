@@ -64,38 +64,69 @@ void AHomingMissileProjectile::Tick(float DeltaSeconds)
     if (!HomingTarget) return;
 
     FVector ToTarget = (HomingTarget->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-    FVector CurrentVel = ProjectileMovement->Velocity.GetSafeNormal();
+    FVector OldVel = ProjectileMovement->Velocity;
+    FVector OldDir = OldVel.GetSafeNormal();
+
+    FVector NewVelocity = OldVel;
+
+    // ===========================================================
+    // 1) ARC / DIRECT 기본 방향 계산
+    // ===========================================================
+    bool bAllowHoming = true;
 
     if (HomingType == EHomingType::ArcHoming)
     {
         if (bIsArcPhase)
         {
-            // 높이 도달 시 유도 시작
             if (GetActorLocation().Z - CachedStartZ >= ArcHeight * 0.8f)
-            {
                 bIsArcPhase = false;
-            }
+            bAllowHoming = !bIsArcPhase;
         }
+    }
 
-        // 유도 중이면 방향 보간
-        if (!bIsArcPhase)
-        {
-            FVector NewDir = FMath::VInterpTo(CurrentVel, ToTarget, DeltaSeconds, TurnInterpSpeed).GetSafeNormal();
-            ProjectileMovement->Velocity = NewDir * HomingSpeed;
-        }
-    }
-    else // Direct Homing
+    // ===========================================================
+    // 2) 가속도 적용 (AccelSpeed > 0일 때만)
+    // ===========================================================
+    if (bAllowHoming)
     {
-        if (ProjectileMovement->ProjectileGravityScale == 0.f)
+        if (AccelSpeed > 0.f)
         {
-            FVector NewDir = FMath::VInterpTo(CurrentVel, ToTarget, DeltaSeconds, TurnInterpSpeed).GetSafeNormal();
-            ProjectileMovement->Velocity = NewDir * HomingSpeed;
+            // 방향은 기존 OldDir 유지, 속력만 증가
+            float CurrentSpeed = OldVel.Size();
+            float NewSpeed = CurrentSpeed + (AccelSpeed * DeltaSeconds);
+            
+
+            FVector NewDir =
+                FMath::VInterpTo(OldDir, ToTarget, DeltaSeconds, TurnInterpSpeed).GetSafeNormal();
+
+            NewVelocity = NewDir * NewSpeed;
+        }
+        else
+        {
+            // AccelSpeed == 0 → 기존 방식
+            FVector NewDir =
+                FMath::VInterpTo(OldDir, ToTarget, DeltaSeconds, TurnInterpSpeed).GetSafeNormal();
+            NewVelocity = NewDir * HomingSpeed;
         }
     }
+
+    // ===========================================================
+    // 3) 중력 중이면 방향 변경 X (Direct Homing 전용)
+    // ===========================================================
+    if (HomingType == EHomingType::DirectHoming &&
+        ProjectileMovement->ProjectileGravityScale > 0.f)
+    {
+        // 중력 떨어지는 동안에는 유도 중지
+        NewVelocity = OldVel;
+    }
+
+    // 적용
+    ProjectileMovement->Velocity = NewVelocity;
 
     // 회전 보정
     SetActorRotation(ProjectileMovement->Velocity.Rotation());
 }
+
 
 void AHomingMissileProjectile::SetHomingTarget(AActor* Target)
 {

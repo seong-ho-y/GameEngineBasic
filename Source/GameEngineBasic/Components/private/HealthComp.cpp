@@ -163,7 +163,7 @@ void UHealthComp::ApplyHealthDamage(float Amount)
 	CurrentHealth = FMath::Clamp(CurrentHealth - Amount, 0, MaxHealth);
 
 	OnHealthChanged_Ver2.Broadcast(CurrentHealth, MaxHealth);
-	if (CurrentHealth == 0)
+	if (CurrentHealth <= 0)
 		OnDeath.Broadcast(GetOwner());
 
 	UE_LOG(LogTemp, Warning, TEXT("[Enemy] Health Take Damaged : %f | Current Health : %f"),Amount, CurrentHealth);
