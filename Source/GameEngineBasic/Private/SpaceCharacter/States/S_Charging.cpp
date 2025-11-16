@@ -3,12 +3,15 @@
 
 #include "SpaceCharacter/States/S_Charging.h"
 #include "SpaceCharacter/SpaceCharacter.h"
+
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Particles/ParticleSystemComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+
+
 #include "Animation/AnimInstance.h"
 #include "Engine/SkeletalMeshSocket.h"
 

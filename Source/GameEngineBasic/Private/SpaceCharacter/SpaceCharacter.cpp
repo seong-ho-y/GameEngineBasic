@@ -8,10 +8,13 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Component/FuelComponent.h"
+#include "Component/WingComponent.h"
+#include "Component/ShieldComp.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
 
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
 
 #include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -23,6 +26,7 @@
 #include <SpaceCharacter/States/S_Aim.h>
 #include <SpaceCharacter/States/S_Charging.h>
 #include <SpaceCharacter/States/S_Fly.h>
+#include <SpaceCharacter/States/S_Boost.h>
 #include <SpaceCharacter/States/S_FlyAim.h>
 #include <SpaceCharacter/States/S_FlyCharge.h>
 
@@ -53,7 +57,10 @@ ASpaceCharacter::ASpaceCharacter()
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
-	Fuel = CreateDefaultSubobject<UFuelComponent>(TEXT("FuelComponent"));
+	Fuel = CreateDefaultSubobject<UFuelComponent>(TEXT("FuelComp"));
+	WingComp = CreateDefaultSubobject<UWingComponent>(TEXT("WingComp"));
+	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
+	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
 
 }
 
@@ -74,6 +81,9 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 		if (LookAction)
 			EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Look);
+
+		if(ShieldAction)
+			EnhancedInput->BindAction(ShieldAction, ETriggerEvent::Started, this, &ASpaceCharacter::OnShieldKeyPressed);
 
 		if (JumpAction)
 		{
@@ -105,7 +115,9 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 void ASpaceCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
 
 	if (StateMap.Num() == 0)
 	{
@@ -116,12 +128,22 @@ void ASpaceCharacter::BeginPlay()
 		StateMap.Add(ECharacterState::Flying, NewObject<US_Fly>(this));
 		StateMap.Add(ECharacterState::FlyAim, NewObject<US_FlyAim>(this));
 		StateMap.Add(ECharacterState::FlyCharge, NewObject<US_FlyCharge>(this));
+		StateMap.Add(ECharacterState::Boosting, NewObject<US_Boost>(this));
 	}
 
 	// 기본 상태 설정
 	ChangeState(ECharacterState::Locomotion);
 	TargetSpeed = WalkSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	if (ShieldComp)
+	{
+		ShieldComp->OnShieldActivated.AddDynamic(this, &ASpaceCharacter::OnShieldActivated);
+		ShieldComp->OnShieldDeactivated.AddDynamic(this, &ASpaceCharacter::OnShieldDeactivated);
+	}
+	if (WingComp)
+		WingComp->SetMesh(GetMesh());
+
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
@@ -140,47 +162,6 @@ void ASpaceCharacter::Tick(float DeltaTime)
 		float NewSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, SprintInterpSpeed);
 		Move->MaxWalkSpeed = NewSpeed;
 	}
-}
-
-void ASpaceCharacter::SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray)
-{
-	if (!Effect || !GetMesh()) return;
-
-	StopEffectArray(ActiveArray);
-
-	ActiveArray.Add(
-		UGameplayStatics::SpawnEmitterAttached(
-			Effect,
-			GetMesh(),
-			TEXT("Wing_L"),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::SnapToTarget,
-			true
-		)
-	);
-
-	ActiveArray.Add(
-		UGameplayStatics::SpawnEmitterAttached(
-			Effect,
-			GetMesh(),
-			TEXT("Wing_R"),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::SnapToTarget,
-			true
-		)
-	);
-}
-
-void ASpaceCharacter::StopEffectArray(TArray<UParticleSystemComponent*>& ActiveArray)
-{
-	for (auto* Comp : ActiveArray)
-	{
-		if (Comp)
-			Comp->DeactivateSystem();
-	}
-	ActiveArray.Empty();
 }
 
 void ASpaceCharacter::SetState(ECharacterState NewState)
@@ -269,6 +250,7 @@ void ASpaceCharacter::StartJump()
 		
 		if (FlyUpMontage) {
 			Anim->Montage_Play(FlyUpMontage);
+			WingComp->PlayFly();
 			return;
 		}
 	}
@@ -285,6 +267,11 @@ void ASpaceCharacter::StopJump()
 		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 		{
 			Anim->Montage_Stop(0.1f, FlyUpMontage);
+
+			if (bIsBoosting)
+				return;
+
+			WingComp->StopAll();
 		}
 	}
 }
@@ -335,7 +322,7 @@ void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
 	// 공중이거나 비행 중일 때는 Boost 실행
 	if (bIsInAir || bIsFlying)
 	{
-		TryBoost();
+		ChangeState(ECharacterState::Boosting);
 		return;
 	}
 
@@ -344,66 +331,18 @@ void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
 
 void ASpaceCharacter::StartSprint()
 {
+	if (bIsBoosting) return;
 	bIsSprinting = true;
-	TargetSpeed = RunSpeed; // 목표 속도만 설정 (즉시 변경 X)
-	SpawnEffectArray(SprintEffect, ActiveSprintEffects);
+	TargetSpeed = RunSpeed;
+	WingComp->PlaySprint();
 }
 
 void ASpaceCharacter::StopSprint()
 {
+	if(bIsBoosting) return;
 	bIsSprinting = false;
-	TargetSpeed = WalkSpeed; // 감속 목표 설정
-	StopEffectArray(ActiveSprintEffects);
-}
-
-
-void ASpaceCharacter::TryBoost()
-{
-	if (bIsBoosting)
-		return;
-	// 공중 또는 Flying 상태인지 체크
-	UCharacterMovementComponent* Move = GetCharacterMovement();
-	bool bIsInAir = Move->IsFalling();
-	bool bIsFlying = (CurrentState == ECharacterState::Flying);
-
-	if (!bIsInAir && !bIsFlying)
-		return;     // 지상이면 Boost 금지 → Sprint로 처리됨
-
-	// 연료 체크
-	if (!Fuel->CanBoost())
-		return;
-
-	ExecuteBoost();
-}
-
-void ASpaceCharacter::ExecuteBoost()
-{
-	Fuel->Consume(Fuel->GetBoostCost());
-	bIsBoosting = true;
-
-	FVector InputDir = GetLastMovementInputVector();
-	FVector BoostDir = InputDir.GetSafeNormal();
-
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-	{
-		MoveComp->AddImpulse(BoostDir * BoostStrength, true);
-	}
-
-	if (BoostMontage)
-		GetMesh()->GetAnimInstance()->Montage_Play(BoostMontage);
-
-	GetWorldTimerManager().SetTimer(
-		BoostHandle,
-		this,
-		&ASpaceCharacter::EndBoost,
-		BoostDuration,
-		false
-	);
-}
-
-void ASpaceCharacter::EndBoost()
-{
-	bIsBoosting = false;
+	TargetSpeed = WalkSpeed;
+	WingComp->StopAll();
 }
 
 void ASpaceCharacter::StartAim()
@@ -512,4 +451,38 @@ void ASpaceCharacter::PlayFireMontage()
 void ASpaceCharacter::StartCharge()
 {
 	ChangeState(ECharacterState::Charging);
+}
+
+void ASpaceCharacter::OnShieldActivated()
+{
+	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+	{
+		if (ShieldMontage && !Anim->Montage_IsPlaying(ShieldMontage))
+			Anim->Montage_Play(ShieldMontage);
+	}
+
+	if (ShieldEffect)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			ShieldEffect,
+			GetMesh(),
+			FName("Shield") 
+		);
+	}
+}
+
+void ASpaceCharacter::OnShieldDeactivated()
+{
+	// 쉴드 꺼질 때 필요한 처리
+	// (예: 파티클 중지, 효과 제거 등)
+
+	// StopAll 파티클을 사용하려면, 
+	// SpawnEmitterAttached의 return 값을 저장하는 방식으로
+	// “활성 파티클 포인터”를 보관하는 패턴으로 확장 가능
+}
+
+void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*/)
+{
+	if (ShieldComp)
+		ShieldComp->ActivateShield();
 }

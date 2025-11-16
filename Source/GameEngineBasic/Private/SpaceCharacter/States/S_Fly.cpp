@@ -6,6 +6,7 @@
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "Component/FuelComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Component/WingComponent.h"
 
 
 
@@ -27,11 +28,16 @@ void US_Fly::Enter_Implementation(ASpaceCharacter* Character)
 	Move->GravityScale = 0.05f;
 	Move->BrakingFrictionFactor = 15.f;
 	Move->AirControl = 1.f;
+
+	if (Character->GetWingComponent())
+		Character->GetWingComponent()->PlayFly();
 }
 
 void US_Fly::Tick_Implementation(ASpaceCharacter* Character, float DeltaTime)
 {
 	if (!Character) return;
+	if (Character->bIsBoosting) return;
+
 	auto* Move = Character->GetCharacterMovement();
 	Character->GetFuelComponent()->ConsumeFlying(DeltaTime);
 
@@ -64,4 +70,7 @@ void US_Fly::Exit_Implementation(ASpaceCharacter* Character)
 	Move->GravityScale = 1.f;
 	Move->BrakingFrictionFactor = 2.f;
 	Move->AirControl = 0.2f;
+
+	if (Character->GetWingComponent())
+		Character->GetWingComponent()->StopAll();
 }

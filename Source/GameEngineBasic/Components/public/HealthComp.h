@@ -28,7 +28,6 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// ���� ���� ��� �ð�(���� �ð�, ��). �� �ð��� ������ +1
 	float NextRegenTime = -FLT_MAX;
 
 public:	
@@ -39,7 +38,6 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Shield")
 	int32 MaxShield = 5;
 
-	// �ǰ� �� ȸ�� ���۱��� ���
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shield")
 	float ShieldRegenDelay = 3.f;   
 
@@ -96,6 +94,13 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ApplyHealthDamage(float Amount);
+
+	// Shiled Comp에서 호출할 수 있도록
+	UFUNCTION(BlueprintCallable)
+	void ForceBroadcast()
+	{
+		BroadcastChanged();
+	}
 
 	// ========== DELEGATES ==========
 	UPROPERTY(BlueprintAssignable, Category="Health")

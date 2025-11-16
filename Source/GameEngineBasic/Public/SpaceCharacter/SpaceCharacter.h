@@ -13,9 +13,13 @@
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
+class UHealthComp;
+class UShieldComp;
+class UFuelComponent;
+class UWingComponent;
+
 class AProjectile;
 class US_Charging;
-class UFuelComponent;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -24,6 +28,7 @@ enum class ECharacterState : uint8
 	Aiming,
 	Charging,
 	Flying,
+	Boosting,
 	FlyAim,
 	FlyCharge
 };
@@ -46,23 +51,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
-	// --- Sprint용 ---
-	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
-	UParticleSystem* SprintEffect;
-
-	UPROPERTY(VisibleAnywhere, Category = "VFX|Sprint")
-	TArray<UParticleSystemComponent*> ActiveSprintEffects;
-
-	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
-	float SprintInterpSpeed = 5.0f;
-
-	// --- Flying용 ---
-	UPROPERTY(EditAnywhere, Category = "VFX|Flying")
-	UParticleSystem* FlyingEffect;
-
-	UPROPERTY(VisibleAnywhere, Category = "VFX|Flying")
-	TArray<UParticleSystemComponent*> ActiveFlyingEffects;
-
 	// Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	USpringArmComponent* CameraBoom;
@@ -76,12 +64,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UFuelComponent* Fuel;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UWingComponent* WingComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHealthComp* HealthComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UShieldComp* ShieldComp;
+
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* JumpAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* MoveAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* BoostAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* SprintAction;
@@ -99,16 +99,7 @@ protected:
 	UInputAction* FireAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
-	UInputAction* BoostAction;
-
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FireMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* BoostMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FlyUpMontage;
+	UInputAction* ShieldAction;
 
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
@@ -119,7 +110,37 @@ public:
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	FORCEINLINE class UWingComponent* GetWingComponent() const { return WingComp; }
+
+	FORCEINLINE class UHealthComp* GetHealthComponent() const { return HealthComp; }
+
+	FORCEINLINE class UShieldComp* GetShieldComponent() const { return ShieldComp; }
+
 public:
+	// Particle System Components
+	UPROPERTY()
+	UParticleSystemComponent* ActiveChargeEffect;
+
+	// Anim Montages
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlyUpMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* BoostMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ShieldMontage;
+
+	// Particle Systems
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	UParticleSystem* ChargingEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Charge")
+	UParticleSystem* ShieldEffect;
+
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float WalkSpeed = 500.f;
@@ -157,17 +178,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Charge")
 	float MaxChargeTime = 6.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Charge")
-	UParticleSystem* ChargingEffect;
+public:
+	// Shield
+	UFUNCTION()
+	void OnShieldActivated();
 
-	UPROPERTY()
-	UParticleSystemComponent* ActiveChargeEffect;
+	UFUNCTION()
+	void OnShieldDeactivated();
+
+	UFUNCTION()
+	void OnShieldKeyPressed(const FInputActionInstance& Instance);
 
 public:
-
-	void SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray);
-	void StopEffectArray(TArray<UParticleSystemComponent*>& ActiveArray);
-
 	virtual void BeginPlay() override;
 
 	void HandleSprintOrBoostInput(const FInputActionValue& Value);
@@ -175,10 +197,6 @@ public:
 	void StartSprint();
 	void StopSprint();
 	void ToggleFlyingMode();
-
-	void TryBoost();
-	void ExecuteBoost();
-	void EndBoost();
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -197,14 +215,13 @@ public:
 	void StartCharge();
 
 	void ChangeState(ECharacterState NewState);
+	ECharacterState GetCurrentState() const { return CurrentState; }
 protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void SetState(ECharacterState NewState);
 
-
-	ECharacterState GetCurrentState() const { return CurrentState; }
 
 public:
 	bool bIsBoosting = false;
@@ -231,4 +248,6 @@ public:
 	// 카메라 변수
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
+
+	float SprintInterpSpeed = 5.f;
 };
