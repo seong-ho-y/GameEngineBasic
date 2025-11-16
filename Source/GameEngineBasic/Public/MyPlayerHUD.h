@@ -61,7 +61,8 @@ protected:
 	float TargetEnemyHPRatio = 0.f;
 	float DisplayEnemyHPRatio = 0.f;
 	float CurrentStunRatio = 0.f;
-	
+
+
 	void CacheReferences();
 
 	UFUNCTION()
@@ -84,4 +85,10 @@ protected:
 
 public:
 	UTargetingSystemComponent* GetTargetingComp();
+
+private:
+	float EnemyUIFadeTime = 0.15f;
+	float EnemyUIOpacity = 0.f;
+	float TargetEnemyUIOpacity = 0.f;
+	float EnemyUIFadeSpeed = 8.f;
 };

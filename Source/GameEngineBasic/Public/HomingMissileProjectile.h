@@ -54,6 +54,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Homing")
 	float HomingSpeed = 2500.f;
 
+	// 가속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Homing")
+	float AccelSpeed = 0.f;
+
 	/** 유도 회전 속도 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Homing")
 	float TurnInterpSpeed = 5.0f;

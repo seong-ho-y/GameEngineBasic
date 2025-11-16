@@ -144,7 +144,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Flight|Fuel")
 	float GetFuelPercent() const
 	{
-		return (MaxFuel > 0) ? CurrentFuel / MaxFuel : 0.f;
+		return (MaxEN > 0) ? CurrentEN / MaxEN : 0.f;
 	}
 
 	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")

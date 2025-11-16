@@ -40,7 +40,7 @@ void UTargetingSystemComponent::TickComponent(float DeltaTime, ELevelTick TickTy
         GEngine->GameViewport->Viewport->GetSizeXY().Y
     ));
     
-	GEngine->AddOnScreenDebugMessage(-9, 0.f, FColor::Black, TEXT("Ticking..."));
+	//GEngine->AddOnScreenDebugMessage(-9, 0.f, FColor::Black, TEXT("Ticking..."));
 	AEnemyHuman* NewTarget = FindClosestEnemyInView();
 
 	if (NewTarget != CurrentTarget)
@@ -94,17 +94,17 @@ AEnemyHuman* UTargetingSystemComponent::FindClosestEnemyInView()
             continue;
 
         // 디버그
-        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White,
+        /*GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::White,
             FString::Printf(TEXT("[Enemy %s] ScreenPos=(%.1f, %.1f)"),
                 *Enemy->GetName(), EnemyScreenPos.X, EnemyScreenPos.Y));
-
+*/
         // 🔹 3) 원 안에 들어왔는지만 검사
         const float DistToCenter = FVector2D::Distance(EnemyScreenPos, CircleCenter);
 
-        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue,
+        /*GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Blue,
             FString::Printf(TEXT("[Enemy %s] DistToCenter=%.1f (R=%.1f)"),
                 *Enemy->GetName(), DistToCenter, Radius));
-
+*/
         if (DistToCenter > Radius)
             continue; // 원 밖 → 후보 제외
 
@@ -118,12 +118,12 @@ AEnemyHuman* UTargetingSystemComponent::FindClosestEnemyInView()
 
     if (!Closest)
     {
-        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red,
+        GEngine->AddOnScreenDebugMessage(-5, 0.f, FColor::Red,
             TEXT("[Targeting] No enemy inside circle"));
     }
     else
     {
-        GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Green,
+        GEngine->AddOnScreenDebugMessage(-5, 0.f, FColor::Green,
             FString::Printf(TEXT("[Targeting] Final Target = %s"),
                 *Closest->GetName()));
     }

@@ -1,37 +1,61 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "MyPlayerHUD.h"
+#include "Components/ProgressBar.h"
+#include "ArcGaugeWidget.h"
 
+#include "TargetingSystemComponent.h"
+#include "EnemyShieldComponent.h"
+#include "EnemyHuman.h"
+
+#include "Kismet/GameplayStatics.h"
 
 void UMyPlayerHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	CacheReferences();
-	
+
 	APawn* P = GetOwningPlayerPawn();
 	if (!P) return;
 
-	UShooterComp* Shooter = P->FindComponentByClass<UShooterComp>();
-	if (!Shooter) return;
+	// Ammo Delegate
+	if (UShooterComp* Shooter = P->FindComponentByClass<UShooterComp>())
+	{
+		Shooter->OnAmmoChanged.AddDynamic(this, &UMyPlayerHUD::HandleAmmoChanged);
+	}
 
-	Shooter->OnAmmoChanged.AddDynamic(this, &UMyPlayerHUD::HandleAmmoChanged);
-	
+	// Energy도 Shooter 또는 EnergyComp에서 Bind
+	// Shooter->OnEnergyChanged.AddDynamic(...)
+
+	// Target 변경 Delegate
 	if (TargetingComp)
 	{
 		TargetingComp->OnTargetChanged.AddDynamic(this, &UMyPlayerHUD::HandleTargetChanged);
 	}
 
-	// 시작할 땐 적 없으니까 숨겨두기
-	if (EnemyHealthGauge) EnemyHealthGauge->SetVisibility(ESlateVisibility::Hidden);
-	if (EnemyStunGauge)   EnemyStunGauge->SetVisibility(ESlateVisibility::Hidden);
+	// 시작 시 숨김 + 완전 투명
+	EnemyUIOpacity = 0.f;
+	TargetEnemyUIOpacity = 0.f;
+
+	if (EnemyHealthGauge)
+	{
+		EnemyHealthGauge->SetRenderOpacity(0.f);
+		EnemyHealthGauge->SetVisibility(ESlateVisibility::Hidden);
+	}
+
+	if (EnemyStunGauge)
+	{
+		EnemyStunGauge->SetRenderOpacity(0.f);
+		EnemyStunGauge->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
 
 void UMyPlayerHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	/* --------------------------
+		 HP 보간
+	--------------------------*/
 	if (EnemyHealthGauge && BoundEnemyHealthComp)
 	{
 		DisplayEnemyHPRatio = FMath::FInterpTo(
@@ -40,40 +64,82 @@ void UMyPlayerHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 			InDeltaTime,
 			10.f
 		);
-
 		EnemyHealthGauge->SetPercent(DisplayEnemyHPRatio);
 	}
 
-	// Stun updates instantly or with small interpolation if needed
-	if (EnemyStunGauge && BoundEnemyShieldComp)
-	{
-		EnemyStunGauge->SetPercent(CurrentStunRatio);
-	}
+	/* --------------------------
+		Fade 보간 (Opacity)
+	--------------------------*/
+	EnemyUIOpacity = FMath::FInterpTo(
+		EnemyUIOpacity,
+		TargetEnemyUIOpacity,
+		InDeltaTime,
+		EnemyUIFadeSpeed
+	);
+
+	if (EnemyHealthGauge)
+		EnemyHealthGauge->SetRenderOpacity(EnemyUIOpacity);
+	if (EnemyStunGauge)
+		EnemyStunGauge->SetRenderOpacity(EnemyUIOpacity);
 }
 
+
+/*-----------------------------------
+	    Target Switched
+-----------------------------------*/
 void UMyPlayerHUD::HandleTargetChanged(AEnemyHuman* NewTarget)
 {
-	// 이전 적의 Health 델리게이트 언바인딩
+	/* 기존 Delegate 정리 */
 	if (BoundEnemyHealthComp)
 	{
-		BoundEnemyHealthComp->OnHealthChanged_Ver2.RemoveDynamic(this, &UMyPlayerHUD::HandleEnemyHealthChanged);
+		BoundEnemyHealthComp->OnHealthChanged_Ver2.RemoveDynamic(
+			this, &UMyPlayerHUD::HandleEnemyHealthChanged);
 		BoundEnemyHealthComp = nullptr;
 	}
+
 	if (BoundEnemyShieldComp)
 	{
 		BoundEnemyShieldComp->OnShieldDamaged.RemoveAll(this);
 		BoundEnemyShieldComp->OnShieldRestored.RemoveAll(this);
 		BoundEnemyShieldComp = nullptr;
 	}
+
+	/*----------------------------
+	         Target 없음
+	----------------------------*/
 	if (!NewTarget)
 	{
-		EnemyHealthGauge->SetVisibility(ESlateVisibility::Hidden);
-		EnemyStunGauge->SetVisibility(ESlateVisibility::Hidden);
+		TargetEnemyUIOpacity = 0.f;
+
+		// FadeOut 끝나면 숨김 처리
+		FTimerHandle Handle;
+		GetWorld()->GetTimerManager().SetTimer(
+			Handle,
+			[this]()
+			{
+				if (EnemyUIOpacity <= 0.01f)
+				{
+					EnemyHealthGauge->SetVisibility(ESlateVisibility::Hidden);
+					EnemyStunGauge->SetVisibility(ESlateVisibility::Hidden);
+				}
+			},
+			0.2f,
+			false
+		);
 		return;
 	}
+
 	/*----------------------------
-			   HP Setup
-		----------------------------*/
+	        Target 있음 → FadeIn
+	----------------------------*/
+	TargetEnemyUIOpacity = 1.f;
+
+	EnemyHealthGauge->SetVisibility(ESlateVisibility::Visible);
+	EnemyStunGauge->SetVisibility(ESlateVisibility::Visible);
+
+	/*----------------------------
+	         HP Setup
+	----------------------------*/
 	BoundEnemyHealthComp = NewTarget->FindComponentByClass<UHealthComp>();
 	if (BoundEnemyHealthComp)
 	{
@@ -84,14 +150,13 @@ void UMyPlayerHUD::HandleTargetChanged(AEnemyHuman* NewTarget)
 		DisplayEnemyHPRatio = TargetEnemyHPRatio;
 
 		EnemyHealthGauge->SetPercent(DisplayEnemyHPRatio);
-		EnemyHealthGauge->SetVisibility(ESlateVisibility::Visible);
 
 		BoundEnemyHealthComp->OnHealthChanged_Ver2.AddDynamic(
 			this, &UMyPlayerHUD::HandleEnemyHealthChanged);
 	}
 
 	/*----------------------------
-		  Shield/Stun Setup
+	         Stun Setup
 	----------------------------*/
 	BoundEnemyShieldComp = NewTarget->FindComponentByClass<UEnemyShieldComponent>();
 	if (BoundEnemyShieldComp)
@@ -101,17 +166,18 @@ void UMyPlayerHUD::HandleTargetChanged(AEnemyHuman* NewTarget)
 		CurrentStunRatio = (Max > 0.f) ? Cur / Max : 0.f;
 
 		EnemyStunGauge->SetPercent(CurrentStunRatio);
-		EnemyStunGauge->SetVisibility(ESlateVisibility::Visible);
 
 		BoundEnemyShieldComp->OnShieldDamaged.AddDynamic(
 			this, &UMyPlayerHUD::HandleEnemyShieldDamaged);
+
 		BoundEnemyShieldComp->OnShieldRestored.AddDynamic(
 			this, &UMyPlayerHUD::HandleEnemyShieldRestored);
 	}
 }
 
+
 /*-----------------------------------
-			 HP Changed
+	          HP 변화
 -----------------------------------*/
 void UMyPlayerHUD::HandleEnemyHealthChanged(float NewHealth, float MaxHealth)
 {
@@ -119,7 +185,7 @@ void UMyPlayerHUD::HandleEnemyHealthChanged(float NewHealth, float MaxHealth)
 }
 
 /*-----------------------------------
-		 Stun / Shield Changed
+	        Stun / Shield 변화
 -----------------------------------*/
 void UMyPlayerHUD::HandleEnemyShieldDamaged()
 {
@@ -129,36 +195,32 @@ void UMyPlayerHUD::HandleEnemyShieldDamaged()
 	float Max = BoundEnemyShieldComp->GetMaxShield();
 	CurrentStunRatio = (Max > 0.f) ? Cur / Max : 0.f;
 
-	if (EnemyStunGauge)
-		EnemyStunGauge->SetPercent(CurrentStunRatio);
+	EnemyStunGauge->SetPercent(CurrentStunRatio);
 }
 
 void UMyPlayerHUD::HandleEnemyShieldRestored()
 {
 	CurrentStunRatio = 1.f;
-	if (EnemyStunGauge)
-		EnemyStunGauge->SetPercent(1.f);
+	EnemyStunGauge->SetPercent(1.f);
 }
 
 /*-----------------------------------
-		 Ammo / Energy
+	       Ammo / Energy
 -----------------------------------*/
 void UMyPlayerHUD::HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
-	float Ratio = (float)CurrentAmmo / (float)MaxAmmo;
 	if (AmmoGauge)
-		AmmoGauge->SetPercent(Ratio);
+		AmmoGauge->SetPercent((float)CurrentAmmo / MaxAmmo);
 }
 
 void UMyPlayerHUD::HandleEnergyChanged(float CurrentEN, float MaxEN)
 {
-	float Ratio = CurrentEN / MaxEN;
 	if (EnergyGauge)
-		EnergyGauge->SetPercent(Ratio);
+		EnergyGauge->SetPercent(CurrentEN / MaxEN);
 }
 
 /*-----------------------------------
-	 Reference Caching
+	    Reference Caching
 -----------------------------------*/
 void UMyPlayerHUD::CacheReferences()
 {
