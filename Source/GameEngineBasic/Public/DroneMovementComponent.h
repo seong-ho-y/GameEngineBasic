@@ -45,6 +45,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Drone|Movement")
 	float VelocityDamp = 5.f;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drone|Movement")
+	bool bHovering = true;
+	
 protected:
 	void ApplyDamping(float DeltaTime);
+
+private:
+	
+	
 };

@@ -221,7 +221,8 @@ void AEnemyHuman::OnDie(AActor* DeadActor)
 		Anim->Montage_Play(DeathMontage);
 	}
 
-	GetCharacterMovement()->DisableMovement();
+	// Drone에서 CharacterMovement 삭제했는데 접근해서 터짐
+	//GetCharacterMovement()->DisableMovement();
 	SetLifeSpan(5.f);
 }
 

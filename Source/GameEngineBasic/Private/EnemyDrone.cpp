@@ -26,40 +26,8 @@ void AEnemyDrone::BeginPlay()
 void AEnemyDrone::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	MaintainHover(DeltaTime);
+	
 	TurnToFacePlayer(DeltaTime);
-}
-
-
-/* ==========================================================
-   Hover 유지 (아머드코어 드론의 “고도 유지” 느낌)
-   ========================================================== */
-void AEnemyDrone::MaintainHover(float DeltaSeconds)
-{
-	const FVector DroneLoc = GetActorLocation();
-	FHitResult Hit;
-
-	FVector Start = DroneLoc;
-	FVector End = Start - FVector(0,0,HoverTraceDistance);
-
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	// 바닥까지 트레이스
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		Hit, Start, End, ECC_Visibility, Params);
-
-	float TargetZ = DroneLoc.Z;
-
-	if (bHit)
-		TargetZ = Hit.Location.Z + HoverHeight;
-
-	// Z 보간
-	float NewZ = FMath::FInterpTo(
-		DroneLoc.Z, TargetZ, DeltaSeconds, HoverInterpSpeed);
-
-	SetActorLocation(FVector(DroneLoc.X, DroneLoc.Y, NewZ), true);
 }
 
 

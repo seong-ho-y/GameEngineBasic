@@ -1,5 +1,9 @@
 #include "EnemyDroneAnimInstance.h"
+
+#include "DroneMovementComponent.h"
 #include "KismetAnimationLibrary.h"
+
+class UDroneMovementComponent;
 
 void UEnemyDroneAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
@@ -7,22 +11,18 @@ void UEnemyDroneAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	if (!OwnerPawn)
 		OwnerPawn = TryGetPawnOwner();
-
 	if (!OwnerPawn) return;
 
-	FVector Velocity = OwnerPawn->GetVelocity();
+	UDroneMovementComponent* MoveComp =
+		OwnerPawn->FindComponentByClass<UDroneMovementComponent>();
 
-	// Normalize (정규화)
-	FVector VelDir = Velocity.GetSafeNormal2D();
+	if (!MoveComp) return;
 
-	// 드론 Transform 기준의 로컬 이동 벡터
+	FVector Velocity = MoveComp->Velocity;
+
+	FVector VelDir = Velocity.GetSafeNormal();
 	FVector LocalDir = OwnerPawn->GetActorTransform().InverseTransformVector(VelDir);
 
-	// LocalDir.X = Forward(+) / Back(-)
-	// LocalDir.Y = Right(+) / Left(-)
-
-	MoveDirForward = LocalDir.X;   // -1 ~ +1
-	MoveDirRight   = LocalDir.Y;   // -1 ~ +1
-
-	
+	MoveDirForward = LocalDir.X;
+	MoveDirRight = LocalDir.Y;
 }

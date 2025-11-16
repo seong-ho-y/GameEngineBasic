@@ -67,7 +67,7 @@ void UBTT_DroneMoveTo::TickTask(
 
     FVector DroneLoc = Drone->GetActorLocation();
     float Dist = FVector::Dist2D(DroneLoc, Mem->TargetLocation);
-
+    
     // 목표 도착?
     if (Dist <= StopDistance)
     {

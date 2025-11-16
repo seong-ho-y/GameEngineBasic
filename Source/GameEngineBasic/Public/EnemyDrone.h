@@ -14,7 +14,8 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	
+	void TurnToFacePlayer(float DeltaSeconds);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UDroneMovementComponent* DroneMoveComp;
 
@@ -33,8 +34,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Drone|Hover")
 	float HoverTraceDistance = 2000.f;
-
-	void MaintainHover(float DeltaSeconds);
 
 
 	/* ============ Movement / Patrol ============ */
@@ -61,8 +60,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Drone|Movement")
 	float RotationInterpSpeed = 6.f;
-
-	void TurnToFacePlayer(float DeltaSeconds);
 
 
 	/* ============ Target Info ============ */

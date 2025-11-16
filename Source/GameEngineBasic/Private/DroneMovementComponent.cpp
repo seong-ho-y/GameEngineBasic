@@ -5,10 +5,11 @@
 UDroneMovementComponent::UDroneMovementComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
+    
 }
 
 void UDroneMovementComponent::TickComponent(
-    float DeltaTime, f
+    float DeltaTime, 
     enum ELevelTick TickType, 
     FActorComponentTickFunction* ThisTickFunction)
 {
@@ -16,7 +17,7 @@ void UDroneMovementComponent::TickComponent(
 
     if (!PawnOwner) return;
 
-    MaintainHover(DeltaTime);
+    if (bHovering) MaintainHover(DeltaTime);
     ApplyDamping(DeltaTime);
 }
 
@@ -66,7 +67,16 @@ void UDroneMovementComponent::StrafeRight()
 /* ================= Approach / Retreat ================= */
 void UDroneMovementComponent::MoveToward(const FVector& Target)
 {
-    FVector Dir = (Target - PawnOwner->GetActorLocation()).GetSafeNormal2D();
+    FVector Loc = PawnOwner->GetActorLocation();
+    FVector Dir;
+    if (!bHovering)
+    {
+        Dir = (Target - Loc).GetSafeNormal();
+    }
+    else
+    {
+        Dir = (Target - Loc).GetSafeNormal2D();
+    }
     Velocity = Dir * MoveSpeed;
 }
 
@@ -83,5 +93,5 @@ void UDroneMovementComponent::ApplyDamping(float DeltaTime)
 
     // Move pawn
     FVector NewLoc = PawnOwner->GetActorLocation() + Velocity * DeltaTime;
-    PawnOwner->SetActorLocation(NewLoc, true);
+    PawnOwner->SetActorLocation(NewLoc, false);
 }
