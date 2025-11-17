@@ -4,20 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "SpaceCharacter/States/CharacterStateBase.h"
-#include "SpaceCharacter/SpaceCharacter.h"
-#include "S_Boost.generated.h"
+#include "S_FlyCharge.generated.h"
 
 UCLASS()
-class GAMEENGINEBASIC_API US_Boost : public UCharacterStateBase
+class GAMEENGINEBASIC_API US_FlyCharge : public UCharacterStateBase
 {
 	GENERATED_BODY()
 
 public:
     virtual void Enter_Implementation(ASpaceCharacter* Character) override;
-    virtual void Tick_Implementation(ASpaceCharacter* Character, float DeltaTime) override;
     virtual void Exit_Implementation(ASpaceCharacter* Character) override;
-
-private:
-    float Elapsed = 0.f;
-    ECharacterState PreviousState;
 };
