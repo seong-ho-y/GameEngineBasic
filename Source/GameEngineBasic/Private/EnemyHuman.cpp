@@ -37,6 +37,8 @@ AEnemyHuman::AEnemyHuman()
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true; // 이동 방향으로만 몸 돌림
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 360.f, 0.f); // 원하는 회전 속도
+
+	ShooterComp->bUseAmmo = false;
 }
 
 // Called when the game starts or when spawned

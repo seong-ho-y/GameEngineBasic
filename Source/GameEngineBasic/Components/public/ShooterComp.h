@@ -53,6 +53,12 @@ public:
 	UFUNCTION()
 	void SetProjectile(); // ProjectileMap에서 자동 선택
 
+	UFUNCTION(BlueprintCallable)
+	void StartReload(float ReloadTime);
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadSuccess();
+
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
@@ -72,6 +78,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 CurrentAmmo = 999;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 FullAmmo = 30;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MaxAmmo = 999;
@@ -97,12 +106,16 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Target")
 	AActor* CurrentTarget = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Option")
+	bool bUseAmmo = true;
 private:
 	UPROPERTY()
 	bool bIsReadyToFire = true;
 
-	FTimerHandle FireRateTimerHandle;
+	bool bIsReloading = false;
 
+	FTimerHandle FireRateTimerHandle;
+	FTimerHandle ReloadTimerHandle;
 public:
 
 };

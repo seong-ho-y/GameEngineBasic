@@ -32,6 +32,13 @@ void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
 bool UShooterComp::TryFire()
 {
+	if (bIsReloading) return false;
+	
+	if (bUseAmmo && CurrentAmmo <= 0)
+	{
+		StartReload( 3.0f /* 임시 값, 나중에 무기별로 장전시간 변수 만들어서 넣어줄 예정 */ );
+		return false;
+	}
 	if (!CanFire())
 	{
 		return false;
@@ -48,7 +55,7 @@ void UShooterComp::SetFireDirection(const FVector& NewDir)
 bool UShooterComp::CanFire() const
 {
 	// 1. Check Ammo
-	if (CurrentAmmo <= 0)
+	if (bUseAmmo && CurrentAmmo <= 0)
 	{
 		return false;
 	}
@@ -84,8 +91,11 @@ void UShooterComp::Fire_Implementation()
 		return;
 	}
 	// 탄약감소
-	CurrentAmmo--;
-	OnAmmoChanged.Broadcast(CurrentAmmo, MaxAmmo);
+	if (bUseAmmo)
+	{
+		CurrentAmmo--;
+		OnAmmoChanged.Broadcast(CurrentAmmo, MaxAmmo);
+	}
 	
 	// 쿨다운
 	bIsReadyToFire = false;
@@ -207,4 +217,22 @@ void UShooterComp::SetProjectile()
 	{
 		UE_LOG(LogTemp, Error, TEXT("SetProjectile: No Projectile for Type %d AND no fallback ProjectileClass"), (int32)CurrentProjectileType);
 	}
+}
+
+void UShooterComp::StartReload(float ReloadTime)
+{
+	if (MaxAmmo <= 0 || bIsReloading)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Fail to Reload"));
+		return;
+	}
+	bIsReloading = true;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Emerald, TEXT("Reloading..."));
+	GetWorld()->GetTimerManager().SetTimer(
+		ReloadTimerHandle,this, &UShooterComp::ReloadSuccess,ReloadTime);
+}
+void UShooterComp::ReloadSuccess()
+{
+	CurrentAmmo = FMath::Min(FullAmmo, MaxAmmo);
+	bIsReloading = false;
 }
