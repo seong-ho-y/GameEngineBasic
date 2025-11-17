@@ -13,6 +13,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnHealthChanged, AActor*, Owner,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeath, AActor*, Owner);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShieldBroken, AActor*, Owner);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDamageTaken, AActor*, Owner);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged_Ver2, float, NewHealth, float, MaxHealth);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UHealthComp : public UActorComponent
@@ -26,10 +28,9 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// ���� ���� ��� �ð�(���� �ð�, ��). �� �ð��� ������ +1
 	float NextRegenTime = -FLT_MAX;
 
-public:
+public:	
 	// ======== CONFIG ========
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Health")
 	int32 MaxHealth = 60;
@@ -37,13 +38,15 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Shield")
 	int32 MaxShield = 5;
 
-	// �ǰ� �� ȸ�� ���۱��� ���
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shield")
 	float ShieldRegenDelay = 3.f;   
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
-	int GetHealth() const { return CurrentHealth; }
-
+	int GetCurrentHealth() const { return CurrentHealth; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	int GetMaxHealth() const { return MaxHealth; }
+	
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	int GetShield() const { return CurrentShield; }
 
@@ -92,7 +95,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ApplyHealthDamage(float Amount);
 
+	// Shiled Comp에서 호출할 수 있도록
+	UFUNCTION(BlueprintCallable)
+	void ForceBroadcast()
+	{
+		BroadcastChanged();
+	}
+
 	// ========== DELEGATES ==========
+	UPROPERTY(BlueprintAssignable, Category="Health")
+	FOnHealthChanged_Ver2 OnHealthChanged_Ver2;
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnHealthChanged OnHealthChanged;
 

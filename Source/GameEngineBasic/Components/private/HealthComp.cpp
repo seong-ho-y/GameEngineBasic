@@ -5,20 +5,16 @@
 #include "GameFramework/Actor.h"
 #include <sstream>
 
-// Sets default values for this component's properties
 UHealthComp::UHealthComp()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-
-// Called when the game starts
 void UHealthComp::BeginPlay()
 {
 	Super::BeginPlay();
 	InitStats();
 
-	// 시작 시 재생 타이머는 비활성 상태로 둠
 	NextRegenTime = -FLT_MAX;
 	LastDamageTime = -FLT_MAX;
 }
@@ -30,7 +26,6 @@ void UHealthComp::InitStats()
 	BroadcastChanged();
 }
 
-// Called every frame
 void UHealthComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -134,6 +129,7 @@ void UHealthComp::StopShieldRegenTimer()
 {
 	GetWorld()->GetTimerManager().ClearTimer(ShieldRegenTimerHandle);
 }
+
 void UHealthComp::RestoreShield(int Amount)
 {
 	if (!bUseShield || Amount <= 0) return;
@@ -166,7 +162,8 @@ void UHealthComp::ApplyHealthDamage(float Amount)
 
 	CurrentHealth = FMath::Clamp(CurrentHealth - Amount, 0, MaxHealth);
 
-	if (CurrentHealth == 0)
+	OnHealthChanged_Ver2.Broadcast(CurrentHealth, MaxHealth);
+	if (CurrentHealth <= 0)
 		OnDeath.Broadcast(GetOwner());
 
 	UE_LOG(LogTemp, Warning, TEXT("[Enemy] Health Take Damaged : %f | Current Health : %f"),Amount, CurrentHealth);

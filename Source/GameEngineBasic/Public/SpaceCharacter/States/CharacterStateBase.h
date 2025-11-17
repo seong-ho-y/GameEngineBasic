@@ -30,4 +30,11 @@ public:
     UFUNCTION(BlueprintNativeEvent, Category = "State")
     void Exit(ASpaceCharacter* Character);
     virtual void Exit_Implementation(ASpaceCharacter* Character);
+
+
+    virtual void HandleMove(ASpaceCharacter*, const FVector2D&) {}
+    virtual void HandleLook(ASpaceCharacter*, const FVector2D&) {}
+    virtual void HandleJump(ASpaceCharacter*) {}
+    virtual void HandleBoost(ASpaceCharacter*) {}
+    virtual void HandleAim(ASpaceCharacter*, bool bPressed) {}
 };
