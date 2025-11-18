@@ -31,6 +31,9 @@ private:
 
 	UPROPERTY()
 	bool bShieldActive = false;
+
+	UPROPERTY()
+	bool bCanShield = true;
 public:
 	// ===== ΩØµÂ Ω∫≈» =====
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield")
@@ -39,8 +42,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
 	float CurrentShield = 50.f;
 
-	UPROPERTY(EditAnywhere, Category = "Shield")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield")
+	float ShieldDuration = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|Effects")
 	UParticleSystem* HitEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|Effects")
+	UParticleSystem* ShieldBroken;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
 	USphereComponent* ShieldCollision;
@@ -55,12 +64,17 @@ public:
 
 	float ApplyShieldDamage(float Damage);
 
+	UFUNCTION(BlueprintCallable)
 	bool IsShieldActive() const { return bShieldActive; }
 
 private:
 	UFUNCTION()
 	void OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	FTimerHandle ShieldCoolDownTimer;
+	void StartShieldCoolDown();
+	void EndShieldCoolDown();
 
 public:
 	// ¿Ã∫•∆Æ

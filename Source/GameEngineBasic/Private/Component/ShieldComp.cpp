@@ -48,7 +48,8 @@ void UShieldComp::BeginPlay()
 
 void UShieldComp::ActivateShield()
 {
-	if (!ShieldCollision) return;
+	if (!ShieldCollision || !bCanShield) return;
+	StartShieldCoolDown();
 
 	if (CurrentShield <= 0.f)
 	{
@@ -64,10 +65,10 @@ void UShieldComp::ActivateShield()
 
 void UShieldComp::DeactivateShield()
 {
+	/*
 	if(GEngine)
-	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Shield Deactivated"));
-	}
+	*/
 	if (!ShieldCollision) return;
 
 	bShieldActive = false;
@@ -76,6 +77,7 @@ void UShieldComp::DeactivateShield()
 	ShieldCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	OnShieldDeactivated.Broadcast();
+
 }
 
 void UShieldComp::OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -94,15 +96,31 @@ void UShieldComp::OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 	}
 
 	// 3. 피격 이펙트 재생
-	if (HitEffect && bShieldActive)
+	if (bShieldActive)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
-			HitEffect,
-			Hit.ImpactPoint,
-			Hit.ImpactNormal.Rotation()
-		);
+		if (HitEffect)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				HitEffect,
+				Hit.ImpactPoint,
+				Hit.ImpactNormal.Rotation()
+			);
+		}
 	}
+	else 
+	{
+		if (ShieldBroken)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				ShieldBroken,
+				Hit.ImpactPoint,
+				Hit.ImpactNormal.Rotation()
+			);
+		}
+	}
+		
 	Projectile->Destroy();
 }
 
@@ -130,4 +148,31 @@ float UShieldComp::ApplyShieldDamage(float Damage)
 	}
 
 	return RemainingDamage;
+}
+
+void UShieldComp::StartShieldCoolDown()
+{
+	bCanShield = false;
+	GetWorld()->GetTimerManager().ClearTimer(ShieldCoolDownTimer);
+
+	if(GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Shield Cooldown Started"));
+	}
+	GetWorld()->GetTimerManager().SetTimer(
+		ShieldCoolDownTimer,
+		this,
+		&UShieldComp::EndShieldCoolDown,
+		ShieldDuration,
+		false
+	);
+}
+
+void UShieldComp::EndShieldCoolDown()
+{
+	/*
+	if(GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Shield Cooldown Ended"));
+	*/
+	bCanShield = true;
 }
