@@ -98,11 +98,6 @@ void UHealthComp::Heal(float Amount)
 
 void UHealthComp::BroadcastStatus()
 {
-	if(GEngine)
-	{
-		FString OwnerName = GetOwner() ? GetOwner()->GetName() : TEXT("NoOwner");
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("[%s] Health: %.1f / %.1f"), *OwnerName, CurrentHealth, MaxHealth));
-	}
 	OnHealthChanged.Broadcast(CurrentHealth);                
 	OnHealthChanged_Ver2.Broadcast(CurrentHealth, MaxHealth);
 }
