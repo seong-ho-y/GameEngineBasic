@@ -106,31 +106,36 @@ void UShooterComp::Fire_Implementation()
 		FireRate,
 		false);
 	// 총구 위치 계산
-	USceneComponent* MuzzleComp = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
-	if (!MuzzleComp)
-	{
-		MuzzleComp = MyOwner->FindComponentByClass<UStaticMeshComponent>();
-	}
-
-	const FVector SpawnLoc = MuzzleComp
-		? MuzzleComp->GetSocketLocation(MuzzleSocketName)
-		: MyOwner->GetActorLocation();
-
+	// 1. WeaponComp에서 할당된 Muzzle 있는지 확인
+	// 2. Owner의 SkeletalMesh or StaticMesh 접근해서 Muzzle 찾기
+	// 3. 없으면 Owner->GetActorLocation()
+	FVector SpawnLoc;
 	FRotator SpawnRot;
 
-	if (!FireDirection.IsNearlyZero())
+	if (bHasExternalMuzzleInfo)
 	{
-		SpawnRot = FireDirection.Rotation();
-	}
-	else if (MuzzleComp)
-	{
-		SpawnRot = MuzzleComp->GetSocketRotation(MuzzleSocketName);
+		SpawnLoc = ExternalMuzzleLoc;
+		SpawnRot = ExternalMuzzleRot;
 	}
 	else
 	{
-		SpawnRot = MyOwner->GetActorRotation();
-	}
+		// Fallback: 적 AI가 사용하는 기존 구조 (Mesh에서 소켓 찾기)
+		USceneComponent* MuzzleComp = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
 
+		if (!MuzzleComp)
+			MuzzleComp = GetOwner()->FindComponentByClass<UStaticMeshComponent>();
+
+		if (MuzzleComp)
+		{
+			SpawnLoc = MuzzleComp->GetSocketLocation(MuzzleSocketName);
+			SpawnRot = MuzzleComp->GetSocketRotation(MuzzleSocketName);
+		}
+		else
+		{
+			SpawnLoc = GetOwner()->GetActorLocation();
+			SpawnRot = GetOwner()->GetActorRotation();
+		}
+	}
 	// Projectile 스폰
 	FActorSpawnParameters Params;
 	Params.Owner = MyOwner;

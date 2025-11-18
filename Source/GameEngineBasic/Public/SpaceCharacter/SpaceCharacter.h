@@ -116,6 +116,7 @@ public:
 
 	FORCEINLINE class UShieldComp* GetShieldComponent() const { return ShieldComp; }
 
+
 public:
 	// Particle System Components
 	UPROPERTY()
@@ -237,15 +238,15 @@ public:
 	FTimerHandle FlightDelayHandle;
 	FTimerHandle ChargeDelayHandle;
 
-	// Ä«¸Þ¶ó ±âº» °Å¸®
+	// Ä«ï¿½Þ¶ï¿½ ï¿½âº» ï¿½Å¸ï¿½
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
-	// Aim ½Ã Ä«¸Þ¶ó À§Ä¡ ¿ÀÇÁ¼Â
+	// Aim ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	// Ä«¸Þ¶ó º¯¼ö
+	// Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
 

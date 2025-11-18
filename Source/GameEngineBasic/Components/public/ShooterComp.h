@@ -28,6 +28,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Events")
 	FOnAmmoChanged OnAmmoChanged;
+	bool bHasExternalMuzzleInfo = false;
+	FVector ExternalMuzzleLoc;
+	FRotator ExternalMuzzleRot;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -99,6 +103,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FVector FireDirection = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector MuzzleLocation = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Homing")
 	bool bUseArcHoming = true;
