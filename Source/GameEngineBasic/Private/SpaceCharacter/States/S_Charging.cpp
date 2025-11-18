@@ -11,7 +11,6 @@
 
 #include "Kismet/GameplayStatics.h"
 
-
 #include "Animation/AnimInstance.h"
 #include "Engine/SkeletalMeshSocket.h"
 
@@ -104,7 +103,7 @@ void US_Charging::Tick_Implementation(ASpaceCharacter* Character, float DeltaTim
 
         if (UHealthComp* Health = Character->FindComponentByClass<UHealthComp>())
         {
-            Health->TakeDamage(10); // 피해량 조정 가능
+            Health->ApplyHealthDamage(10); // 피해량 조정 가능
         }
 
         UE_LOG(LogTemp, Warning, TEXT("Player exploded after overcharge!"));

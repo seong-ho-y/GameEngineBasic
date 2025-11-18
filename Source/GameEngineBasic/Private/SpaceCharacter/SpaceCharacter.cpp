@@ -5,6 +5,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Component/FuelComponent.h"
@@ -143,6 +144,10 @@ void ASpaceCharacter::BeginPlay()
 	}
 	if (WingComp)
 		WingComp->SetMesh(GetMesh());
+	if (HealthComp)
+	{
+		HealthComp->OnDeath.AddDynamic(this, &ASpaceCharacter::OnCharacterDeath);
+	}
 
 }
 
@@ -485,4 +490,76 @@ void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*
 {
 	if (ShieldComp)
 		ShieldComp->ActivateShield();
+}
+
+
+float ASpaceCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	float RealHealthDamageTaken = 0.f;
+	/*
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("ASpaceCharacter::TakeDamage: DamageAmount = %f, ActualDamage = %f"), DamageAmount, ActualDamage));
+	*/
+	if (HealthComp)
+	{
+		RealHealthDamageTaken = HealthComp->ApplyHealthDamage(ActualDamage);
+	}
+	if(GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f"), RealHealthDamageTaken));
+
+	if (!bIsDead && RealHealthDamageTaken > 0.f && HitMontage)
+	{
+		PlayAnimMontage(HitMontage);
+	}
+
+	return ActualDamage;
+}
+
+void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
+{
+	if (bIsDead) return;
+	bIsDead = true;
+
+	if (Controller)
+	{
+		Controller->StopMovement();
+		Controller->UnPossess();
+	}
+
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetMesh()->SetSimulatePhysics(true);
+	}
+
+	GetWorldTimerManager().SetTimer(
+		DeathTimerHandle,
+		this,
+		&ASpaceCharacter::ExplodeAndDestroy,
+		RagdollDuration,
+		false
+	);
+}
+
+void ASpaceCharacter::ExplodeAndDestroy()
+{
+	if (DeathExplosionEffect && GetMesh())
+	{
+		FVector SpawnLocation = GetMesh()->GetComponentLocation();
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			DeathExplosionEffect,
+			SpawnLocation,
+			FRotator::ZeroRotator,
+			true
+		);
+	}
+
+	Destroy();
 }

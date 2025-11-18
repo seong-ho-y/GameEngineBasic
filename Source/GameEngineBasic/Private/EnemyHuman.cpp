@@ -22,10 +22,10 @@ AEnemyHuman::AEnemyHuman()
 	ShooterComp = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
 	ShieldComp = CreateDefaultSubobject<UEnemyShieldComponent>(TEXT("ShieldComp"));
-	
+	/*
 	HealthComp->bUseShield = false;
 	HealthComp->bUseShieldRegen = false;
-	
+	*/
 	PawnSensingComp->bOnlySensePlayers = true;
 	PawnSensingComp->SensingInterval = 0.1f;
 	

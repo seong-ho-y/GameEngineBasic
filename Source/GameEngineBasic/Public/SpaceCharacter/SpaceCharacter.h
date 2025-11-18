@@ -134,12 +134,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ShieldMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* HitMontage;
+
 	// Particle Systems
-	UPROPERTY(EditAnywhere, Category = "Charge")
+	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ChargingEffect;
 
-	UPROPERTY(EditAnywhere, Category = "Charge")
+	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ShieldEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* DeathExplosionEffect;
 
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
@@ -147,6 +153,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 1200.f;
+
+	// 사망
+	UPROPERTY(EditAnywhere, Category = "State|Movement")
+	float RagdollDuration = 3.0f; 
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
@@ -189,11 +199,16 @@ public:
 	UFUNCTION()
 	void OnShieldKeyPressed(const FInputActionInstance& Instance);
 
+	// Die
+	UFUNCTION()
+	void OnCharacterDeath(AActor* DeadActor);
+
+	void ExplodeAndDestroy();
+
 public:
 	virtual void BeginPlay() override;
 
 	void HandleSprintOrBoostInput(const FInputActionValue& Value);
-
 	void StartSprint();
 	void StopSprint();
 	void ToggleFlyingMode();
@@ -213,6 +228,9 @@ public:
 	void PlayFireMontage();
 
 	void StartCharge();
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator, AActor* DamageCauser) override;
 
 	void ChangeState(ECharacterState NewState);
 	ECharacterState GetCurrentState() const { return CurrentState; }
@@ -235,7 +253,8 @@ public:
 public:
 	FTimerHandle BoostHandle;
 	FTimerHandle FlightDelayHandle;
-	FTimerHandle ChargeDelayHandle;
+	FTimerHandle ChargeDelayHandle; 
+	FTimerHandle DeathTimerHandle;
 
 	// 카메라 기본 거리
 	float DefaultArmLength = 300.f;
@@ -250,4 +269,7 @@ public:
 	bool bIsCameraTransitioning = false;
 
 	float SprintInterpSpeed = 5.f;
+
+	// 사망 여부
+	bool bIsDead = false;
 };

@@ -7,11 +7,12 @@
 #include "ShieldComp.generated.h"
 
 
-class UHealthComp;
-class AShieldActor;
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnShieldActivated);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnShieldDeactivated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnShieldBroken);
+
+class USphereComponent;
+class AShieldActor;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UShieldComp : public UActorComponent
@@ -21,41 +22,54 @@ class GAMEENGINEBASIC_API UShieldComp : public UActorComponent
 public:
 	UShieldComp();
 
+protected:
+	virtual void BeginPlay() override;
+
+private:
 	UPROPERTY()
 	AShieldActor* ShieldActor;
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AShieldActor> ShieldActorClass;
-
-protected:
-    virtual void BeginPlay() override;
-
-private:
-    UPROPERTY()
-    UHealthComp* HealthComp;
-
+	UPROPERTY()
 	bool bShieldActive = false;
+public:
+	// ===== 쉴드 스탯 =====
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield")
+	float MaxShield = 50.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
+	float CurrentShield = 50.f;
+
+	UPROPERTY(EditAnywhere, Category = "Shield")
+	UParticleSystem* HitEffect;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
+	USphereComponent* ShieldCollision;
 
 public:
-	// 스킬 사용으로 생성되는 쉴드량
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield Ability")
-	int32 ShieldAmount = 5;
-
-public:
+	// ===== 기능 함수 =====
 	UFUNCTION(BlueprintCallable)
 	void ActivateShield();
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateShield();
 
-	// Delegates
+	float ApplyShieldDamage(float Damage);
+
+	bool IsShieldActive() const { return bShieldActive; }
+
+private:
+	UFUNCTION()
+	void OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+public:
+	// 이벤트
 	UPROPERTY(BlueprintAssignable)
 	FOnShieldActivated OnShieldActivated;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnShieldDeactivated OnShieldDeactivated;
 
-private:
-	UFUNCTION()
-	void OnShieldBrokenHandler(AActor* Owner);
+	UPROPERTY(BlueprintAssignable)
+	FOnShieldBroken OnShieldBroken;
 };

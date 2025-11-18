@@ -16,6 +16,7 @@ class UInputAction;
 class UInputMappingContext;
 
 class UHealthComp;
+class UShieldComp;
 class UMyShipMovement;
 class UShooterComp;
 
@@ -39,7 +40,10 @@ protected:
 
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	USphereComponent* ShieldComp = nullptr;
+	UShieldComp* ShieldComp = nullptr;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UChildActorComponent* ShieldActorComp = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UHealthComp* HealthComp = nullptr;
@@ -74,24 +78,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 	UParticleSystem* ExplosionFX = nullptr;
 
-protected:
-	// Projectile과 Overlap되었을 때
-	UFUNCTION()
-	void OnShieldOverlap(UPrimitiveComponent* Overlapped, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	// Ship Mesh가 Projectile제외 충돌했을 때
-	UFUNCTION()
-	void OnShipHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, FVector NormalImpulse,
-		const FHitResult& Hit);
-
+public:
 	UFUNCTION()
 	void OnShieldBroken(AActor* OwnActor);
 
 	// 체력/실드 값 변화 시 (HUD 갱신 등에 사용)
 	UFUNCTION()
-	void OnHealthChanged(AActor* OwnActor, float NewHealth, float NewShield);
+	void OnHealthChanged(float NewHealth, float MaxHealth);
 
 	// 사망 처리
 	UFUNCTION()
