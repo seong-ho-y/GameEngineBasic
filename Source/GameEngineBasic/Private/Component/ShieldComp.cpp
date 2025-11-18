@@ -2,85 +2,132 @@
 
 
 #include "Component/ShieldComp.h"
-#include "GameEngineBasic/Components/public/HealthComp.h"
-#include "SpaceCharacter/Shield/ShieldActor.h"
-#include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
+
+#include "Components/SphereComponent.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "Components/ChildActorComponent.h"
+
+#include "GameEngineBasic/Public/Projectile.h"
+#include "Engine/Engine.h"
 
 UShieldComp::UShieldComp()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	ShieldCollision = CreateDefaultSubobject<USphereComponent>(TEXT("ShieldCollision"));
 }
 
 void UShieldComp::BeginPlay()
 {
 	Super::BeginPlay();
+	CurrentShield = MaxShield;
 
-	HealthComp = GetOwner()->FindComponentByClass<UHealthComp>();
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
 
-	if (HealthComp)
+	if (ShieldCollision)
 	{
-		HealthComp->OnShieldBroken.AddDynamic(this, &UShieldComp::OnShieldBrokenHandler);
-	}
+		// 2. 컴포넌트 등록 및 설정
+		ShieldCollision->RegisterComponent();
+		ShieldCollision->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
-	if (ShieldActorClass)
-	{
-		AActor* Owner = GetOwner();
-		FActorSpawnParameters Params;
-		Params.Owner = Owner;
+		// 3. 콜리전 설정
+		ShieldCollision->InitSphereRadius(120.f); 
+		ShieldCollision->SetCollisionProfileName(TEXT("ShieldActor")); 
+		ShieldCollision->SetNotifyRigidBodyCollision(true);
 
-		ShieldActor = Owner->GetWorld()->SpawnActor<AShieldActor>(
-			ShieldActorClass,
-			Owner->GetActorLocation(),
-			Owner->GetActorRotation(),
-			Params
-		);
+		// 4. 이벤트 바인딩
+		ShieldCollision->OnComponentHit.AddDynamic(this, &UShieldComp::OnShieldHit);
 
-		ShieldActor->AttachToComponent(
-			Cast<ACharacter>(Owner)->GetMesh(),
-			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-			FName("Shield")
-		);
-
-		ShieldActor->SetActorHiddenInGame(true);
-		ShieldActor->SetActorEnableCollision(false);
-		ShieldActor->OwnerCharacter = Owner;
+		// 5. 초기 상태: 꺼짐 (충돌 없음, 숨김)
+		ShieldCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ShieldCollision->SetHiddenInGame(true);
 	}
 }
 
-
 void UShieldComp::ActivateShield()
 {
-	if (!HealthComp) return;
-	if (bShieldActive) return;
+	if (!ShieldCollision) return;
 
-	OnShieldActivated.Broadcast();
+	if (CurrentShield <= 0.f)
+	{
+		CurrentShield = MaxShield;
+	}
 	bShieldActive = true;
 
-	HealthComp->bUseShield = true;
-	HealthComp->bUseShieldRegen = false;
-	HealthComp->CurrentShield = FMath::Clamp(ShieldAmount, 0, HealthComp->MaxShield);
-	HealthComp->ForceBroadcast();
+	ShieldCollision->SetHiddenInGame(false);
+	ShieldCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	OnShieldActivated.Broadcast();
 }
 
 void UShieldComp::DeactivateShield()
 {
-	if (!HealthComp) return;
+	if(GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Shield Deactivated"));
+	}
+	if (!ShieldCollision) return;
+
+	bShieldActive = false;
+
+	ShieldCollision->SetHiddenInGame(true);
+	ShieldCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	OnShieldDeactivated.Broadcast();
-	bShieldActive = false;
-	HealthComp->CurrentShield = 0;
-	HealthComp->bUseShield = false;
-	HealthComp->bUseShieldRegen = false;
-
-	HealthComp->ForceBroadcast();
 }
 
-void UShieldComp::OnShieldBrokenHandler(AActor* Owner)
+void UShieldComp::OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (bShieldActive)
+	// 1. 발사체 확인
+	AProjectile* Projectile = Cast<AProjectile>(OtherActor);
+	if (!Projectile) return;
+
+	// 2. 데미지 전달
+	// Owner의 TakeDamage -> HealthComp -> ShieldComp::ApplyShieldDamage 
+	// 순서로 호출되어 로직 흐름이 유지됩니다.
+	if (AActor* Owner = GetOwner())
 	{
-		DeactivateShield();
+		float Damage = Projectile->DamageAmount;
+		UGameplayStatics::ApplyDamage(Owner, Damage, nullptr, Owner, UDamageType::StaticClass());
 	}
+
+	// 3. 피격 이펙트 재생
+	if (HitEffect && bShieldActive)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			HitEffect,
+			Hit.ImpactPoint,
+			Hit.ImpactNormal.Rotation()
+		);
+	}
+	Projectile->Destroy();
 }
 
+float UShieldComp::ApplyShieldDamage(float Damage)
+{
+	// 쉴드가 꺼져있으면 데미지를 모두 통과
+	if (!bShieldActive || CurrentShield <= 0.f)
+		return Damage;
+
+	CurrentShield -= Damage;
+	float RemainingDamage = 0.f;
+
+	// 쉴드 파괴 계산
+	if (CurrentShield <= 0.f)
+	{
+		RemainingDamage = -CurrentShield;
+		CurrentShield = 0.f;
+
+		DeactivateShield();
+		OnShieldBroken.Broadcast();
+	}
+	else
+	{
+		RemainingDamage = 0.f;
+	}
+
+	return RemainingDamage;
+}
