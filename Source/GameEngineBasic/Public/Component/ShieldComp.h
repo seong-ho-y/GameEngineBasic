@@ -62,10 +62,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void DeactivateShield();
 
-	float ApplyShieldDamage(float Damage);
-
 	UFUNCTION(BlueprintCallable)
 	bool IsShieldActive() const { return bShieldActive; }
+
+	float ApplyShieldDamage(float Damage);
+
+	
 
 private:
 	UFUNCTION()
