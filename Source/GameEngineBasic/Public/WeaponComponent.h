@@ -26,6 +26,9 @@ public:
 
 	virtual bool CanFire() const;
 	virtual void PerformFire();
+	FVector GetAimPoint() const;
+	FVector GetMuzzleLoc() const;
+
 protected:
 
 	UPROPERTY()
@@ -34,8 +37,10 @@ protected:
 	UPROPERTY()
 	UShooterComp* ShooterComp;
 
-	FVector GetAimPoint() const;
-	FVector GetMuzzleLoc() const;
+	
+	UPROPERTY(EditAnywhere, Category = "Muzzle")
+	FName MuzzleSocketName;
+	
 	virtual FVector GetAimDirection() const; // If there are more than one aim logic, you can override in child weapon
 public:	
 	// Called every frame

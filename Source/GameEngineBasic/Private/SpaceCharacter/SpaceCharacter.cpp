@@ -61,6 +61,7 @@ ASpaceCharacter::ASpaceCharacter()
 	WingComp = CreateDefaultSubobject<UWingComponent>(TEXT("WingComp"));
 	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
+	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp")); 
 
 }
 

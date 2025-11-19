@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "TargetingSystemComponent.h"
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
@@ -100,6 +101,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ShieldAction;
+
+	UPROPERTY(EditAnywhere, Category = "Component")
+	UTargetingSystemComponent* TargetingComp;
 
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }

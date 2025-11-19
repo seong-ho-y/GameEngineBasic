@@ -28,6 +28,25 @@ void UShooterComp::BeginPlay()
 void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (bIsReloading)
+	{
+		ReloadTimeRemaining -= DeltaTime;
+		float ReloadPercent = 1.f - (ReloadTimeRemaining / ReloadTimeTotal);
+
+		int32 TargetAmmo = FMath::FloorToInt(ReloadPercent * FullAmmo);
+		TargetAmmo = FMath::Clamp(TargetAmmo, 0, FullAmmo);
+
+		if (CurrentAmmo < TargetAmmo)
+		{
+			CurrentAmmo++;
+			OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo);
+		}
+		if (ReloadTimeRemaining <= 0.f)
+		{
+			ReloadSuccess();
+		}
+	}
 }
 
 bool UShooterComp::TryFire()
@@ -94,7 +113,7 @@ void UShooterComp::Fire_Implementation()
 	if (bUseAmmo)
 	{
 		CurrentAmmo--;
-		OnAmmoChanged.Broadcast(CurrentAmmo, MaxAmmo);
+		OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo);
 	}
 	
 	// 쿨다운
@@ -109,34 +128,9 @@ void UShooterComp::Fire_Implementation()
 	// 1. WeaponComp에서 할당된 Muzzle 있는지 확인
 	// 2. Owner의 SkeletalMesh or StaticMesh 접근해서 Muzzle 찾기
 	// 3. 없으면 Owner->GetActorLocation()
-	FVector SpawnLoc;
-	FRotator SpawnRot;
-
-	if (bHasExternalMuzzleInfo)
-	{
-		SpawnLoc = ExternalMuzzleLoc;
-		SpawnRot = ExternalMuzzleRot;
-	}
-	else
-	{
-		// Fallback: 적 AI가 사용하는 기존 구조 (Mesh에서 소켓 찾기)
-		USceneComponent* MuzzleComp = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
-
-		if (!MuzzleComp)
-			MuzzleComp = GetOwner()->FindComponentByClass<UStaticMeshComponent>();
-
-		if (MuzzleComp)
-		{
-			SpawnLoc = MuzzleComp->GetSocketLocation(MuzzleSocketName);
-			SpawnRot = MuzzleComp->GetSocketRotation(MuzzleSocketName);
-		}
-		else
-		{
-			SpawnLoc = GetOwner()->GetActorLocation();
-			SpawnRot = GetOwner()->GetActorRotation();
-		}
-	}
-	// Projectile 스폰
+	FVector SpawnLoc = bHasExternalMuzzleInfo ? ExternalMuzzleLoc : FindMuzzleLoc();
+	FRotator DummyRot;
+	// Projectile 스폰 파라미터 설정
 	FActorSpawnParameters Params;
 	Params.Owner = MyOwner;
 	Params.Instigator = MyOwner->GetInstigator();
@@ -146,7 +140,7 @@ void UShooterComp::Fire_Implementation()
 	AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
 		ProjectileClass,
 		SpawnLoc,
-		SpawnRot,
+		DummyRot,
 		Params);
 	// =========== 임시 로그 ===========
 	if (!Projectile)
@@ -159,6 +153,7 @@ void UShooterComp::Fire_Implementation()
 		   *SpawnLoc.ToString());
 	*/
 
+	// 프로젝타일 스폰 성공 시 데미지 & 방향 설정
 	if (Projectile)
 	{
 		Projectile->DamageAmount = PendingDamage;
@@ -167,9 +162,11 @@ void UShooterComp::Fire_Implementation()
 		if (Projectile->GetProjectileMovement())
 		{
 			const FVector Direction = FireDirection.IsNearlyZero()
-				? SpawnRot.Vector()
+				? FVector::ZeroVector
 				: FireDirection;
 
+
+			// 프로젝타일 방향 계산 후 설정
 			Projectile->GetProjectileMovement()->Velocity =
 				Direction * Projectile->GetProjectileMovement()->InitialSpeed;
 		}
@@ -188,8 +185,7 @@ void UShooterComp::Fire_Implementation()
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			MuzzleFlashEffect,
-			SpawnLoc,
-			SpawnRot);
+			SpawnLoc);
 	}
 	if (FireSound)
 	{
@@ -232,12 +228,47 @@ void UShooterComp::StartReload(float ReloadTime)
 		return;
 	}
 	bIsReloading = true;
+	ReloadTimeTotal = ReloadTime;
+	ReloadTimeRemaining = ReloadTime;
+	
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Emerald, TEXT("Reloading..."));
-	GetWorld()->GetTimerManager().SetTimer(
-		ReloadTimerHandle,this, &UShooterComp::ReloadSuccess,ReloadTime);
 }
 void UShooterComp::ReloadSuccess()
 {
 	CurrentAmmo = FMath::Min(FullAmmo, MaxAmmo);
 	bIsReloading = false;
+	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo);
+}
+void UShooterComp::SetMuzzle(const FVector& Loc)
+{
+	bHasExternalMuzzleInfo = true;
+	ExternalMuzzleLoc = Loc;
+}
+void UShooterComp::ClearMuzzle()
+{
+	bHasExternalMuzzleInfo = false;
+}
+
+FVector UShooterComp::FindMuzzleLoc() const
+{
+	FVector SpawnLoc;
+	
+	// 1. 스켈레탈 메쉬를 먼저 확인
+	USceneComponent* MuzzleComp = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
+
+	// 2. 스켈레탈 메쉬 없으면 스태틱 메쉬 확인
+	if (!MuzzleComp)
+		MuzzleComp = GetOwner()->FindComponentByClass<UStaticMeshComponent>();
+
+	// 3. Mesh에서 MuzzleSocketName에 맞는 Muzzle 위치 가져오기
+	if (MuzzleComp)
+	{
+		SpawnLoc = MuzzleComp->GetSocketLocation(MuzzleSocketName);
+	}
+	// 4. Muzzle이 없으면 그냥 액터의 위치 반환
+	else
+	{
+		SpawnLoc = GetOwner()->GetActorLocation();
+	}
+	return SpawnLoc;
 }

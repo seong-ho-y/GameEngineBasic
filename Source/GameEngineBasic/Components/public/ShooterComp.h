@@ -62,6 +62,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ReloadSuccess();
+	void SetMuzzle(const FVector& Loc);
+	void ClearMuzzle();
+	FVector FindMuzzleLoc() const;
 
 public:
 
@@ -115,6 +118,13 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Option")
 	bool bUseAmmo = true;
+
+	UPROPERTY()
+	float ReloadTimeRemaining = 0.f;
+
+	UPROPERTY()
+	float ReloadTimeTotal = 0.f;
+
 private:
 	UPROPERTY()
 	bool bIsReadyToFire = true;
