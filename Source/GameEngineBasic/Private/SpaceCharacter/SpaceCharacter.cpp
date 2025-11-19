@@ -11,12 +11,14 @@
 #include "Component/FuelComponent.h"
 #include "Component/WingComponent.h"
 #include "Component/ShieldComp.h"
+#include "Component/ExecutionComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 
+#include "GameEngineBasic/Public/Item/AbilityUnlockItem.h"	
 #include "Animation/AnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -62,7 +64,7 @@ ASpaceCharacter::ASpaceCharacter()
 	WingComp = CreateDefaultSubobject<UWingComponent>(TEXT("WingComp"));
 	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
-
+	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
 }
 
 void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -110,6 +112,8 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		{
 			EnhancedInput->BindAction(BoostAction, ETriggerEvent::Started, this, &ASpaceCharacter::HandleSprintOrBoostInput);
 		}
+		if(ExecuteAction)
+			EnhancedInput->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryExecutionInput);
 	}
 }
 
@@ -447,7 +451,7 @@ void ASpaceCharacter::PlayFireMontage()
 	{
 		if (FireMontage && !AnimInstance->Montage_IsPlaying(FireMontage))
 		{
-			UE_LOG(LogTemp, Log, TEXT("ASpaceCharacter::PlayFireMontage: --- Playing FireMontage! ---"));
+			//UE_LOG(LogTemp, Log, TEXT("ASpaceCharacter::PlayFireMontage: --- Playing FireMontage! ---"));
 			AnimInstance->Montage_Play(FireMontage);
 		}
 	}
@@ -505,8 +509,6 @@ float ASpaceCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Damage
 	{
 		RealHealthDamageTaken = HealthComp->ApplyHealthDamage(ActualDamage);
 	}
-	if(GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("%f"), RealHealthDamageTaken));
 
 	if (!bIsDead && RealHealthDamageTaken > 0.f && HitMontage)
 	{
@@ -532,12 +534,6 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	if (GetMesh())
-	{
-		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-		GetMesh()->SetSimulatePhysics(true);
-	}
-
 	GetWorldTimerManager().SetTimer(
 		DeathTimerHandle,
 		this,
@@ -551,15 +547,69 @@ void ASpaceCharacter::ExplodeAndDestroy()
 {
 	if (DeathExplosionEffect && GetMesh())
 	{
-		FVector SpawnLocation = GetMesh()->GetComponentLocation();
-		UGameplayStatics::SpawnEmitterAtLocation(
-			GetWorld(),
+		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+		{
+			Anim->Montage_Play(DeathMontage);
+		}
+
+		UGameplayStatics::SpawnEmitterAttached(
 			DeathExplosionEffect,
-			SpawnLocation,
-			FRotator::ZeroRotator,
-			true
+			GetMesh(),
+			FName("Shield")
 		);
 	}
 
 	Destroy();
+}
+
+
+void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
+{
+	switch (Ability)
+	{
+	case EAbilityType::Sprint:
+		bCanSprint = true;
+		break;
+
+	case EAbilityType::Flying:
+		bCanFly = true;
+		break;
+
+	case EAbilityType::Dash:
+		bCanDash = true;
+		break;
+
+	case EAbilityType::Shield:
+		bCanShield = true;
+		break;
+	}
+
+
+	// 연출
+	if (UAnimMontage** MontagePtr = AbilityUnlockMontages.Find(Ability))
+	{
+		UAnimMontage* Montage = *MontagePtr;
+		if (Montage)
+		{
+			if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+			{
+				Anim->Montage_Play(Montage);
+			}
+		}
+	}
+}
+
+void ASpaceCharacter::TryExecutionInput()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
+
+	if (ExecutionComp)
+		if (ExecutionComp->StartExecution())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Started"));
+			if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
+			{
+				Anim->Montage_Play(ExecuteMontage);
+			}
+		}
 }

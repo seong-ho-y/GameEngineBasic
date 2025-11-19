@@ -17,8 +17,10 @@ class UHealthComp;
 class UShieldComp;
 class UFuelComponent;
 class UWingComponent;
+class UExecutionComp;
 
 class AProjectile;
+class AAblityUnlockItem;
 class US_Charging;
 
 UENUM(BlueprintType)
@@ -73,6 +75,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UExecutionComp* ExecutionComp;
+
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* JumpAction;
@@ -100,7 +105,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ShieldAction;
-
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ExecuteAction;
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
 
@@ -115,6 +122,8 @@ public:
 	FORCEINLINE class UHealthComp* GetHealthComponent() const { return HealthComp; }
 
 	FORCEINLINE class UShieldComp* GetShieldComponent() const { return ShieldComp; }
+
+	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
 
 public:
 	// Particle System Components
@@ -136,6 +145,15 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* HitMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ExecuteMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
+	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
 
 	// Particle Systems
 	UPROPERTY(EditAnywhere, Category = "Effect")
@@ -188,6 +206,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Charge")
 	float MaxChargeTime = 6.0f;
 
+	
+public:
+	// Item Unlocks
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanSprint = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanFly = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanDash = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanShield = false;
+
+	UFUNCTION(BlueprintCallable)
+	void UnlockAbility(EAbilityType Ability);
+
 public:
 	// Shield
 	UFUNCTION()
@@ -228,6 +264,8 @@ public:
 	void PlayFireMontage();
 
 	void StartCharge();
+
+	void TryExecutionInput();
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 		class AController* EventInstigator, AActor* DamageCauser) override;
