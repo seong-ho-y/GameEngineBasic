@@ -18,8 +18,10 @@ class UHealthComp;
 class UShieldComp;
 class UFuelComponent;
 class UWingComponent;
+class UExecutionComp;
 
 class AProjectile;
+class AAblityUnlockItem;
 class US_Charging;
 
 UENUM(BlueprintType)
@@ -77,6 +79,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Components")
 	UTargetingSystemComponent* TargetingComp;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UExecutionComp* ExecutionComp;
 
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -109,6 +113,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ReloadAction;
 
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ExecuteAction;
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
 
@@ -124,6 +131,7 @@ public:
 
 	FORCEINLINE class UShieldComp* GetShieldComponent() const { return ShieldComp; }
 
+	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
 
 public:
 	// Particle System Components
@@ -143,12 +151,27 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ShieldMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* HitMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ExecuteMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
+	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
+
 	// Particle Systems
-	UPROPERTY(EditAnywhere, Category = "Charge")
+	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ChargingEffect;
 
-	UPROPERTY(EditAnywhere, Category = "Charge")
+	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ShieldEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* DeathExplosionEffect;
 
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
@@ -156,6 +179,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 1200.f;
+
+	// ���
+	UPROPERTY(EditAnywhere, Category = "State|Movement")
+	float RagdollDuration = 3.0f; 
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
@@ -187,6 +214,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Charge")
 	float MaxChargeTime = 6.0f;
 
+	
+public:
+	// Item Unlocks
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanSprint = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanFly = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanDash = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanShield = false;
+
+	UFUNCTION(BlueprintCallable)
+	void UnlockAbility(EAbilityType Ability);
+
 public:
 	// Shield
 	UFUNCTION()
@@ -199,11 +244,16 @@ public:
 	void OnShieldKeyPressed(const FInputActionInstance& Instance);
 	void HandleReload();
 
+	// Die
+	UFUNCTION()
+	void OnCharacterDeath(AActor* DeadActor);
+
+	void ExplodeAndDestroy();
+
 public:
 	virtual void BeginPlay() override;
 
 	void HandleSprintOrBoostInput(const FInputActionValue& Value);
-
 	void StartSprint();
 	void StopSprint();
 	void ToggleFlyingMode();
@@ -223,6 +273,11 @@ public:
 	void PlayFireMontage();
 
 	void StartCharge();
+
+	void TryExecutionInput();
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+		class AController* EventInstigator, AActor* DamageCauser) override;
 
 	void ChangeState(ECharacterState NewState);
 	ECharacterState GetCurrentState() const { return CurrentState; }
@@ -245,7 +300,8 @@ public:
 public:
 	FTimerHandle BoostHandle;
 	FTimerHandle FlightDelayHandle;
-	FTimerHandle ChargeDelayHandle;
+	FTimerHandle ChargeDelayHandle; 
+	FTimerHandle DeathTimerHandle;
 
 	// ī�޶� �⺻ �Ÿ�
 	float DefaultArmLength = 300.f;
@@ -260,4 +316,7 @@ public:
 	bool bIsCameraTransitioning = false;
 
 	float SprintInterpSpeed = 5.f;
+
+	// ��� ����
+	bool bIsDead = false;
 };
