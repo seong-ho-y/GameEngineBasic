@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "TargetingSystemComponent.h"
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
@@ -75,6 +76,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
 
+	UPROPERTY(EditAnywhere, Category = "Components")
+	UTargetingSystemComponent* TargetingComp;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UExecutionComp* ExecutionComp;
 
@@ -105,6 +109,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ShieldAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ReloadAction;
+
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ExecuteAction;
@@ -172,7 +180,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 1200.f;
 
-	// »ç¸Á
+	// ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "State|Movement")
 	float RagdollDuration = 3.0f; 
 
@@ -234,6 +242,7 @@ public:
 
 	UFUNCTION()
 	void OnShieldKeyPressed(const FInputActionInstance& Instance);
+	void HandleReload();
 
 	// Die
 	UFUNCTION()
@@ -294,20 +303,20 @@ public:
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
 
-	// Ä«¸Þ¶ó ±âº» °Å¸®
+	// Ä«ï¿½Þ¶ï¿½ ï¿½âº» ï¿½Å¸ï¿½
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
-	// Aim ½Ã Ä«¸Þ¶ó À§Ä¡ ¿ÀÇÁ¼Â
+	// Aim ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	// Ä«¸Þ¶ó º¯¼ö
+	// Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
 
 	float SprintInterpSpeed = 5.f;
 
-	// »ç¸Á ¿©ºÎ
+	// ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	bool bIsDead = false;
 };

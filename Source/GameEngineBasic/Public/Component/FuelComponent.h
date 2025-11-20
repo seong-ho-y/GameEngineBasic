@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "FuelComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FFuelChanged, float, CurrentFuel, float, MaxFuel);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UFuelComponent : public UActorComponent
@@ -14,7 +15,9 @@ class GAMEENGINEBASIC_API UFuelComponent : public UActorComponent
 
 public:
     UFuelComponent();
-
+    
+    UPROPERTY(BlueprintAssignable)
+    FFuelChanged OnFuelChanged;
 protected:
     virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -23,6 +26,8 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Fuel")
     float MaxFuel = 100.f;
 
+
+
     UPROPERTY(VisibleAnywhere, Category = "Fuel")
     float CurrentFuel = 100.f;
 
@@ -30,7 +35,7 @@ protected:
     float FlyingConsumeRate = 12.f;
 
     UPROPERTY(EditAnywhere, Category = "Fuel|Rates")
-    float RechargeRate = 6.f;
+    float RechargeRate = 10.f;
 
     UPROPERTY(EditAnywhere, Category = "Fuel|Boost")
     float BoostCost = 20.f;
