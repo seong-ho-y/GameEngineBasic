@@ -16,7 +16,7 @@ enum class EProjectileType : uint8
 	Laser      UMETA(DisplayName = "Laser")
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChanged, int32, CurrentAmmo, int32, MaxAmmo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAmmoChanged, int32, CurrentAmmo, int32, FullAmmo, int32, MaxAmmo);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
@@ -28,6 +28,11 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Events")
 	FOnAmmoChanged OnAmmoChanged;
+	bool bHasExternalMuzzleInfo = false;
+	FVector ExternalMuzzleLoc;
+	FRotator ExternalMuzzleRot;
+	float ReloadTime = 5.f;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -53,6 +58,15 @@ public:
 	UFUNCTION()
 	void SetProjectile(); // ProjectileMap에서 자동 선택
 
+	UFUNCTION(BlueprintCallable)
+	void StartReload();
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadSuccess();
+	void SetMuzzle(const FVector& Loc);
+	void ClearMuzzle();
+	FVector FindMuzzleLoc() const;
+
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
@@ -71,7 +85,10 @@ public:
 	float FireRate = 0.01f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentAmmo = 999;
+	int32 CurrentAmmo = 30;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 FullAmmo = 30;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 MaxAmmo = 999;
@@ -91,18 +108,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FVector FireDirection = FVector::ZeroVector;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector MuzzleLocation = FVector::ZeroVector;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Homing")
 	bool bUseArcHoming = true;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Target")
 	AActor* CurrentTarget = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Option")
+	bool bUseAmmo = true;
+
+	UPROPERTY()
+	float ReloadTimeRemaining = 0.f;
+
+	UPROPERTY()
+	float ReloadTimeTotal = 0.f;
+
 private:
 	UPROPERTY()
 	bool bIsReadyToFire = true;
 
-	FTimerHandle FireRateTimerHandle;
+	bool bIsReloading = false;
 
+	FTimerHandle FireRateTimerHandle;
+	FTimerHandle ReloadTimerHandle;
 public:
 
 };

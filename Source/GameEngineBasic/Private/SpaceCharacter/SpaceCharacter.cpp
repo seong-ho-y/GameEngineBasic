@@ -33,6 +33,8 @@
 #include <SpaceCharacter/States/S_FlyAim.h>
 #include <SpaceCharacter/States/S_FlyCharge.h>
 
+#include "WeaponComponent.h"
+
 ASpaceCharacter::ASpaceCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -64,6 +66,8 @@ ASpaceCharacter::ASpaceCharacter()
 	WingComp = CreateDefaultSubobject<UWingComponent>(TEXT("WingComp"));
 	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
+	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp")); 
+
 	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
 }
 
@@ -73,6 +77,8 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		if (ReloadAction)
+			EnhancedInput->BindAction(ReloadAction, ETriggerEvent::Started, this, &ASpaceCharacter::HandleReload);
 		if (MoveAction)
 			EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Move);
 
@@ -495,6 +501,12 @@ void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*
 	if (ShieldComp)
 		ShieldComp->ActivateShield();
 }
+void ASpaceCharacter::HandleReload()
+{
+	if (Shooter)
+	{
+		Shooter->StartReload();
+	}
 
 
 float ASpaceCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
