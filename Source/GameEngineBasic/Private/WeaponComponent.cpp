@@ -15,6 +15,11 @@ void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* I
 {
 	OwnerCharacter = Player;
 	ShooterComp = InShooterComp;
+	ShooterComp->ReloadTime = WeaponData.ReloadTime;
+	ShooterComp->CurrentAmmo = WeaponData.FullAmmo;
+	ShooterComp->FullAmmo = WeaponData.FullAmmo;
+	ShooterComp->MaxAmmo = WeaponData.MaxAmmo;
+	ShooterComp->PendingDamage = WeaponData.Damage;
 }
 
 

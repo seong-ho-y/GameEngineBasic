@@ -16,7 +16,7 @@ enum class EProjectileType : uint8
 	Laser      UMETA(DisplayName = "Laser")
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChanged, int32, CurrentAmmo, int32, MaxAmmo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAmmoChanged, int32, CurrentAmmo, int32, FullAmmo, int32, MaxAmmo);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
@@ -31,6 +31,7 @@ public:
 	bool bHasExternalMuzzleInfo = false;
 	FVector ExternalMuzzleLoc;
 	FRotator ExternalMuzzleRot;
+	float ReloadTime = 5.f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -58,7 +59,7 @@ public:
 	void SetProjectile(); // ProjectileMap에서 자동 선택
 
 	UFUNCTION(BlueprintCallable)
-	void StartReload(float ReloadTime);
+	void StartReload();
 
 	UFUNCTION(BlueprintCallable)
 	void ReloadSuccess();
@@ -84,7 +85,7 @@ public:
 	float FireRate = 0.01f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentAmmo = 999;
+	int32 CurrentAmmo = 30;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	int32 FullAmmo = 30;

@@ -74,6 +74,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
 
+	UPROPERTY(EditAnywhere, Category = "Components")
+	UTargetingSystemComponent* TargetingComp;
+
+
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* JumpAction;
@@ -102,8 +106,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ShieldAction;
 
-	UPROPERTY(EditAnywhere, Category = "Component")
-	UTargetingSystemComponent* TargetingComp;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ReloadAction;
 
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
@@ -193,6 +197,7 @@ public:
 
 	UFUNCTION()
 	void OnShieldKeyPressed(const FInputActionInstance& Instance);
+	void HandleReload();
 
 public:
 	virtual void BeginPlay() override;

@@ -1,5 +1,6 @@
 ﻿#include "../Components/public/ShooterComp.h"
 #include "HomingMissileProjectile.h"
+#include "MyPlayerHUD.h"
 #include "NiagaraFunctionLibrary.h"
 #include "AnimNodes/AnimNode_RandomPlayer.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,74 +25,49 @@ void UShooterComp::BeginPlay()
 }
 
 
-// Called every frame
 void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (bIsReloading)
-	{
-		ReloadTimeRemaining -= DeltaTime;
-		float ReloadPercent = 1.f - (ReloadTimeRemaining / ReloadTimeTotal);
+	if (!bIsReloading)
+		return;
 
-		int32 TargetAmmo = FMath::FloorToInt(ReloadPercent * FullAmmo);
-		TargetAmmo = FMath::Clamp(TargetAmmo, 0, FullAmmo);
+	// Reload 진행 시간 감소
+	ReloadTimeRemaining -= DeltaTime;
+	ReloadTimeRemaining = FMath::Max(0.f, ReloadTimeRemaining);
 
-		if (CurrentAmmo < TargetAmmo)
-		{
-			CurrentAmmo++;
-			OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo);
-		}
-		if (ReloadTimeRemaining <= 0.f)
-		{
-			ReloadSuccess();
-		}
-	}
-}
+	float Elapsed = ReloadTimeTotal - ReloadTimeRemaining;
+	float ReloadPercent = Elapsed / ReloadTimeTotal;
+	ReloadPercent = FMath::Clamp(ReloadPercent, 0.f, 1.f);
 
-bool UShooterComp::TryFire()
-{
-	if (bIsReloading) return false;
-	
-	if (bUseAmmo && CurrentAmmo <= 0)
-	{
-		StartReload( 3.0f /* 임시 값, 나중에 무기별로 장전시간 변수 만들어서 넣어줄 예정 */ );
-		return false;
-	}
-	if (!CanFire())
-	{
-		return false;
-	}
-	Fire();
-	return true;
-}
+	// 새로 계산된 Ammo 값
+	int32 NewAmmo = FMath::RoundToInt(ReloadPercent * FullAmmo);
 
-void UShooterComp::SetFireDirection(const FVector& NewDir)
-{
-	FireDirection = NewDir.GetSafeNormal();
-}
+	// 현재 가지고 있는 최대로 채울 수 있는 ammo를 넘지 않도록
+	int32 MaxCanFill = FMath::Min(FullAmmo, MaxAmmo);
 
-bool UShooterComp::CanFire() const
-{
-	// 1. Check Ammo
-	if (bUseAmmo && CurrentAmmo <= 0)
+	NewAmmo = FMath::Clamp(NewAmmo, 0, MaxCanFill);
+
+	// HUD 업데이트
+	if (NewAmmo != CurrentAmmo)
 	{
-		return false;
-	}
-	// 2. Check Cooldown
-	if (!bIsReadyToFire)
-	{
-		return false;
+		CurrentAmmo = NewAmmo;
+		OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
 	}
 
-	if (!ProjectileClass && ProjectileMap.Num() == 0)
+	// Reload 종료 조건 1 : 시간이 다 됨
+	if (ReloadTimeRemaining <= 0.f)
 	{
-		//UE_LOG(LogTemp, Error, TEXT("CanFire: No ProjectileClass and ProjectileMap is empty"));
-		return false;
+		ReloadSuccess();
+		return;
 	}
-	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
 
-	return true;
+	// Reload 종료 조건 2 : 더 이상 채울 Ammo가 없음
+	if (CurrentAmmo >= MaxCanFill)
+	{
+		ReloadSuccess();
+		return;
+	}
 }
 
 void UShooterComp::Fire_Implementation()
@@ -113,7 +89,7 @@ void UShooterComp::Fire_Implementation()
 	if (bUseAmmo)
 	{
 		CurrentAmmo--;
-		OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo);
+		OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
 	}
 	
 	// 쿨다운
@@ -193,6 +169,85 @@ void UShooterComp::Fire_Implementation()
 	}
 }
 
+
+void UShooterComp::StartReload()
+{
+	if (bIsReloading)
+		return;
+
+	if (CurrentAmmo >= FullAmmo || CurrentAmmo >= MaxAmmo)
+		return; // 이미 FULL 이면 필요 없음
+
+	bIsReloading = true;
+
+	ReloadTimeTotal = ReloadTime;
+	ReloadTimeRemaining = ReloadTime;
+
+	UE_LOG(LogTemp, Log, TEXT("Reload Start: ReloadTime = %.2f"), ReloadTime);
+}
+
+
+void UShooterComp::ReloadSuccess()
+{
+	bIsReloading = false;
+
+	// MaxAmmo와 FullAmmo 비교
+	int32 MaxCanFill = FMath::Min(FullAmmo, MaxAmmo);
+
+	CurrentAmmo = MaxCanFill;
+	MaxAmmo -= CurrentAmmo;
+	
+	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
+
+	UE_LOG(LogTemp, Log, TEXT("Reload Success → Ammo = %d / %d"), CurrentAmmo, FullAmmo);
+}
+
+bool UShooterComp::TryFire()
+{
+	if (bIsReloading) return false;
+	
+	if (bUseAmmo && CurrentAmmo <= 0)
+	{
+		StartReload();
+		return false;
+	}
+	if (!CanFire())
+	{
+		return false;
+	}
+	Fire();
+	return true;
+}
+
+void UShooterComp::SetFireDirection(const FVector& NewDir)
+{
+	FireDirection = NewDir.GetSafeNormal();
+}
+
+bool UShooterComp::CanFire() const
+{
+	// 1. Check Ammo
+	if (bUseAmmo && CurrentAmmo <= 0)
+	{
+		return false;
+	}
+	// 2. Check Cooldown
+	if (!bIsReadyToFire)
+	{
+		return false;
+	}
+
+	if (!ProjectileClass && ProjectileMap.Num() == 0)
+	{
+		//UE_LOG(LogTemp, Error, TEXT("CanFire: No ProjectileClass and ProjectileMap is empty"));
+		return false;
+	}
+	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
+
+	return true;
+}
+
+
 void UShooterComp::ResetFireReady()
 {
 	bIsReadyToFire = true;
@@ -220,25 +275,7 @@ void UShooterComp::SetProjectile()
 	}
 }
 
-void UShooterComp::StartReload(float ReloadTime)
-{
-	if (MaxAmmo <= 0 || bIsReloading)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Fail to Reload"));
-		return;
-	}
-	bIsReloading = true;
-	ReloadTimeTotal = ReloadTime;
-	ReloadTimeRemaining = ReloadTime;
-	
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Emerald, TEXT("Reloading..."));
-}
-void UShooterComp::ReloadSuccess()
-{
-	CurrentAmmo = FMath::Min(FullAmmo, MaxAmmo);
-	bIsReloading = false;
-	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo);
-}
+
 void UShooterComp::SetMuzzle(const FVector& Loc)
 {
 	bHasExternalMuzzleInfo = true;

@@ -30,6 +30,8 @@
 #include <SpaceCharacter/States/S_FlyAim.h>
 #include <SpaceCharacter/States/S_FlyCharge.h>
 
+#include "WeaponComponent.h"
+
 ASpaceCharacter::ASpaceCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -71,6 +73,8 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		if (ReloadAction)
+			EnhancedInput->BindAction(ReloadAction, ETriggerEvent::Started, this, &ASpaceCharacter::HandleReload);
 		if (MoveAction)
 			EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Move);
 
@@ -486,4 +490,11 @@ void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*
 {
 	if (ShieldComp)
 		ShieldComp->ActivateShield();
+}
+void ASpaceCharacter::HandleReload()
+{
+	if (Shooter)
+	{
+		Shooter->StartReload();
+	}
 }

@@ -38,7 +38,11 @@ bool UFuelComponent::CanFly() const
 
 void UFuelComponent::Consume(float Amount)
 {
+    float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel - Amount, 0.f, MaxFuel);
+
+    if (CurrentFuel!=OldFuel)
+        OnFuelChanged.Broadcast(CurrentFuel,MaxFuel);
 }
 
 void UFuelComponent::ConsumeFlying(float DeltaTime)
@@ -48,5 +52,9 @@ void UFuelComponent::ConsumeFlying(float DeltaTime)
 
 void UFuelComponent::Recharge(float DeltaTime)
 {
+    float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel + RechargeRate * DeltaTime, 0.f, MaxFuel);
+    if (CurrentFuel != OldFuel)
+        OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
+    
 }

@@ -8,7 +8,24 @@
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "WeaponComponent.generated.h"
 
+USTRUCT(BlueprintType)
+struct FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
 
+public:
+	UPROPERTY(EditAnywhere)
+	float Damage;
+
+	UPROPERTY(EditAnywhere)
+	float ReloadTime;
+
+	UPROPERTY(EditAnywhere)
+	int32 FullAmmo;
+
+	UPROPERTY(EditAnywhere)
+	int32 MaxAmmo;
+};
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UWeaponComponent : public UActorComponent
 {
@@ -29,6 +46,7 @@ public:
 	FVector GetAimPoint() const;
 	FVector GetMuzzleLoc() const;
 
+	
 protected:
 
 	UPROPERTY()
@@ -37,6 +55,8 @@ protected:
 	UPROPERTY()
 	UShooterComp* ShooterComp;
 
+	UPROPERTY(EditAnywhere)
+	FWeaponData WeaponData;
 	
 	UPROPERTY(EditAnywhere, Category = "Muzzle")
 	FName MuzzleSocketName;
