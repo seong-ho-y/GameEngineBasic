@@ -7,6 +7,8 @@
 #include "EnemyHuman.h"
 #include "Component/FuelComponent.h"
 #include "Components/TextBlock.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
 
 #include "Kismet/GameplayStatics.h"
 

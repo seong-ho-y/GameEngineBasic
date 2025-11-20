@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "Component/ExecutionComp.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "Component/ExecutionComp.h"
 #include "Camera/CameraComponent.h"
@@ -26,7 +26,7 @@ bool UExecutionComp::StartExecution()
 	if (!Target)
 		return false;
 
-	// »óÅÂ ºê·ÎµåÄ³½ºÆ®
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Îµï¿½Ä³ï¿½ï¿½Æ®
 	OnExecutionStart.Broadcast(Target);
 	return true;
 }
@@ -75,7 +75,7 @@ AActor* UExecutionComp::FindExecutionTarget() const
 		FString::Printf(TEXT("Execution Target Found: %s"), *Enemy->GetName())
 	);
 	
-	// EnemyShieldComponent Ã¼Å© ¡æ bCanExecuted ÇÊ¿ä
+	// EnemyShieldComponent Ã¼Å© ï¿½ï¿½ bCanExecuted ï¿½Ê¿ï¿½
 	if (auto* Shield = Enemy->FindComponentByClass<UEnemyShieldComponent>())
 	{
 		if (Shield->CanBeExecuted())

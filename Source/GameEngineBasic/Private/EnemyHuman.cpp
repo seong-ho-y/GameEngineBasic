@@ -2,15 +2,12 @@
 
 
 #include "EnemyHuman.h"
-
 #include "EnemyAnimInstance.h"
 #include "EnemyShieldComponent.h"
-#include "NiagaraFunctionLibrary.h"
-#include "Engine/DamageEvents.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Perception/AIPerceptionComponent.h"
+
 
 // Sets default values
 AEnemyHuman::AEnemyHuman()
@@ -22,10 +19,7 @@ AEnemyHuman::AEnemyHuman()
 	ShooterComp = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
 	ShieldComp = CreateDefaultSubobject<UEnemyShieldComponent>(TEXT("ShieldComp"));
-	/*
-	HealthComp->bUseShield = false;
-	HealthComp->bUseShieldRegen = false;
-	*/
+	
 	PawnSensingComp->bOnlySensePlayers = true;
 	PawnSensingComp->SensingInterval = 0.1f;
 	

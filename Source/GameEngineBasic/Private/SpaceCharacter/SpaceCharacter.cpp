@@ -507,7 +507,7 @@ void ASpaceCharacter::HandleReload()
 	{
 		Shooter->StartReload();
 	}
-
+}
 
 float ASpaceCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {

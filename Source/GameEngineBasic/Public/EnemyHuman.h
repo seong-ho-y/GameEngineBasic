@@ -6,15 +6,14 @@
 #include "EnemyAnimInstance.h"
 #include "EnemyShieldComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
-#include "GameEngineBasic/Components/public/Damageable.h"
-#include "GameEngineBasic/Components/public/HealthComp.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
+
 #include "GameFramework/Character.h"
-#include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
-#include "Perception/AIPerceptionComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "EnemyHuman.generated.h"
+
+class UHealthComp;
+class UShooterComp;
 
 UCLASS()
 class GAMEENGINEBASIC_API AEnemyHuman : public ACharacter
@@ -50,8 +49,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UPawnSensingComponent* PawnSensingComp;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UShooterComp*  ShooterComp;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UHealthComp* HealthComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
