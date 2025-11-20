@@ -535,6 +535,9 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 	if (bIsDead) return;
 	bIsDead = true;
 
+	if(DeathMontage)
+		PlayAnimMontage(DeathMontage);
+
 	if (Controller)
 	{
 		Controller->StopMovement();
@@ -559,11 +562,6 @@ void ASpaceCharacter::ExplodeAndDestroy()
 {
 	if (DeathExplosionEffect && GetMesh())
 	{
-		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-		{
-			Anim->Montage_Play(DeathMontage);
-		}
-
 		UGameplayStatics::SpawnEmitterAttached(
 			DeathExplosionEffect,
 			GetMesh(),
@@ -613,15 +611,13 @@ void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
 
 void ASpaceCharacter::TryExecutionInput()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
 
 	if (ExecutionComp)
 		if (ExecutionComp->StartExecution())
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Started"));
-			if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-			{
-				Anim->Montage_Play(ExecuteMontage);
-			}
+			if (ExecuteMontage)
+				PlayAnimMontage(ExecuteMontage);
 		}
 }
