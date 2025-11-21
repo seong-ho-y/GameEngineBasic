@@ -12,9 +12,7 @@
 
 class UTextBlock;
 class UImage;
-/**
- * 
- */
+
 UCLASS()
 class GAMEENGINEBASIC_API UMyPlayerHUD : public UUserWidget
 {

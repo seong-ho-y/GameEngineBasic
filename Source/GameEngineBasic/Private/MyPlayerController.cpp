@@ -10,7 +10,6 @@
 void AMyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void AMyPlayerController::SetupInputComponent()

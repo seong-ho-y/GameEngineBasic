@@ -26,8 +26,6 @@ protected:
     UPROPERTY(EditAnywhere, Category = "Fuel")
     float MaxFuel = 100.f;
 
-
-
     UPROPERTY(VisibleAnywhere, Category = "Fuel")
     float CurrentFuel = 100.f;
 
