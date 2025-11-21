@@ -13,6 +13,9 @@
 void UMyPlayerHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
+	UE_LOG(LogTemp, Error, TEXT("[HUD] Constructed in %s | Instance: %p"),
+		*GetOuter()->GetName(),
+		this);
 
 	CacheReferences();
 

@@ -40,6 +40,10 @@ void UFuelComponent::Consume(float Amount)
 {
     float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel - Amount, 0.f, MaxFuel);
+    /*
+    if(GEngine)
+        GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, FString::Printf(TEXT("Fuel: %.2f / %.2f"), CurrentFuel, MaxFuel));
+    */
 
     if (CurrentFuel!=OldFuel)
         OnFuelChanged.Broadcast(CurrentFuel,MaxFuel);
