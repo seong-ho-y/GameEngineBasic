@@ -118,10 +118,6 @@ protected:
 	UInputAction* ExecuteAction;
 	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
 	UParticleSystem* ExecutionTeleportVFX;
-	UPROPERTY(EditAnywhere, Category = "Execution|Offset")
-	double ForwardOffset;
-	UPROPERTY(EditAnywhere, Category = "Execution|Offset")
-	double HeightOffset;
 
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
@@ -298,7 +294,7 @@ protected:
 
 	void SetState(ECharacterState NewState);
 
-	FVector GetExecutionPosition(AActor* Target, float a, float t);
+	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;

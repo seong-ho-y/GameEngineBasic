@@ -498,22 +498,30 @@ void ASpaceCharacter::TryExecutionInput()
 
 void ASpaceCharacter::OnExecutionStart(AActor* Target)
 {
-	// 1) 카메라 확대
-	FollowCamera->SetFieldOfView(70.f);
-
+	// 움직임 0으로
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->Velocity = FVector::ZeroVector;
+	}
+	
 	// 2) 입력 잠금
 	DisableInput(Cast<APlayerController>(Controller));
-	FVector ExecPos = GetExecutionPosition(Target, 120.f, 0.f);
+	
+	FVector ExecPos = GetExecutionPosition(Target, 500.f, 400.f);
+	
 	SetActorLocation(ExecPos);
 
 	// ================================
-	//  ❗ 적을 바라보도록 회전
+	//  적을 바라보도록 회전
 	// ================================
 	FRotator LookAt = (Target->GetActorLocation() - GetActorLocation()).Rotation();
 	SetActorRotation(LookAt);
 	Controller->SetControlRotation(LookAt);
+	//  카메라 확대
+	FollowCamera->SetFieldOfView(70.f);
 	// ================================
-	//  ❗ VFX 발사 (예: Teleport VFX)
+	//  VFX 발사 (예: Teleport VFX)
 	// ================================
 	if (ExecutionTeleportVFX)
 	{
@@ -670,15 +678,22 @@ void ASpaceCharacter::SetState(ECharacterState NewState)
 	CurrentState = NewState;
 }
 
-FVector ASpaceCharacter::GetExecutionPosition(AActor* Target, float a, float t)
+FVector ASpaceCharacter::GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset)
 {
-	// 적 정면 방향
-	FVector Forward = Target->GetActorForwardVector();
+	if (!Target) return GetActorLocation();
 
-	// 플레이어가 설 위치
-	FVector TargetLocation = Target->GetActorLocation()
-		+ Forward * ForwardOffset
-		+ FVector(0, 0, HeightOffset);
+	// 1) 적의 정면 방향
+	FVector Forward = Target->GetActorForwardVector().GetSafeNormal();
 
-	return TargetLocation;
+	// 2) 적의 바닥 위치 기준
+	const float HalfHeight = Target->GetSimpleCollisionHalfHeight();
+	FVector BaseLocation = Target->GetActorLocation() - FVector(0, 0, HalfHeight);
+
+	// 3) 최종 위치: 적 정면 ForwardOffset + 위로 UpOffset
+	FVector ExecPos =
+		BaseLocation +
+		Forward * ForwardOffset +   // 적 정면 앞으로 이동
+		FVector(0, 0, UpOffset);    // 위로 Offset
+
+	return ExecPos;
 }
