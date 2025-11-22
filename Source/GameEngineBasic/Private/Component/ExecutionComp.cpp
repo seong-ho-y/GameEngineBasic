@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "SpaceCharacter/SpaceCharacter.h"
 #include "Component/ExecutionComp.h"
+#include "SpaceCharacter/SpaceCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "EnemyShieldComponent.h"
 

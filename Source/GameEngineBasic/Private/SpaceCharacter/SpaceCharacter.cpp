@@ -393,13 +393,6 @@ void ASpaceCharacter::StopAim()
 
 void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 {
-	// 비행 
-	if (CurrentState == ECharacterState::FlyAim)
-	{
-		ChangeState(ECharacterState::FlyCharge);
-		return;
-	}
-
 	// 지상
 	if (CurrentState != ECharacterState::Aiming)
 		return;
@@ -435,7 +428,6 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		{
 			Shooter->SetFireDirection(FollowCamera->GetForwardVector());
 			Shooter->TryFire();
-			PlayFireMontage(); // 필요시 발사 몽타주 재생
 		}
 		return;
 	}
@@ -537,12 +529,6 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 
 	if(DeathMontage)
 		PlayAnimMontage(DeathMontage);
-
-	if (Controller)
-	{
-		Controller->StopMovement();
-		Controller->UnPossess();
-	}
 
 	if (GetCapsuleComponent())
 	{
