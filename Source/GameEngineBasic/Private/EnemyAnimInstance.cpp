@@ -1,6 +1,7 @@
 // EnemyAnimInstance.cpp
 #include "EnemyAnimInstance.h"
 
+#include "EnemyHuman.h"
 #include "KismetAnimationLibrary.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/Character.h"
@@ -24,6 +25,7 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (!OwnerChar || !OwnerChar->GetCharacterMovement()) return;
 	}
 
+	UpdateState();
 	UpdateLocomotionParams(DeltaSeconds);
 	UpdateAimParams(DeltaSeconds);
 }
@@ -31,14 +33,14 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 void UEnemyAnimInstance::UpdateState()
 {
 	if (!OwnerChar) return;
-
+	AEnemyHuman* Owner = Cast<AEnemyHuman>(OwnerChar);
 	// --- 전신 상태 우선 (가장 높은 우선순위) ---
-	if (bIsDead)
+	if (Owner->bIsDead)
 	{
 		FullBodyState = EFullBodyState::Dead;
 		return;
 	}
-	else if (bIsKnocked)
+	if (Owner->bIsKnocked)
 	{
 		FullBodyState = EFullBodyState::Knock;
 		return;
@@ -49,18 +51,14 @@ void UEnemyAnimInstance::UpdateState()
 	}
 
 	// --- 하체 상태 ---
-	if (bIsKnocked)
-		LowerBodyState = ELowerBodyState::Knock;
-	else if (bIsBoosting)
+	if (bIsBoosting)
 		LowerBodyState = ELowerBodyState::Boost;
 	else
 		LowerBodyState = ELowerBodyState::WalkBlendSpace;
 
 
 	// --- 상체 상태 ---
-	if (bIsKnocked)
-		UpperBodyState = EUpperBodyState::Knock;
-	else if (bShooting)
+	if (bShooting)
 		UpperBodyState = EUpperBodyState::Shoot;
 	else if (bReloading)
 		UpperBodyState = EUpperBodyState::Reload;

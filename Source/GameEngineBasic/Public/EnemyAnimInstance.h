@@ -14,7 +14,6 @@ enum class ELowerBodyState : uint8
 {
 	WalkBlendSpace,
 	Boost,
-	Knock,
 	Jump,
 	Land
 };
@@ -27,7 +26,6 @@ enum class EUpperBodyState : uint8
 	Shoot,
 	Reload,
 	Melee,
-	Knock
 };
 
 UENUM(BlueprintType)
@@ -53,9 +51,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	EFullBodyState FullBodyState = EFullBodyState::Default;
 	
-	bool bIsDead;
 	bool bShooting;
-	bool bIsKnocked;
 	bool bReloading;
 	bool bAiming;
 

@@ -611,7 +611,7 @@ void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
 
 void ASpaceCharacter::TryExecutionInput()
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
 
 	if (ExecutionComp)
 		if (ExecutionComp->StartExecution())

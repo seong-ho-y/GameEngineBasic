@@ -36,10 +36,15 @@ protected:
 	void SetLowerBodyState(ELowerBodyState NewState);
 	UFUNCTION(BlueprintCallable)
 	void SetUpperBodyState(EUpperBodyState NewState);
+	UFUNCTION()
+	void OnExecute();
+	UFUNCTION()
+	void OnExecuteTimeFinish();
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-public:	
+public:
+	void SetOutlineEnabled(bool bCond);
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale);
@@ -71,6 +76,11 @@ public:
 	FVector     BoostDirCached = FVector::ZeroVector;
 
 	FTimerHandle TimerHandle_BoostTick;
+public:
+	bool bIsKnocked;
+	bool bIsDead;
+
+
 
 	void OnBoostTick(); // ← 타이머 콜백
 	UFUNCTION()
@@ -108,7 +118,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* KnockMontage;
-
+	
+	UPROPERTY(EditAnywhere, Category = "Animation|Montage")
+	UAnimMontage* ExecutionMontage;
+	
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* DeathMontage;
 

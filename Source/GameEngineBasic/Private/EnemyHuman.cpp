@@ -25,6 +25,7 @@ AEnemyHuman::AEnemyHuman()
 	
 	ShieldComp->OnShieldBreak.AddDynamic(this, &AEnemyHuman::OnKnock);
 	HealthComp->OnDeath.AddDynamic(this, &AEnemyHuman::OnDie);
+	ShieldComp->OnShieldRestored.AddDynamic(this, &AEnemyHuman::OnExecuteTimeFinish);
 	
 	//몸체 자체 회전 끄기
 	bUseControllerRotationYaw = false;
@@ -56,6 +57,19 @@ float AEnemyHuman::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 	
 	return FinalDamage;
 }
+
+void AEnemyHuman::SetOutlineEnabled(bool bCond)
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (!MeshComp) return;
+
+	MeshComp->SetRenderCustomDepth(bCond);
+	if (bCond)
+	{
+		MeshComp->SetCustomDepthStencilValue(1);
+	}
+}
+
 void AEnemyHuman::EntryGroggyState(FName Bone)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy entered to GroggyState"));
@@ -145,7 +159,10 @@ void AEnemyHuman::EndBoost()
 void AEnemyHuman::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	if (ShieldComp->CanBeExecuted())
+		SetOutlineEnabled(true);
+	else
+		SetOutlineEnabled(false);
 }
 
 // Called to bind functionality to input
@@ -188,19 +205,13 @@ void AEnemyHuman::OnBoostTick()
 void AEnemyHuman::OnKnock()
 {
 	UE_LOG(LogTemp, Error, TEXT("Enemy Got Knocked"));
+	bIsKnocked = true;
 	if (bIsBoosting)
 	{
 		EndBoost(); // Boost 중이면 강제 종료
 	}
-
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		Anim->FullBodyState = EFullBodyState::Knock;
-		Anim->Montage_Play(KnockMontage);
-	}
-	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
-	{
-		Anim->FullBodyState = EFullBodyState::Knock;
 		Anim->Montage_Play(KnockMontage);
 	}
 }
@@ -213,7 +224,6 @@ void AEnemyHuman::OnDie(AActor* DeadActor)
 
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		Anim->FullBodyState = EFullBodyState::Dead;
 		Anim->Montage_Play(DeathMontage);
 	}
 
@@ -233,4 +243,15 @@ void AEnemyHuman::SetUpperBodyState(EUpperBodyState NewState)
 {
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 		Anim->UpperBodyState = NewState;
+}
+void AEnemyHuman::OnExecute() // 적 처형 실행 되었을 때
+{
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+		Anim->Montage_Play(ExecutionMontage);
+	// 적 Mesh에 빨간색으로 Glow효과 (레퍼런스 : 둠)
+	
+}
+void AEnemyHuman::OnExecuteTimeFinish()
+{
+	
 }

@@ -101,6 +101,8 @@ void UEnemyShieldComponent::ShieldBrokenVFX()
 {
 	if (ShieldBrokenVfx)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),ShieldBrokenVfx,GetOwner()->GetActorLocation());
+	if (ShieldBrokenParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShieldBrokenParticle, GetOwner()->GetActorLocation());
 	if (ShieldBrokenSound)
 		UGameplayStatics::SpawnSoundAtLocation(GetWorld(),ShieldBrokenSound, GetOwner()->GetActorLocation());
 }
@@ -108,7 +110,8 @@ void UEnemyShieldComponent::ShieldResotreVFX()
 {
 	if (ShieldResotreVfx)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ShieldResotreVfx, GetOwner()->GetActorLocation());
+	if (ShieldRestoreParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShieldRestoreParticle, GetOwner()->GetActorLocation());
 	if (ShieldRestoreSound)
-		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShieldBrokenSound, GetOwner()->GetActorLocation());
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShieldRestoreSound, GetOwner()->GetActorLocation());
 }
-
