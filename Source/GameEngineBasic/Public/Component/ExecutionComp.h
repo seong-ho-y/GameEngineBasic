@@ -21,34 +21,37 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	// ====== Ã³Çü ±â´É °ø°³ API ======
+	// ====== Ã³ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ API ======
 	UFUNCTION(BlueprintCallable, Category = "Execution")
 	bool StartExecution();
 
 	UFUNCTION(BlueprintCallable, Category = "Execution")
-	void EndExecution();
+	void EndExecution(AActor* Target);
 
-	// ====== Ray ±â¹Ý Å¸°Ù Å½»ö ======
+	// ====== Ray ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½ Å½ï¿½ï¿½ ======
 	UFUNCTION(BlueprintCallable, Category = "Execution")
 	AActor* FindExecutionTarget() const;
 
 public:
-	// ====== ºê·ÎµåÄ³½ºÆ® ======
+	// ====== ï¿½ï¿½Îµï¿½Ä³ï¿½ï¿½Æ® ======
 	UPROPERTY(BlueprintAssignable, Category = "Execution|Event")
 	FOnExecutionStart OnExecutionStart;
 
 	UPROPERTY(BlueprintAssignable, Category = "Execution|Event")
 	FOnExecutionEnd OnExecutionEnd;
-		
+
 protected:
 	UPROPERTY(EditAnywhere, Category = "Execution")
 	float ExecutionRange = 600.f;
 
-	// EnemyÀÇ Visibility Block
+	// Enemyï¿½ï¿½ Visibility Block
 	UPROPERTY(EditAnywhere, Category = "Execution")
 	TEnumAsByte<ECollisionChannel> ExecutionTraceChannel = ECC_Visibility;
 	
 	UPROPERTY(EditAnywhere, Category = "Execution")
 	bool bDebugDraw = false;
+private:
+	FTimerHandle TimerHandle_ExecutionFinish;
+	
 	
 };

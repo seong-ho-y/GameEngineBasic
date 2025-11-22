@@ -2,8 +2,11 @@
 
 
 #include "EnemyHuman.h"
+
+#include "AIController.h"
 #include "EnemyAnimInstance.h"
 #include "EnemyShieldComponent.h"
+#include "Component/ExecutionComp.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -25,7 +28,7 @@ AEnemyHuman::AEnemyHuman()
 	
 	ShieldComp->OnShieldBreak.AddDynamic(this, &AEnemyHuman::OnKnock);
 	HealthComp->OnDeath.AddDynamic(this, &AEnemyHuman::OnDie);
-	ShieldComp->OnShieldRestored.AddDynamic(this, &AEnemyHuman::OnExecuteTimeFinish);
+	//ShieldComp->OnShieldRestored.AddDynamic(this, &AEnemyHuman::OnExecuteTimeFinish);
 	
 	//몸체 자체 회전 끄기
 	bUseControllerRotationYaw = false;
@@ -36,12 +39,35 @@ AEnemyHuman::AEnemyHuman()
 	ShooterComp->bUseAmmo = false;
 }
 
+
+
 // Called when the game starts or when spawned
 void AEnemyHuman::BeginPlay()
 {
 	Super::BeginPlay();
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!PC) return;
 
+	APawn* PlayerPawn = PC->GetPawn();
+	if (!PlayerPawn) return;
+	if (auto* ExecComp = PlayerPawn->FindComponentByClass<UExecutionComp>())
+	{
+		ExecComp->OnExecutionStart.AddDynamic(this, &AEnemyHuman::OnExecutionStart);
+		//ExecComp->OnExecutionEnd.AddDynamic(this, &AEnemyHuman::OnExecutionEnd);
+	}
+	USkeletalMeshComponent* LocalMesh = GetMesh();
+	if (!LocalMesh) return;
 
+	DynamicMIDs.Empty();
+
+	for (int32 i = 0; i < LocalMesh->GetNumMaterials(); i++)
+	{
+		UMaterialInstanceDynamic* MID = LocalMesh->CreateAndSetMaterialInstanceDynamic(i);
+		if (MID)
+		{
+			DynamicMIDs.Add(MID);
+		}
+	}
 	
 }
 
@@ -60,13 +86,27 @@ float AEnemyHuman::TakeDamage(float DamageAmount, struct FDamageEvent const& Dam
 
 void AEnemyHuman::SetOutlineEnabled(bool bCond)
 {
-	USkeletalMeshComponent* MeshComp = GetMesh();
-	if (!MeshComp) return;
+	bPulseActive = bCond;
 
-	MeshComp->SetRenderCustomDepth(bCond);
-	if (bCond)
+	for (UMaterialInstanceDynamic* MID : DynamicMIDs)
 	{
-		MeshComp->SetCustomDepthStencilValue(1);
+		if (!MID) continue;
+
+		MID->SetVectorParameterValue("Base_Color", bCond ?
+			FLinearColor(1, 0.1, 0.1) :
+			FLinearColor(1, 1, 1));
+
+		MID->SetScalarParameterValue("Emissive_power", bCond ? 50.f : 1.f);
+	}
+
+	if (!bCond)
+	{
+		PulseTime = 0.f;
+		// Contrast 원상복구
+		for (UMaterialInstanceDynamic* MID : DynamicMIDs)
+		{
+			MID->SetScalarParameterValue("Base_Constrast", 1.f);
+		}
 	}
 }
 
@@ -159,10 +199,30 @@ void AEnemyHuman::EndBoost()
 void AEnemyHuman::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bIsExecuting) return;
+	if (HealthComp->CurrentHealth <= 0) return;
 	if (ShieldComp->CanBeExecuted())
 		SetOutlineEnabled(true);
 	else
 		SetOutlineEnabled(false);
+	
+	USkeletalMeshComponent* LocalMesh = GetMesh();
+	if (bPulseActive)
+	{
+		PulseTime += DeltaTime;
+		// 0 ~ 5 사이 펄스
+		float PulseValue = 2.5f + FMath::Sin(PulseTime * 5.0f) * 2.5f;
+
+		if (!LocalMesh) return;
+
+		for (int32 i = 0; i < LocalMesh->GetNumMaterials(); i++)
+		{
+			if (UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(LocalMesh->GetMaterial(i)))
+			{
+				MID->SetScalarParameterValue("Base_Constrast", PulseValue);
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -218,6 +278,9 @@ void AEnemyHuman::OnKnock()
 
 void AEnemyHuman::OnDie(AActor* DeadActor)
 {
+	bIsExecuting = false;
+	bIsKnocked = false;
+	bIsDead = true;
 	static bool bDied = false;
 	if (bDied) return;
 	bDied = true;
@@ -228,6 +291,7 @@ void AEnemyHuman::OnDie(AActor* DeadActor)
 	}
 
 	// Drone에서 CharacterMovement 삭제했는데 접근해서 터짐
+	// 적이 계속 누워있다가 사라지게(Fade Out)
 	//GetCharacterMovement()->DisableMovement();
 	SetLifeSpan(5.f);
 }
@@ -244,14 +308,51 @@ void AEnemyHuman::SetUpperBodyState(EUpperBodyState NewState)
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 		Anim->UpperBodyState = NewState;
 }
-void AEnemyHuman::OnExecute() // 적 처형 실행 되었을 때
+
+
+void AEnemyHuman::OnExecutionStart(AActor* TargetEnemy)
 {
+	SetOutlineEnabled(false);
+	bIsExecuting = true;
+	bIsKnocked = false;
 	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
 		Anim->Montage_Play(ExecutionMontage);
-	// 적 Mesh에 빨간색으로 Glow효과 (레퍼런스 : 둠)
-	
+
+	DisabledMovementAndAI();
 }
-void AEnemyHuman::OnExecuteTimeFinish()
+void AEnemyHuman::DisabledMovementAndAI()
 {
-	
+	// 1) 이동 중지 및 Movement 비활성화
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		// 즉시 속도 0
+		Move->StopMovementImmediately();
+
+		// 이동 자체를 비활성화
+		Move->DisableMovement();
+
+		// AI 이동이나 Force 등도 비활성화
+		Move->SetComponentTickEnabled(false);
+	}
+
+	// 2) AIController + BehaviorTree 중지
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		// AI가 가지고 있는 행동 중단
+		if (UBrainComponent* Brain = AICon->GetBrainComponent())
+		{
+			Brain->StopLogic(TEXT("Execution Kill Stop"));
+		}
+
+		// 이동 중지
+		AICon->StopMovement();
+
+		// AI Tick도 꺼버릴 수 있음(선택)
+		AICon->SetActorTickEnabled(false);
+	}
+
+	// 3) Enemy 자체 Tick 꺼도 됨(선택)
+	//SetActorTickEnabled(false);
+
+	UE_LOG(LogTemp, Warning, TEXT("Enemy Movement & AI Disabled"));
 }

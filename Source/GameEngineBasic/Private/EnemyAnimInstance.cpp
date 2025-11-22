@@ -40,6 +40,11 @@ void UEnemyAnimInstance::UpdateState()
 		FullBodyState = EFullBodyState::Dead;
 		return;
 	}
+	if (Owner->bIsExecuting)
+	{
+		FullBodyState = EFullBodyState::Execution;
+		return;
+	}
 	if (Owner->bIsKnocked)
 	{
 		FullBodyState = EFullBodyState::Knock;

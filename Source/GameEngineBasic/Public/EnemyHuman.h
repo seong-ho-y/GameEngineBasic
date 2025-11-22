@@ -25,7 +25,11 @@ public:
 	AEnemyHuman();
 
 protected:
-	
+	UFUNCTION()
+	void DisabledMovementAndAI();
+	UFUNCTION()
+	void OnExecutionStart(AActor* TargetEnemy);
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 		
@@ -36,10 +40,7 @@ protected:
 	void SetLowerBodyState(ELowerBodyState NewState);
 	UFUNCTION(BlueprintCallable)
 	void SetUpperBodyState(EUpperBodyState NewState);
-	UFUNCTION()
-	void OnExecute();
-	UFUNCTION()
-	void OnExecuteTimeFinish();
+	
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -79,7 +80,7 @@ public:
 public:
 	bool bIsKnocked;
 	bool bIsDead;
-
+	bool bIsExecuting;
 
 
 	void OnBoostTick(); // ← 타이머 콜백
@@ -127,5 +128,9 @@ protected:
 
 private:
 	FTimerHandle TimerHandle_BoostEnd;
-	
+	bool bPulseActive = false;
+	float PulseTime = 0.f;
+
+	UPROPERTY()
+	TArray<UMaterialInstanceDynamic*> DynamicMIDs;
 };

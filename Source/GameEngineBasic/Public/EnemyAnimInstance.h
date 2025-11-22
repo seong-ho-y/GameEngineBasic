@@ -33,6 +33,7 @@ enum class EFullBodyState : uint8
 {
 	Default,
 	Knock,
+	Execution,
 	Dead
 };
 
