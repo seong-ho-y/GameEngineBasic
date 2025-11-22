@@ -116,6 +116,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ExecuteAction;
+	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
+	UParticleSystem* ExecutionTeleportVFX;
+
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
 
@@ -275,9 +278,13 @@ public:
 	void StartCharge();
 
 	void TryExecutionInput();
+	UFUNCTION()
+	void OnExecutionStart(AActor* Target);
+	UFUNCTION()
+	void OnExecutionEnd(AActor* Target);
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
-		class AController* EventInstigator, AActor* DamageCauser) override;
+	                         class AController* EventInstigator, AActor* DamageCauser) override;
 
 	void ChangeState(ECharacterState NewState);
 	ECharacterState GetCurrentState() const { return CurrentState; }
@@ -287,7 +294,7 @@ protected:
 
 	void SetState(ECharacterState NewState);
 
-
+	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;

@@ -1,12 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
+#include "Component/ExecutionComp.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "Component/ExecutionComp.h"
 #include "Camera/CameraComponent.h"
 #include "EnemyShieldComponent.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
 
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 UExecutionComp::UExecutionComp()
@@ -25,15 +27,39 @@ bool UExecutionComp::StartExecution()
 	AActor* Target = FindExecutionTarget();
 	if (!Target)
 		return false;
+	
+	// 슬로우 모션
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.25f);
 
-	// ���� ��ε�ĳ��Ʈ
+	// 알림 (Enemy, Player 둘 다 들을 수 있음)
 	OnExecutionStart.Broadcast(Target);
+	// 타이머에 Target 인자로 넘기기
+	FTimerDelegate TimerDel;
+	TimerDel.BindUObject(this, &UExecutionComp::EndExecution, Target);
+
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_ExecutionFinish,
+		TimerDel,
+		1.f,
+		false
+	);
 	return true;
 }
 
-void UExecutionComp::EndExecution()
+void UExecutionComp::EndExecution(AActor* Target)
 {
-	AActor* Target = FindExecutionTarget();
+	// 타이머 제거(안전)
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_ExecutionFinish);
+	
+	// Give Damage to Enemy
+	if (UHealthComp* EnemyHealth = Target->FindComponentByClass<UHealthComp>())
+	{
+		EnemyHealth->ApplyHealthDamage(999999);
+	}
+	
+	// restore world time
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.0f);
+	
 	OnExecutionEnd.Broadcast(Target);
 }
 
@@ -75,7 +101,7 @@ AActor* UExecutionComp::FindExecutionTarget() const
 		FString::Printf(TEXT("Execution Target Found: %s"), *Enemy->GetName())
 	);
 	
-	// EnemyShieldComponent üũ �� bCanExecuted �ʿ�
+	// EnemyShieldComponent üũ �� bCanExecuted �ʿ�
 	if (auto* Shield = Enemy->FindComponentByClass<UEnemyShieldComponent>())
 	{
 		if (Shield->CanBeExecuted())
