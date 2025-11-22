@@ -5,6 +5,7 @@
 
 #include "TurretAnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 AEnemyTurret::AEnemyTurret()
 {

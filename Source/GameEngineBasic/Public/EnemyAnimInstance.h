@@ -119,4 +119,6 @@ private:
 
 	void UpdateLocomotionParams(float DeltaSeconds);
 	void UpdateAimParams(float DeltaSeconds);
+	UFUNCTION()
+	void AnimNotify_KnockEnd();
 };

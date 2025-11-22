@@ -3,6 +3,7 @@
 
 #include "EnemyShieldComponent.h"
 
+#include "EnemyHuman.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -90,6 +91,9 @@ void UEnemyShieldComponent::RegenerateShield(float DeltaTime)
 // 쉴드 완전 복구 
 void UEnemyShieldComponent::RestoreShieldFull()
 {
+	AEnemyHuman* Owner = Cast<AEnemyHuman>(GetOwner());
+	if (!Owner) return;
+	if (Owner->bIsExecuting || Owner->bIsDead) return;
 	CurrentShield = MaxShield;
 	bIsShieldBroken = false;
 	bCanExecuted = false;

@@ -7,6 +7,7 @@
 #include "EnemyAnimInstance.h"
 #include "EnemyShieldComponent.h"
 #include "Component/ExecutionComp.h"
+#include "Components/CapsuleComponent.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -278,22 +279,44 @@ void AEnemyHuman::OnKnock()
 
 void AEnemyHuman::OnDie(AActor* DeadActor)
 {
+	GEngine->AddOnScreenDebugMessage(234, 1.f, FColor::Orange, TEXT("Enemy Die"));
+	// ---- 중복 방지 ----
+	if (bIsDead) return;
+	bIsDead = true;
+
+	// 실행중/그로기 상태 등 초기화
 	bIsExecuting = false;
 	bIsKnocked = false;
-	bIsDead = true;
-	static bool bDied = false;
-	if (bDied) return;
-	bDied = true;
 
-	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	// ---- Movement / AI 완전 정지 ----
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Anim->Montage_Play(DeathMontage);
+		Move->StopMovementImmediately();
+		Move->DisableMovement();
 	}
 
-	// Drone에서 CharacterMovement 삭제했는데 접근해서 터짐
-	// 적이 계속 누워있다가 사라지게(Fade Out)
-	//GetCharacterMovement()->DisableMovement();
-	SetLifeSpan(5.f);
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* Brain = AICon->GetBrainComponent())
+		{
+			Brain->StopLogic(TEXT("Enemy Died"));
+		}
+		AICon->StopMovement();
+	}
+
+	// ---- Animation ----
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		// ★★ Blend out 없이 완전히 재생되도록 설정 ★★
+		Anim->Montage_Play(DeathMontage, 1.f);
+		
+	}
+
+	// ---- Collision 제거 ----
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// ---- Death 처리 ----
+	SetLifeSpan(8.f);
 }
 
 void AEnemyHuman::SetLowerBodyState(ELowerBodyState NewState)
@@ -312,6 +335,8 @@ void AEnemyHuman::SetUpperBodyState(EUpperBodyState NewState)
 
 void AEnemyHuman::OnExecutionStart(AActor* TargetEnemy)
 {
+	if (TargetEnemy != this) return;
+	
 	SetOutlineEnabled(false);
 	bIsExecuting = true;
 	bIsKnocked = false;

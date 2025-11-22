@@ -120,3 +120,12 @@ void UEnemyAnimInstance::UpdateAimParams(float DeltaSeconds)
 	AimYaw = Delta.Yaw;
 	AimPitch = Delta.Pitch;
 }
+
+void UEnemyAnimInstance::AnimNotify_KnockEnd()
+{
+	GEngine->AddOnScreenDebugMessage(52352, 1.f, FColor::Red, TEXT("AnimNotify_KnockEnd fired"));
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(OwnerChar))
+	{
+		Enemy->bIsKnocked = false;
+	}
+}
