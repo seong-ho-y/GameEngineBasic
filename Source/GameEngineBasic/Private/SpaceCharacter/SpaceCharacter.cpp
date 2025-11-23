@@ -120,6 +120,8 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		}
 		if(ExecuteAction)
 			EnhancedInput->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryExecutionInput);
+		if(InteractAction)
+			EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryInteract);
 	}
 }
 
@@ -313,6 +315,9 @@ void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
 
 void ASpaceCharacter::ToggleFlyingMode()
 {
+	if (!bCanFly)
+		return;
+
 	if (CurrentState == ECharacterState::Flying)
 	{
 		ChangeState(ECharacterState::Locomotion);
@@ -346,7 +351,7 @@ void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
 
 void ASpaceCharacter::StartSprint()
 {
-	if (bIsBoosting) return;
+	if (bIsBoosting || !bCanSprint) return;
 	bIsSprinting = true;
 	TargetSpeed = RunSpeed;
 	WingComp->PlaySprint();
@@ -462,6 +467,9 @@ void ASpaceCharacter::StartCharge()
 
 void ASpaceCharacter::OnShieldActivated()
 {
+	if (!bCanShield)
+		return;
+
 	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 	{
 		if (ShieldMontage && !Anim->Montage_IsPlaying(ShieldMontage))
@@ -556,6 +564,15 @@ void ASpaceCharacter::ExplodeAndDestroy()
 	}
 
 	Destroy();
+}
+
+void ASpaceCharacter::TryInteract()
+{
+	if (!CurrentInteractTarget)
+		return;
+
+	CurrentInteractTarget->Interact(this);
+	CurrentInteractTarget = nullptr;
 }
 
 

@@ -24,6 +24,8 @@ class AProjectile;
 class AAblityUnlockItem;
 class US_Charging;
 
+class IU_Interactable;
+
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
 {
@@ -113,6 +115,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ReloadAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* InteractAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ExecuteAction;
@@ -134,6 +138,10 @@ public:
 	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
 
 public:
+	// Interactable
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TScriptInterface<IU_Interactable> CurrentInteractTarget;
+
 	// Particle System Components
 	UPROPERTY()
 	UParticleSystemComponent* ActiveChargeEffect;
@@ -249,6 +257,9 @@ public:
 	void OnCharacterDeath(AActor* DeadActor);
 
 	void ExplodeAndDestroy();
+
+	// Interact
+	void TryInteract();
 
 public:
 	virtual void BeginPlay() override;
