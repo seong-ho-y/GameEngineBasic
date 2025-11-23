@@ -299,7 +299,6 @@ protected:
 	void SetState(ECharacterState NewState);
 
 	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
-	void EquipWeaponMesh(UStaticMeshComponent* NewWeaponMesh);
 
 public:
 	bool bIsBoosting = false;

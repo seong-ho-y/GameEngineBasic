@@ -145,7 +145,7 @@ public:
 	FWeaponData WeaponData;
 	
 	UPROPERTY(EditAnywhere, Category = "Muzzle")
-	FName MuzzleSocketName;
+	FName MuzzleSocketName = "MuzzleSocket";
 	
 	virtual FVector GetAimDirection() const; // If there are more than one aim logic, you can override in child weapon
 public:	
