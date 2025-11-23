@@ -5,12 +5,19 @@
 #include "TargetingSystemComponent.h"
 #include "EnemyShieldComponent.h"
 #include "EnemyHuman.h"
+#include "Component/FuelComponent.h"
+#include "Components/TextBlock.h"
+#include "GameEngineBasic/Components/public/HealthComp.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
 
 #include "Kismet/GameplayStatics.h"
 
 void UMyPlayerHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
+	UE_LOG(LogTemp, Error, TEXT("[HUD] Constructed in %s | Instance: %p"),
+		*GetOuter()->GetName(),
+		this);
 
 	CacheReferences();
 
@@ -22,9 +29,11 @@ void UMyPlayerHUD::NativeConstruct()
 	{
 		Shooter->OnAmmoChanged.AddDynamic(this, &UMyPlayerHUD::HandleAmmoChanged);
 	}
-
-	// Energy도 Shooter 또는 EnergyComp에서 Bind
-	// Shooter->OnEnergyChanged.AddDynamic(...)
+	// Energy Delegate
+	if (UFuelComponent* Energy = P->FindComponentByClass<UFuelComponent>())
+	{
+		Energy->OnFuelChanged.AddDynamic(this, &UMyPlayerHUD::HandleEnergyChanged);
+	}
 
 	// Target 변경 Delegate
 	if (TargetingComp)
@@ -58,15 +67,38 @@ void UMyPlayerHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	--------------------------*/
 	if (EnemyHealthGauge && BoundEnemyHealthComp)
 	{
-		DisplayEnemyHPRatio = FMath::FInterpTo(
-			DisplayEnemyHPRatio,
-			TargetEnemyHPRatio,
+		DisplayCurrentRatio = FMath::FInterpTo(
+			DisplayCurrentRatio,
+			TargeRatio,
 			InDeltaTime,
 			10.f
 		);
-		EnemyHealthGauge->SetPercent(DisplayEnemyHPRatio);
+		EnemyHealthGauge->SetPercent(DisplayCurrentRatio);
 	}
-
+	/* --------------------------
+		 Ammo Gauge 보간
+	--------------------------*/
+	if (AmmoGauge)
+	{
+		DisplayAmmoRatio = FMath::FInterpTo(
+			DisplayAmmoRatio,
+			TargetAmmoRatio,
+			InDeltaTime,
+			10.f
+		);
+		AmmoGauge->SetPercent(DisplayAmmoRatio);
+	}
+	// Energy Gauge 보간
+	if (EnergyGauge)
+	{
+		DisplayEnergyRatio = FMath::FInterpTo(
+			DisplayEnergyRatio,
+			TargetEnergyRatio,
+			InDeltaTime,
+			10.f
+			);
+		EnergyGauge->SetPercent(DisplayEnergyRatio);
+	}
 	/* --------------------------
 		Fade 보간 (Opacity)
 	--------------------------*/
@@ -82,6 +114,7 @@ void UMyPlayerHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	if (EnemyStunGauge)
 		EnemyStunGauge->SetRenderOpacity(EnemyUIOpacity);
 }
+
 
 
 /*-----------------------------------
@@ -146,10 +179,10 @@ void UMyPlayerHUD::HandleTargetChanged(AEnemyHuman* NewTarget)
 		float Cur = BoundEnemyHealthComp->GetCurrentHealth();
 		float Max = BoundEnemyHealthComp->GetMaxHealth();
 
-		TargetEnemyHPRatio  = (Max > 0.f) ? Cur / Max : 0.f;
-		DisplayEnemyHPRatio = TargetEnemyHPRatio;
+		TargeRatio  = (Max > 0.f) ? Cur / Max : 0.f;
+		DisplayCurrentRatio = TargeRatio;
 
-		EnemyHealthGauge->SetPercent(DisplayEnemyHPRatio);
+		EnemyHealthGauge->SetPercent(DisplayCurrentRatio);
 
 		BoundEnemyHealthComp->OnHealthChanged_Ver2.AddDynamic(
 			this, &UMyPlayerHUD::HandleEnemyHealthChanged);
@@ -181,7 +214,7 @@ void UMyPlayerHUD::HandleTargetChanged(AEnemyHuman* NewTarget)
 -----------------------------------*/
 void UMyPlayerHUD::HandleEnemyHealthChanged(float NewHealth, float MaxHealth)
 {
-	TargetEnemyHPRatio = (MaxHealth > 0.f) ? (NewHealth / MaxHealth) : 0.f;
+	TargeRatio = (MaxHealth > 0.f) ? (NewHealth / MaxHealth) : 0.f;
 }
 
 /*-----------------------------------
@@ -207,16 +240,15 @@ void UMyPlayerHUD::HandleEnemyShieldRestored()
 /*-----------------------------------
 	       Ammo / Energy
 -----------------------------------*/
-void UMyPlayerHUD::HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
+void UMyPlayerHUD::HandleAmmoChanged(int32 CurrentAmmo, int32 FullAmmo, int32 InMaxAmmo)
 {
-	if (AmmoGauge)
-		AmmoGauge->SetPercent((float)CurrentAmmo / MaxAmmo);
+	TargetAmmoRatio = (float)CurrentAmmo / FullAmmo;
+	MaxAmmo->SetText(FText::FromString(FString::Printf(TEXT("A : %d"),InMaxAmmo)));
 }
 
 void UMyPlayerHUD::HandleEnergyChanged(float CurrentEN, float MaxEN)
 {
-	if (EnergyGauge)
-		EnergyGauge->SetPercent(CurrentEN / MaxEN);
+	TargetEnergyRatio = CurrentEN / MaxEN;
 }
 
 /*-----------------------------------

@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "TargetingSystemComponent.h"
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
@@ -17,8 +18,10 @@ class UHealthComp;
 class UShieldComp;
 class UFuelComponent;
 class UWingComponent;
+class UExecutionComp;
 
 class AProjectile;
+class AAblityUnlockItem;
 class US_Charging;
 
 UENUM(BlueprintType)
@@ -73,6 +76,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
 
+	UPROPERTY(EditAnywhere, Category = "Components")
+	UTargetingSystemComponent* TargetingComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UExecutionComp* ExecutionComp;
+
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* JumpAction;
@@ -101,6 +110,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ShieldAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ReloadAction;
+
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ExecuteAction;
+	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
+	UParticleSystem* ExecutionTeleportVFX;
+
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
 
@@ -115,6 +133,8 @@ public:
 	FORCEINLINE class UHealthComp* GetHealthComponent() const { return HealthComp; }
 
 	FORCEINLINE class UShieldComp* GetShieldComponent() const { return ShieldComp; }
+
+	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
 
 public:
 	// Particle System Components
@@ -134,12 +154,27 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ShieldMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* HitMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ExecuteMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
+	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
+
 	// Particle Systems
-	UPROPERTY(EditAnywhere, Category = "Charge")
+	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ChargingEffect;
 
-	UPROPERTY(EditAnywhere, Category = "Charge")
+	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* ShieldEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* DeathExplosionEffect;
 
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
@@ -147,6 +182,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float RunSpeed = 1200.f;
+
+	// ï¿½ï¿½ï¿½
+	UPROPERTY(EditAnywhere, Category = "State|Movement")
+	float RagdollDuration = 3.0f; 
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
@@ -178,6 +217,24 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Charge")
 	float MaxChargeTime = 6.0f;
 
+	
+public:
+	// Item Unlocks
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanSprint = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanFly = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanDash = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
+	bool bCanShield = false;
+
+	UFUNCTION(BlueprintCallable)
+	void UnlockAbility(EAbilityType Ability);
+
 public:
 	// Shield
 	UFUNCTION()
@@ -188,12 +245,18 @@ public:
 
 	UFUNCTION()
 	void OnShieldKeyPressed(const FInputActionInstance& Instance);
+	void HandleReload();
+
+	// Die
+	UFUNCTION()
+	void OnCharacterDeath(AActor* DeadActor);
+
+	void ExplodeAndDestroy();
 
 public:
 	virtual void BeginPlay() override;
 
 	void HandleSprintOrBoostInput(const FInputActionValue& Value);
-
 	void StartSprint();
 	void StopSprint();
 	void ToggleFlyingMode();
@@ -214,6 +277,15 @@ public:
 
 	void StartCharge();
 
+	void TryExecutionInput();
+	UFUNCTION()
+	void OnExecutionStart(AActor* Target);
+	UFUNCTION()
+	void OnExecutionEnd(AActor* Target);
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	                         class AController* EventInstigator, AActor* DamageCauser) override;
+
 	void ChangeState(ECharacterState NewState);
 	ECharacterState GetCurrentState() const { return CurrentState; }
 protected:
@@ -222,7 +294,7 @@ protected:
 
 	void SetState(ECharacterState NewState);
 
-
+	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
@@ -235,19 +307,23 @@ public:
 public:
 	FTimerHandle BoostHandle;
 	FTimerHandle FlightDelayHandle;
-	FTimerHandle ChargeDelayHandle;
+	FTimerHandle ChargeDelayHandle; 
+	FTimerHandle DeathTimerHandle;
 
-	// Ä«¸Þ¶ó ±âº» °Å¸®
+	// Ä«ï¿½Þ¶ï¿½ ï¿½âº» ï¿½Å¸ï¿½
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
-	// Aim ½Ã Ä«¸Þ¶ó À§Ä¡ ¿ÀÇÁ¼Â
+	// Aim ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	// Ä«¸Þ¶ó º¯¼ö
+	// Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
 
 	float SprintInterpSpeed = 5.f;
+
+	// ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	bool bIsDead = false;
 };

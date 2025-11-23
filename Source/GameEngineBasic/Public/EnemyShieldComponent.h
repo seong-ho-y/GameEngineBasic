@@ -40,6 +40,7 @@ public:
 	float GetCurrentShield() const {return CurrentShield;}
 	float GetMaxShield() const {return MaxShield;}
 
+	bool Inexecutable() const {return bCanExecuted;}
 	/** 쉴드 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category="Shield|Event")
 	FOnShieldBreak OnShieldBreak;
@@ -80,9 +81,15 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
 	UNiagaraSystem* ShieldBrokenVfx;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	UParticleSystem* ShieldBrokenParticle;
 	
 	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
 	USoundBase* ShieldRestoreSound;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	UParticleSystem* ShieldRestoreParticle;
 	
 	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
 	UNiagaraSystem* ShieldResotreVfx;

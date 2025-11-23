@@ -10,10 +10,9 @@
 #include "GeometryCollection/GeometryCollectionConvexUtility.h"
 #include "MyPlayerHUD.generated.h"
 
+class UTextBlock;
 class UImage;
-/**
- * 
- */
+
 UCLASS()
 class GAMEENGINEBASIC_API UMyPlayerHUD : public UUserWidget
 {
@@ -22,6 +21,7 @@ class GAMEENGINEBASIC_API UMyPlayerHUD : public UUserWidget
 
 public:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	UFUNCTION()
 	virtual void NativeConstruct() override;
 
 protected:
@@ -58,9 +58,13 @@ protected:
 	UPROPERTY()
 	UEnemyShieldComponent* BoundEnemyShieldComp;
 
-	float TargetEnemyHPRatio = 0.f;
-	float DisplayEnemyHPRatio = 0.f;
+	float TargeRatio = 0.f;
+	float DisplayCurrentRatio = 0.f;
 	float CurrentStunRatio = 0.f;
+	float DisplayAmmoRatio = 1.f;
+	float TargetAmmoRatio = 1.f;
+	float DisplayEnergyRatio = 1.f;
+	float TargetEnergyRatio = 1.f;
 
 
 	void CacheReferences();
@@ -78,13 +82,19 @@ protected:
 	void HandleEnemyShieldRestored();
 
 	UFUNCTION()
-	void HandleAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
+	void HandleAmmoChanged(int32 CurrentAmmo, int32 FullAmmo, int32 InMaxAmmo);
 
 	UFUNCTION()
 	void HandleEnergyChanged(float CurrentEN, float MaxEN);
 
 public:
 	UTargetingSystemComponent* GetTargetingComp();
+
+
+	// 보유한 총 탄약 개수
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* MaxAmmo;
+
 
 private:
 	float EnemyUIFadeTime = 0.15f;

@@ -3,6 +3,7 @@
 
 #include "EnemyShieldComponent.h"
 
+#include "EnemyHuman.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -90,6 +91,9 @@ void UEnemyShieldComponent::RegenerateShield(float DeltaTime)
 // 쉴드 완전 복구 
 void UEnemyShieldComponent::RestoreShieldFull()
 {
+	AEnemyHuman* Owner = Cast<AEnemyHuman>(GetOwner());
+	if (!Owner) return;
+	if (Owner->bIsExecuting || Owner->bIsDead) return;
 	CurrentShield = MaxShield;
 	bIsShieldBroken = false;
 	bCanExecuted = false;
@@ -101,6 +105,8 @@ void UEnemyShieldComponent::ShieldBrokenVFX()
 {
 	if (ShieldBrokenVfx)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),ShieldBrokenVfx,GetOwner()->GetActorLocation());
+	if (ShieldBrokenParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShieldBrokenParticle, GetOwner()->GetActorLocation());
 	if (ShieldBrokenSound)
 		UGameplayStatics::SpawnSoundAtLocation(GetWorld(),ShieldBrokenSound, GetOwner()->GetActorLocation());
 }
@@ -108,7 +114,8 @@ void UEnemyShieldComponent::ShieldResotreVFX()
 {
 	if (ShieldResotreVfx)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ShieldResotreVfx, GetOwner()->GetActorLocation());
+	if (ShieldRestoreParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShieldRestoreParticle, GetOwner()->GetActorLocation());
 	if (ShieldRestoreSound)
-		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShieldBrokenSound, GetOwner()->GetActorLocation());
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShieldRestoreSound, GetOwner()->GetActorLocation());
 }
-

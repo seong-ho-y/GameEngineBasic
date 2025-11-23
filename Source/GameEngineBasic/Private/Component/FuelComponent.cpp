@@ -18,6 +18,7 @@ void UFuelComponent::BeginPlay()
 void UFuelComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    GEngine->AddOnScreenDebugMessage(35, 5.f, FColor::Silver, FString::Printf(TEXT("Remain Energy : %f"),CurrentFuel));
     Recharge(DeltaTime);
 }
 
@@ -38,7 +39,16 @@ bool UFuelComponent::CanFly() const
 
 void UFuelComponent::Consume(float Amount)
 {
+    GEngine->AddOnScreenDebugMessage(33, 1, FColor::Orange, TEXT("Consume Called"));
+    float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel - Amount, 0.f, MaxFuel);
+    /*
+    if(GEngine)
+        GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, FString::Printf(TEXT("Fuel: %.2f / %.2f"), CurrentFuel, MaxFuel));
+    */
+
+    if (CurrentFuel!=OldFuel)
+        OnFuelChanged.Broadcast(CurrentFuel,MaxFuel);
 }
 
 void UFuelComponent::ConsumeFlying(float DeltaTime)
@@ -48,5 +58,9 @@ void UFuelComponent::ConsumeFlying(float DeltaTime)
 
 void UFuelComponent::Recharge(float DeltaTime)
 {
+    float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel + RechargeRate * DeltaTime, 0.f, MaxFuel);
+    if (CurrentFuel != OldFuel)
+        OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
+    
 }

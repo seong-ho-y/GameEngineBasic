@@ -6,15 +6,14 @@
 #include "EnemyAnimInstance.h"
 #include "EnemyShieldComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
-#include "GameEngineBasic/Components/public/Damageable.h"
-#include "GameEngineBasic/Components/public/HealthComp.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
+
 #include "GameFramework/Character.h"
-#include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
-#include "Perception/AIPerceptionComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "EnemyHuman.generated.h"
+
+class UHealthComp;
+class UShooterComp;
 
 UCLASS()
 class GAMEENGINEBASIC_API AEnemyHuman : public ACharacter
@@ -26,7 +25,11 @@ public:
 	AEnemyHuman();
 
 protected:
-	
+	UFUNCTION()
+	void DisabledMovementAndAI();
+	UFUNCTION()
+	void OnExecutionStart(AActor* TargetEnemy);
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 		
@@ -37,10 +40,12 @@ protected:
 	void SetLowerBodyState(ELowerBodyState NewState);
 	UFUNCTION(BlueprintCallable)
 	void SetUpperBodyState(EUpperBodyState NewState);
+	
 
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
-public:	
+public:
+	void SetOutlineEnabled(bool bCond);
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	void StartBoost(FVector Direction, float Speed, float Duration, float Decel, float GravityScale);
@@ -50,8 +55,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UPawnSensingComponent* PawnSensingComp;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UShooterComp*  ShooterComp;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UHealthComp* HealthComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
@@ -70,6 +77,11 @@ public:
 	FVector     BoostDirCached = FVector::ZeroVector;
 
 	FTimerHandle TimerHandle_BoostTick;
+public:
+	bool bIsKnocked;
+	bool bIsDead;
+	bool bIsExecuting;
+
 
 	void OnBoostTick(); // ← 타이머 콜백
 	UFUNCTION()
@@ -107,11 +119,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* KnockMontage;
-
+	
+	UPROPERTY(EditAnywhere, Category = "Animation|Montage")
+	UAnimMontage* ExecutionMontage;
+	
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* DeathMontage;
 
 private:
 	FTimerHandle TimerHandle_BoostEnd;
-	
+	bool bPulseActive = false;
+	float PulseTime = 0.f;
+
+	UPROPERTY()
+	TArray<UMaterialInstanceDynamic*> DynamicMIDs;
 };
