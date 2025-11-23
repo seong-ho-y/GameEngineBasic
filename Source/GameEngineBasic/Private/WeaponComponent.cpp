@@ -2,6 +2,9 @@
 
 
 #include "WeaponComponent.h"
+#include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "SpaceCharacter/SpaceCharacter.h"
+#include "Camera/CameraComponent.h"
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
@@ -15,11 +18,35 @@ void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* I
 {
 	OwnerCharacter = Player;
 	ShooterComp = InShooterComp;
+
+	if (WeaponTable && WeaponRowName != NAME_None)
+	{
+		const FWeaponData* Row = WeaponTable->FindRow<FWeaponData>(WeaponRowName, TEXT(""));
+		if (Row)
+		{
+			WeaponData = *Row;
+			
+		}
+		GEngine->AddOnScreenDebugMessage(-1, 6.f, FColor::Red,
+	FString::Printf(TEXT("WeaponTable=%s | RowName=%s | hasRow=%d"),
+		*WeaponTable->GetName(),
+		*WeaponRowName.ToString(),
+		Row != nullptr));
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 6.f, FColor::Red,TEXT("NoWeapon"));
+	}
+	
+	// 1) ShooterComp에 무기 스탯 적용
+	ShooterComp->PendingDamage = WeaponData.Damage;
 	ShooterComp->ReloadTime = WeaponData.ReloadTime;
-	ShooterComp->CurrentAmmo = WeaponData.FullAmmo;
+	ShooterComp->CurrentAmmo =  WeaponData.FullAmmo;
 	ShooterComp->FullAmmo = WeaponData.FullAmmo;
 	ShooterComp->MaxAmmo = WeaponData.MaxAmmo;
-	ShooterComp->PendingDamage = WeaponData.Damage;
+	ShooterComp->ProjectileClass = WeaponData.ProjectileClass;
+
+	SpawnAndAttachWeaponMesh();
 }
 
 
@@ -35,6 +62,11 @@ FVector UWeaponComponent::GetAimDirection() const
 	const FVector MuzzleLoc = GetMuzzleLoc();
 	ShooterComp->SetMuzzle(MuzzleLoc);
 	return (AimPoint - MuzzleLoc).GetSafeNormal();
+}
+
+void UWeaponComponent::SetWeaponMesh(UStaticMeshComponent* InWeaponMeshComp)
+{
+	WeaponMeshComp = InWeaponMeshComp;
 }
 
 void UWeaponComponent::HandleFirePressed()
@@ -54,8 +86,12 @@ bool UWeaponComponent::CanFire() const
 
 void UWeaponComponent::PerformFire()
 {
-	ShooterComp->SetFireDirection(GetAimDirection());
+	if (!ShooterComp || !OwnerCharacter)
+		return;
 	
+	ShooterComp->SetFireDirection(GetAimDirection());
+	ShooterComp->TryFire();
+
 }
 
 FVector UWeaponComponent::GetAimPoint() const
@@ -107,19 +143,43 @@ FVector UWeaponComponent::GetAimPoint() const
 
 FVector UWeaponComponent::GetMuzzleLoc() const
 {
-	FVector SpawnLoc;
-	
-	// 1. 스켈레탈 메쉬를 먼저 확인
-	USceneComponent* MuzzleComp = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
-
-	// 2. 스켈레탈 메쉬 없으면 스태틱 메쉬 확인
-	if (!MuzzleComp)
-		MuzzleComp = GetOwner()->FindComponentByClass<UStaticMeshComponent>();
-
-	// 3. Mesh에서 MuzzleSocketName에 맞는 Muzzle 위치 가져오기
-	if (MuzzleComp)
+	// 1) 무기 메쉬가 있으면 무기 메쉬 소켓 사용
+	if (WeaponMeshComp)
 	{
-		SpawnLoc = MuzzleComp->GetSocketLocation(MuzzleSocketName);
+		return WeaponMeshComp->GetSocketLocation(MuzzleSocketName);
 	}
-	return SpawnLoc;
+
+	// 2) 없으면 플레이어 메쉬 fallback
+	if (OwnerCharacter && OwnerCharacter->GetMesh())
+	{
+		return OwnerCharacter->GetMesh()->GetSocketLocation(MuzzleSocketName);
+	}
+
+	return FVector::ZeroVector;
+}
+
+void UWeaponComponent::SpawnAndAttachWeaponMesh()
+{
+	if (!OwnerCharacter || !OwnerCharacter->GetMesh())
+		return;
+
+	if (!WeaponData.WeaponMesh)   // DataTable에 SkeletalMesh 또는 StaticMesh 넣어두기
+		return;
+
+	if (!WeaponMeshComp)
+	{
+		WeaponMeshComp = NewObject<UStaticMeshComponent>(OwnerCharacter);
+		WeaponMeshComp->RegisterComponent();
+	}
+
+	WeaponMeshComp->SetStaticMesh(WeaponData.WeaponMesh);
+
+	// 무기 소켓이름은 DT 또는 Blueprint로 지정
+	FName SocketName = TEXT("WeaponSocket");
+
+	WeaponMeshComp->AttachToComponent(
+		OwnerCharacter->GetMesh(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		SocketName
+	);
 }

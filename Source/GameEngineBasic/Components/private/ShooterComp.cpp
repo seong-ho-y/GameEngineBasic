@@ -2,6 +2,7 @@
 #include "HomingMissileProjectile.h"
 #include "MyPlayerHUD.h"
 #include "NiagaraFunctionLibrary.h"
+#include "WeaponComponent.h"
 #include "AnimNodes/AnimNode_RandomPlayer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -72,6 +73,8 @@ void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
 void UShooterComp::Fire_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp Fire Start"));
+	
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner)
 	{
@@ -204,6 +207,7 @@ void UShooterComp::ReloadSuccess()
 
 bool UShooterComp::TryFire()
 {
+	GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp TryFire Start"));
 	if (bIsReloading) return false;
 	
 	if (bUseAmmo && CurrentAmmo <= 0)
@@ -229,17 +233,20 @@ bool UShooterComp::CanFire() const
 	// 1. Check Ammo
 	if (bUseAmmo && CurrentAmmo <= 0)
 	{
+		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoAmmo"));
 		return false;
 	}
 	// 2. Check Cooldown
 	if (!bIsReadyToFire)
 	{
+		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NotReadyToFire"));
 		return false;
 	}
 
 	if (!ProjectileClass && ProjectileMap.Num() == 0)
 	{
 		//UE_LOG(LogTemp, Error, TEXT("CanFire: No ProjectileClass and ProjectileMap is empty"));
+		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoProjectileClass"));
 		return false;
 	}
 	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
@@ -255,24 +262,19 @@ void UShooterComp::ResetFireReady()
 
 void UShooterComp::SetProjectile()
 {
+	// 플레이어 무기라면 무조건 WeaponComponent 우선
+	if (GetOwner()->FindComponentByClass<UWeaponComponent>())
+		return;
+	
+	// ---- AI/적용 fallback ----
 	TSubclassOf<AProjectile>* FoundClass = ProjectileMap.Find(CurrentProjectileType);
 	if (FoundClass && *FoundClass)
 	{
 		ProjectileClass = *FoundClass;
-		/*UE_LOG(LogTemp, Warning, TEXT("SetProjectile: Map[%d] -> %s"),
-			(int32)CurrentProjectileType,
-			*ProjectileClass->GetName());
-		*/
+		return;
 	}
-	// 맵에는 없지만 기존 ProjectileClass가 있으면 그대로 사용 (정상 상황)
-	else if (ProjectileClass)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("SetProjectile: Using existing ProjectileClass -> %s"), *ProjectileClass->GetName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("SetProjectile: No Projectile for Type %d AND no fallback ProjectileClass"), (int32)CurrentProjectileType);
-	}
+
+	UE_LOG(LogTemp, Error, TEXT("ShooterComp: No ProjectileClass found!!"));
 }
 
 

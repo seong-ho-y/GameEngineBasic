@@ -40,7 +40,7 @@ bool UExecutionComp::StartExecution()
 	GetWorld()->GetTimerManager().SetTimer(
 		TimerHandle_ExecutionFinish,
 		TimerDel,
-		1.f,
+		0.2f,
 		false
 	);
 	return true;

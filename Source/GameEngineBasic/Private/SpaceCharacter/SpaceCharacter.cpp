@@ -69,6 +69,9 @@ ASpaceCharacter::ASpaceCharacter()
 	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp")); 
 
 	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
+
+	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
+	
 }
 
 void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
@@ -197,7 +200,6 @@ void ASpaceCharacter::BeginPlay()
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
-
 	if (StateMap.Num() == 0)
 	{
 		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
@@ -231,7 +233,8 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionStart.AddDynamic(this, &ASpaceCharacter::OnExecutionStart);
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
-
+	if (WeaponComp)
+		WeaponComp->InitializeWeapon(this, Shooter);
 }
 
 void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
@@ -420,7 +423,13 @@ void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 	if (CurrentState != ECharacterState::Aiming)
 		return;
 
-	// 지상 Aim에서는 기존처럼 "차지 지연 타이머" 작동
+	
+	if (WeaponComp)
+		WeaponComp->HandleFirePressed();
+
+
+	//지상 Aim에서는 기존처럼 "차지 지연 타이머" 작동
+	/*
 	GetWorldTimerManager().SetTimer(
 		ChargeDelayHandle,
 		this,
@@ -428,6 +437,7 @@ void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 		ChargeStartDelay,
 		false
 	);
+	*/
 }
 
 void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
@@ -439,6 +449,12 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		return;
 	}
 
+	
+	if (WeaponComp)
+		WeaponComp->HandleFireReleased();
+
+	
+	/*
 	// 만약 ChargeDelayHandle 타이머가 여전히 활성화 상태라면 (즉, StartCharge가 호출되기 전)
 	if (GetWorldTimerManager().IsTimerActive(ChargeDelayHandle))
 	{
@@ -465,6 +481,7 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		PlayFireMontage();
 		return;
 	}
+	*/
 }
 
 void ASpaceCharacter::PlayFireMontage()
