@@ -366,7 +366,6 @@ void ASpaceCharacter::StartJump()
 
 		LaunchCharacter(FVector::UpVector * UpLaunchPower, false, false);
 
-		
 		if (FlyUpMontage) {
 			Anim->Montage_Play(FlyUpMontage);
 			WingComp->PlayFly();
@@ -397,17 +396,14 @@ void ASpaceCharacter::StopJump()
 
 void ASpaceCharacter::StartAim()
 {
+	if (CurrentState == ECharacterState::Flying || bIsFlyingMode)
+		return;
+
 	bIsAiming = true;
 	bIsCameraTransitioning = true;
 
-	if (CurrentState == ECharacterState::Flying || bIsFlyingMode)
-	{
-		ChangeState(ECharacterState::FlyAim);
-	}
-	else
-	{
+	if (CurrentState == ECharacterState::Locomotion)
 		ChangeState(ECharacterState::Aiming);
-	}
 }
 
 void ASpaceCharacter::StopAim()
@@ -415,16 +411,9 @@ void ASpaceCharacter::StopAim()
 	bIsAiming = false;
 	bIsCameraTransitioning = true; // 카메라 줌 아웃을 위해 트랜지션 시작
 
-	if (CurrentState == ECharacterState::FlyAim ||
-		CurrentState == ECharacterState::FlyCharge)
-	{
-		ChangeState(ECharacterState::Flying);
-	}
-	else
-	{
-		ChangeState(ECharacterState::Locomotion);
-	}
+	ChangeState(ECharacterState::Aiming);
 }
+
 void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
 {
 	const float TargetLength = bIsAiming ? AimedArmLength : DefaultArmLength;
@@ -466,7 +455,6 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 	if (CurrentState == ECharacterState::FlyAim ||
 		CurrentState == ECharacterState::FlyCharge)
 	{
-		// 비행에서는 FireCompleted가 의미 없음
 		return;
 	}
 
@@ -482,6 +470,7 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		{
 			Shooter->SetFireDirection(FollowCamera->GetForwardVector());
 			Shooter->TryFire();
+			PlaySingleFireMontage();
 		}
 		return;
 	}
@@ -492,19 +481,31 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		// 이 호출이 S_Charging::Exit_Implementation을 트리거하여
 		// 충전된 발사체를 발사하게 됩니다.
 		ChangeState(ECharacterState::Aiming);
-		PlayFireMontage();
+		PlayChargeFireMontage();
 		return;
 	}
 }
 
-void ASpaceCharacter::PlayFireMontage()
+void ASpaceCharacter::PlayChargeFireMontage()
 {
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		if (FireMontage && !AnimInstance->Montage_IsPlaying(FireMontage))
+		if (ChargeFireMontage && !AnimInstance->Montage_IsPlaying(ChargeFireMontage))
 		{
-			//UE_LOG(LogTemp, Log, TEXT("ASpaceCharacter::PlayFireMontage: --- Playing FireMontage! ---"));
-			AnimInstance->Montage_Play(FireMontage);
+			//UE_LOG(LogTemp, Log, TEXT("ASpaceCharacter::ChargeFireMontage: --- Playing FireMontage! ---"));
+			AnimInstance->Montage_Play(ChargeFireMontage);
+		}
+	}
+}
+
+void ASpaceCharacter::PlaySingleFireMontage()
+{
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		if (SingleFireMontage && !AnimInstance->Montage_IsPlaying(SingleFireMontage))
+		{
+			//UE_LOG(LogTemp, Log, TEXT("ASpaceCharacter::SingleFireMontage: --- Playing SingleFireMontage! ---"));
+			AnimInstance->Montage_Play(SingleFireMontage);
 		}
 	}
 }
@@ -513,18 +514,9 @@ void ASpaceCharacter::StartCharge()
 {
 	ChangeState(ECharacterState::Charging);
 }
+
 void ASpaceCharacter::TryExecutionInput()
 {
-	if (!bCanShield)
-		return;
-
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		if (ShieldMontage && !Anim->Montage_IsPlaying(ShieldMontage))
-			Anim->Montage_Play(ShieldMontage);
-	}
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
-
 	if (ExecutionComp)
 		if (ExecutionComp->StartExecution())
 		{
@@ -638,11 +630,6 @@ void ASpaceCharacter::ChangeState(ECharacterState NewState)
 
 	if (CurrentStateObject)
 		CurrentStateObject->Exit(this);
-
-	if (GetCapsuleComponent())
-	{
-		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
 
 	CurrentState = NewState;
 

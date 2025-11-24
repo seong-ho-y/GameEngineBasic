@@ -151,7 +151,10 @@ public:
 
 	// Anim Montages
 	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FireMontage;
+	UAnimMontage* ChargeFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* SingleFireMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* FlyUpMontage;
@@ -284,7 +287,8 @@ public:
 
 	void OnFireStarted(const struct FInputActionInstance& Instance);
 	void OnFireCompleted(const struct FInputActionInstance& Instance);
-	void PlayFireMontage();
+	void PlayChargeFireMontage();
+	void PlaySingleFireMontage();
 
 	void StartCharge();
 
