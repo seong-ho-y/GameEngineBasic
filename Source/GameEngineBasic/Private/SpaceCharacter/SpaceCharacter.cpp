@@ -66,9 +66,70 @@ ASpaceCharacter::ASpaceCharacter()
 	WingComp = CreateDefaultSubobject<UWingComponent>(TEXT("WingComp"));
 	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
-	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp")); 
+	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp"));
 
 	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
+}
+
+void ASpaceCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+
+	if (StateMap.Num() == 0)
+	{
+		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
+		StateMap.Add(ECharacterState::Aiming, NewObject<US_Aim>(this));
+		if (ChargingStateClass)
+			StateMap.Add(ECharacterState::Charging, NewObject<US_Charging>(this, ChargingStateClass));
+		StateMap.Add(ECharacterState::Flying, NewObject<US_Fly>(this));
+		StateMap.Add(ECharacterState::FlyAim, NewObject<US_FlyAim>(this));
+		StateMap.Add(ECharacterState::FlyCharge, NewObject<US_FlyCharge>(this));
+		StateMap.Add(ECharacterState::Boosting, NewObject<US_Boost>(this));
+	}
+
+	// 기본 상태 설정
+	ChangeState(ECharacterState::Locomotion);
+	TargetSpeed = WalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	if (ShieldComp)
+	{
+		ShieldComp->OnShieldActivated.AddDynamic(this, &ASpaceCharacter::OnShieldActivated);
+		ShieldComp->OnShieldDeactivated.AddDynamic(this, &ASpaceCharacter::OnShieldDeactivated);
+	}
+	if (WingComp)
+		WingComp->SetMesh(GetMesh());
+	if (HealthComp)
+	{
+		HealthComp->OnDeath.AddDynamic(this, &ASpaceCharacter::OnCharacterDeath);
+	}
+	if (ExecutionComp)
+	{
+		ExecutionComp->OnExecutionStart.AddDynamic(this, &ASpaceCharacter::OnExecutionStart);
+		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
+	}
+
+}
+
+void ASpaceCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (CurrentStateObject)
+		CurrentStateObject->Tick(this, DeltaTime);
+
+	if (bIsCameraTransitioning)
+		UpdateCameraTransition(DeltaTime);
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		float CurrentSpeed = Move->MaxWalkSpeed;
+		float NewSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, SprintInterpSpeed);
+		Move->MaxWalkSpeed = NewSpeed;
+	}
 }
 
 void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -91,7 +152,7 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		if (LookAction)
 			EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASpaceCharacter::Look);
 
-		if(ShieldAction)
+		if (ShieldAction)
 			EnhancedInput->BindAction(ShieldAction, ETriggerEvent::Started, this, &ASpaceCharacter::OnShieldKeyPressed);
 
 		if (JumpAction)
@@ -118,106 +179,142 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		{
 			EnhancedInput->BindAction(BoostAction, ETriggerEvent::Started, this, &ASpaceCharacter::HandleSprintOrBoostInput);
 		}
-		if(ExecuteAction)
+		if (ExecuteAction)
 			EnhancedInput->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryExecutionInput);
-		if(InteractAction)
-			EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryInteract);
 	}
 }
 
-void ASpaceCharacter::BeginPlay()
+void ASpaceCharacter::OnShieldActivated()
 {
-	Super::BeginPlay();
-
-	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-
-
-	if (StateMap.Num() == 0)
+	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 	{
-		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
-		StateMap.Add(ECharacterState::Aiming, NewObject<US_Aim>(this)); 
-		if (ChargingStateClass)
-			StateMap.Add(ECharacterState::Charging, NewObject<US_Charging>(this, ChargingStateClass));
-		StateMap.Add(ECharacterState::Flying, NewObject<US_Fly>(this));
-		StateMap.Add(ECharacterState::FlyAim, NewObject<US_FlyAim>(this));
-		StateMap.Add(ECharacterState::FlyCharge, NewObject<US_FlyCharge>(this));
-		StateMap.Add(ECharacterState::Boosting, NewObject<US_Boost>(this));
+		if (ShieldMontage && !Anim->Montage_IsPlaying(ShieldMontage))
+			Anim->Montage_Play(ShieldMontage);
 	}
 
-	// 기본 상태 설정
-	ChangeState(ECharacterState::Locomotion);
-	TargetSpeed = WalkSpeed;
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	if (ShieldEffect)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			ShieldEffect,
+			GetMesh(),
+			FName("Shield") 
+		);
+	}
+}
 
+void ASpaceCharacter::OnShieldDeactivated()
+{
+	// 쉴드 꺼질 때 필요한 처리
+	// (예: 파티클 중지, 효과 제거 등)
+
+	// StopAll 파티클을 사용하려면, 
+	// SpawnEmitterAttached의 return 값을 저장하는 방식으로
+	// “활성 파티클 포인터”를 보관하는 패턴으로 확장 가능
+}
+
+void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*/)
+{
 	if (ShieldComp)
-	{
-		ShieldComp->OnShieldActivated.AddDynamic(this, &ASpaceCharacter::OnShieldActivated);
-		ShieldComp->OnShieldDeactivated.AddDynamic(this, &ASpaceCharacter::OnShieldDeactivated);
-	}
-	if (WingComp)
-		WingComp->SetMesh(GetMesh());
-	if (HealthComp)
-	{
-		HealthComp->OnDeath.AddDynamic(this, &ASpaceCharacter::OnCharacterDeath);
-	}
-
+		ShieldComp->ActivateShield();
 }
 
-void ASpaceCharacter::Tick(float DeltaTime)
+void ASpaceCharacter::HandleReload()
 {
-	Super::Tick(DeltaTime);
-
-	if (CurrentStateObject)
-		CurrentStateObject->Tick(this, DeltaTime);
-
-	if (bIsCameraTransitioning)
-		UpdateCameraTransition(DeltaTime);
-
-	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	if (Shooter)
 	{
-		float CurrentSpeed = Move->MaxWalkSpeed;
-		float NewSpeed = FMath::FInterpTo(CurrentSpeed, TargetSpeed, DeltaTime, SprintInterpSpeed);
-		Move->MaxWalkSpeed = NewSpeed;
+		Shooter->StartReload();
 	}
 }
 
-void ASpaceCharacter::SetState(ECharacterState NewState)
+void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 {
-	if (CurrentState == NewState) return;
+	if (bIsDead) return;
+	bIsDead = true;
 
-	switch (NewState)
+	if(DeathMontage)
+		PlayAnimMontage(DeathMontage);
+
+	if (Controller)
 	{
-	case ECharacterState::Aiming:
-		bIsAiming = true;
-		break;
-	case ECharacterState::Flying:
-		bIsFlyingMode = true;
-		break;
-	default:
-		bIsAiming = false;
-		bIsFlyingMode = false;
-		break;
+		Controller->StopMovement();
+		Controller->UnPossess();
 	}
 
-	CurrentState = NewState;
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	GetWorldTimerManager().SetTimer(
+		DeathTimerHandle,
+		this,
+		&ASpaceCharacter::ExplodeAndDestroy,
+		RagdollDuration,
+		false
+	);
 }
 
-void ASpaceCharacter::ChangeState(ECharacterState NewState)
+void ASpaceCharacter::ExplodeAndDestroy()
 {
-	if (CurrentState == NewState)
+	if (DeathExplosionEffect && GetMesh())
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			DeathExplosionEffect,
+			GetMesh(),
+			FName("Shield")
+		);
+	}
+
+	Destroy();
+}
+
+void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
+{
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!Move) return;
+
+	const bool bIsInAir = Move->IsFalling();
+	const bool bIsFlying = (CurrentState == ECharacterState::Flying) || bIsFlyingMode;
+
+	// 공중이거나 비행 중일 때는 Boost 실행
+	if (bIsInAir || bIsFlying)
+	{
+		ChangeState(ECharacterState::Boosting);
 		return;
-
-	if (CurrentStateObject)
-		CurrentStateObject->Exit(this);
-
-	CurrentState = NewState;
-
-	if (StateMap.Contains(NewState))
-	{
-		CurrentStateObject = StateMap[NewState];
-		if (CurrentStateObject)
-			CurrentStateObject->Enter(this);
 	}
+
+	StartSprint();
+}
+
+void ASpaceCharacter::StartSprint()
+{
+	if (bIsBoosting) return;
+	bIsSprinting = true;
+	TargetSpeed = RunSpeed;
+	WingComp->PlaySprint();
+}
+
+void ASpaceCharacter::StopSprint()
+{
+	if(bIsBoosting) return;
+	bIsSprinting = false;
+	TargetSpeed = WalkSpeed;
+	WingComp->StopAll();
+}
+
+void ASpaceCharacter::ToggleFlyingMode()
+{
+	if (CurrentState == ECharacterState::Flying)
+	{
+		ChangeState(ECharacterState::Locomotion);
+		return;
+	}
+	if (!Fuel || !Fuel->CanFly())
+	{
+		return;
+	}
+
+	ChangeState(ECharacterState::Flying);
 }
 
 void ASpaceCharacter::Move(const FInputActionValue& Value)
@@ -396,6 +493,26 @@ void ASpaceCharacter::StopAim()
 	}
 }
 
+void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
+{
+	const float TargetLength = bIsAiming ? AimedArmLength : DefaultArmLength;
+	const FVector TargetOffset = bIsAiming ? AimedSocketOffset : DefaultSocketOffset;
+
+	CameraBoom->TargetArmLength = UKismetMathLibrary::FInterpTo_Constant(
+		CameraBoom->TargetArmLength, TargetLength, DeltaTime, CameraInterpSpeed);
+
+	CameraBoom->SocketOffset = UKismetMathLibrary::VInterpTo_Constant(
+		CameraBoom->SocketOffset, TargetOffset, DeltaTime, CameraInterpSpeed);
+
+	if (FMath::IsNearlyEqual(CameraBoom->TargetArmLength, TargetLength, 0.1f) &&
+		CameraBoom->SocketOffset.Equals(TargetOffset, 0.1f))
+	{
+		CameraBoom->TargetArmLength = TargetLength;
+		CameraBoom->SocketOffset = TargetOffset;
+		bIsCameraTransitioning = false;
+	}
+}
+
 void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 {
 	// 지상
@@ -464,8 +581,7 @@ void ASpaceCharacter::StartCharge()
 {
 	ChangeState(ECharacterState::Charging);
 }
-
-void ASpaceCharacter::OnShieldActivated()
+void ASpaceCharacter::TryExecutionInput()
 {
 	if (!bCanShield)
 		return;
@@ -475,39 +591,71 @@ void ASpaceCharacter::OnShieldActivated()
 		if (ShieldMontage && !Anim->Montage_IsPlaying(ShieldMontage))
 			Anim->Montage_Play(ShieldMontage);
 	}
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
 
-	if (ShieldEffect)
+	if (ExecutionComp)
+		if (ExecutionComp->StartExecution())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Started"));
+			if (ExecuteMontage)
+				PlayAnimMontage(ExecuteMontage);
+		}
+}
+
+void ASpaceCharacter::OnExecutionStart(AActor* Target)
+{
+	// 움직임 0으로
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		UGameplayStatics::SpawnEmitterAttached(
-			ShieldEffect,
-			GetMesh(),
-			FName("Shield") 
+		Move->StopMovementImmediately();
+		Move->Velocity = FVector::ZeroVector;
+	}
+	
+	// 2) 입력 잠금
+	DisableInput(Cast<APlayerController>(Controller));
+	
+	FVector ExecPos = GetExecutionPosition(Target, 500.f, 400.f);
+	
+	SetActorLocation(ExecPos);
+
+	// ================================
+	//  적을 바라보도록 회전
+	// ================================
+	FRotator LookAt = (Target->GetActorLocation() - GetActorLocation()).Rotation();
+	SetActorRotation(LookAt);
+	Controller->SetControlRotation(LookAt);
+	//  카메라 확대
+	FollowCamera->SetFieldOfView(70.f);
+	// ================================
+	//  VFX 발사 (예: Teleport VFX)
+	// ================================
+	if (ExecutionTeleportVFX)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			ExecutionTeleportVFX,
+			GetActorLocation(),
+			GetActorRotation()
 		);
 	}
+	// 3) 스프링암 살짝 당기기 (옵션)
+	CameraBoom->TargetArmLength = 150.f;
+
+	// 4) 스프링암 Offset 살짝 조정
+	CameraBoom->SocketOffset = FVector(0, 40, 20);
+
+	bIsCameraTransitioning = true;
 }
 
-void ASpaceCharacter::OnShieldDeactivated()
-{
-	// 쉴드 꺼질 때 필요한 처리
-	// (예: 파티클 중지, 효과 제거 등)
 
-	// StopAll 파티클을 사용하려면, 
-	// SpawnEmitterAttached의 return 값을 저장하는 방식으로
-	// “활성 파티클 포인터”를 보관하는 패턴으로 확장 가능
+void ASpaceCharacter::OnExecutionEnd(AActor* Target)
+{
+	FollowCamera->SetFieldOfView(90.f);
+	bIsCameraTransitioning = true;
+
+	EnableInput(Cast<APlayerController>(Controller));
 }
 
-void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*/)
-{
-	if (ShieldComp)
-		ShieldComp->ActivateShield();
-}
-void ASpaceCharacter::HandleReload()
-{
-	if (Shooter)
-	{
-		Shooter->StartReload();
-	}
-}
 
 float ASpaceCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
@@ -530,13 +678,34 @@ float ASpaceCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Damage
 	return ActualDamage;
 }
 
-void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
+void ASpaceCharacter::SetState(ECharacterState NewState)
 {
-	if (bIsDead) return;
-	bIsDead = true;
+	if (CurrentState == NewState) return;
 
-	if(DeathMontage)
-		PlayAnimMontage(DeathMontage);
+	switch (NewState)
+	{
+	case ECharacterState::Aiming:
+		bIsAiming = true;
+		break;
+	case ECharacterState::Flying:
+		bIsFlyingMode = true;
+		break;
+	default:
+		bIsAiming = false;
+		bIsFlyingMode = false;
+		break;
+	}
+
+	CurrentState = NewState;
+}
+
+void ASpaceCharacter::ChangeState(ECharacterState NewState)
+{
+	if (CurrentState == NewState)
+		return;
+
+	if (CurrentStateObject)
+		CurrentStateObject->Exit(this);
 
 	if (GetCapsuleComponent())
 	{
@@ -550,20 +719,14 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 		RagdollDuration,
 		false
 	);
-}
+	CurrentState = NewState;
 
-void ASpaceCharacter::ExplodeAndDestroy()
-{
-	if (DeathExplosionEffect && GetMesh())
+	if (StateMap.Contains(NewState))
 	{
-		UGameplayStatics::SpawnEmitterAttached(
-			DeathExplosionEffect,
-			GetMesh(),
-			FName("Shield")
-		);
+		CurrentStateObject = StateMap[NewState];
+		if (CurrentStateObject)
+			CurrentStateObject->Enter(this);
 	}
-
-	Destroy();
 }
 
 void ASpaceCharacter::TryInteract()
@@ -591,14 +754,11 @@ void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
 	case EAbilityType::Dash:
 		bCanDash = true;
 		break;
-
 	case EAbilityType::Shield:
 		bCanShield = true;
 		break;
 	}
 
-
-	// 연출
 	if (UAnimMontage** MontagePtr = AbilityUnlockMontages.Find(Ability))
 	{
 		UAnimMontage* Montage = *MontagePtr;
@@ -612,15 +772,24 @@ void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
 	}
 }
 
-void ASpaceCharacter::TryExecutionInput()
-{
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Input Triggered"));
 
-	if (ExecutionComp)
-		if (ExecutionComp->StartExecution())
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Started"));
-			if (ExecuteMontage)
-				PlayAnimMontage(ExecuteMontage);
-		}
+
+FVector ASpaceCharacter::GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset)
+{
+	if (!Target) return GetActorLocation();
+
+	// 1) 적의 정면 방향
+	FVector Forward = Target->GetActorForwardVector().GetSafeNormal();
+
+	// 2) 적의 바닥 위치 기준
+	const float HalfHeight = Target->GetSimpleCollisionHalfHeight();
+	FVector BaseLocation = Target->GetActorLocation() - FVector(0, 0, HalfHeight);
+
+	// 3) 최종 위치: 적 정면 ForwardOffset + 위로 UpOffset
+	FVector ExecPos =
+		BaseLocation +
+		Forward * ForwardOffset +   // 적 정면 앞으로 이동
+		FVector(0, 0, UpOffset);    // 위로 Offset
+
+	return ExecPos;
 }
