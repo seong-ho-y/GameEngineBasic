@@ -181,6 +181,8 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		}
 		if (ExecuteAction)
 			EnhancedInput->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryExecutionInput);
+		if (InteractAction)
+			EnhancedInput->BindAction(InteractAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryInteract);
 	}
 }
 
@@ -288,7 +290,7 @@ void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
 
 void ASpaceCharacter::StartSprint()
 {
-	if (bIsBoosting) return;
+	if (bIsBoosting || !bCanSprint) return;
 	bIsSprinting = true;
 	TargetSpeed = RunSpeed;
 	WingComp->PlaySprint();
@@ -296,7 +298,7 @@ void ASpaceCharacter::StartSprint()
 
 void ASpaceCharacter::StopSprint()
 {
-	if(bIsBoosting) return;
+	if (bIsBoosting) return;
 	bIsSprinting = false;
 	TargetSpeed = WalkSpeed;
 	WingComp->StopAll();
@@ -304,6 +306,9 @@ void ASpaceCharacter::StopSprint()
 
 void ASpaceCharacter::ToggleFlyingMode()
 {
+	if (!bCanFly)
+		return;
+
 	if (CurrentState == ECharacterState::Flying)
 	{
 		ChangeState(ECharacterState::Locomotion);
@@ -390,78 +395,6 @@ void ASpaceCharacter::StopJump()
 	}
 }
 
-void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
-{
-	const float TargetLength = bIsAiming ? AimedArmLength : DefaultArmLength;
-	const FVector TargetOffset = bIsAiming ? AimedSocketOffset : DefaultSocketOffset;
-
-	CameraBoom->TargetArmLength = UKismetMathLibrary::FInterpTo_Constant(
-		CameraBoom->TargetArmLength, TargetLength, DeltaTime, CameraInterpSpeed);
-
-	CameraBoom->SocketOffset = UKismetMathLibrary::VInterpTo_Constant(
-		CameraBoom->SocketOffset, TargetOffset, DeltaTime, CameraInterpSpeed);
-
-	if (FMath::IsNearlyEqual(CameraBoom->TargetArmLength, TargetLength, 0.1f) &&
-		CameraBoom->SocketOffset.Equals(TargetOffset, 0.1f))
-	{
-		CameraBoom->TargetArmLength = TargetLength;
-		CameraBoom->SocketOffset = TargetOffset;
-		bIsCameraTransitioning = false;
-	}
-}
-
-void ASpaceCharacter::ToggleFlyingMode()
-{
-	if (!bCanFly)
-		return;
-
-	if (CurrentState == ECharacterState::Flying)
-	{
-		ChangeState(ECharacterState::Locomotion);
-		return;
-	}
-	if (!Fuel || !Fuel->CanFly())
-	{
-		return;
-	}
-
-	ChangeState(ECharacterState::Flying);
-}
-
-void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
-{
-	UCharacterMovementComponent* Move = GetCharacterMovement();
-	if (!Move) return;
-
-	const bool bIsInAir = Move->IsFalling();
-	const bool bIsFlying = (CurrentState == ECharacterState::Flying) || bIsFlyingMode;
-
-	// 공중이거나 비행 중일 때는 Boost 실행
-	if (bIsInAir || bIsFlying)
-	{
-		ChangeState(ECharacterState::Boosting);
-		return;
-	}
-
-	StartSprint();
-}
-
-void ASpaceCharacter::StartSprint()
-{
-	if (bIsBoosting || !bCanSprint) return;
-	bIsSprinting = true;
-	TargetSpeed = RunSpeed;
-	WingComp->PlaySprint();
-}
-
-void ASpaceCharacter::StopSprint()
-{
-	if(bIsBoosting) return;
-	bIsSprinting = false;
-	TargetSpeed = WalkSpeed;
-	WingComp->StopAll();
-}
-
 void ASpaceCharacter::StartAim()
 {
 	bIsAiming = true;
@@ -492,7 +425,6 @@ void ASpaceCharacter::StopAim()
 		ChangeState(ECharacterState::Locomotion);
 	}
 }
-
 void ASpaceCharacter::UpdateCameraTransition(float DeltaTime)
 {
 	const float TargetLength = bIsAiming ? AimedArmLength : DefaultArmLength;
@@ -712,13 +644,6 @@ void ASpaceCharacter::ChangeState(ECharacterState NewState)
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	GetWorldTimerManager().SetTimer(
-		DeathTimerHandle,
-		this,
-		&ASpaceCharacter::ExplodeAndDestroy,
-		RagdollDuration,
-		false
-	);
 	CurrentState = NewState;
 
 	if (StateMap.Contains(NewState))
@@ -771,8 +696,6 @@ void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
 		}
 	}
 }
-
-
 
 FVector ASpaceCharacter::GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset)
 {
