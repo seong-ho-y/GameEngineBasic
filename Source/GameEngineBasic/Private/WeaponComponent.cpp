@@ -27,7 +27,7 @@ void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* I
 			WeaponData = *Row;
 			
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 6.f, FColor::Red,
+		GEngine->AddOnScreenDebugMessage(-1, 6.f, FColor::Blue,
 	FString::Printf(TEXT("WeaponTable=%s | RowName=%s | hasRow=%d"),
 		*WeaponTable->GetName(),
 		*WeaponRowName.ToString(),

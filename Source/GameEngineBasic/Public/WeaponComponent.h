@@ -80,6 +80,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float OverchargeTime = 2.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* ChargeVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* ChargeSFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* OverChargeVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* OverChargeSFX;
     /* --------------------------- 이동 디버프 (머신건/레이저캐논) --------------------------- */
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -70,7 +70,7 @@ ASpaceCharacter::ASpaceCharacter()
 
 	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
 
-	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
+	//WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
 	
 }
 
