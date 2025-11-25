@@ -34,6 +34,7 @@
 #include <SpaceCharacter/States/S_FlyCharge.h>
 
 #include "WeaponComponent.h"
+#include "Iris/Serialization/ObjectNetSerializer.h"
 
 ASpaceCharacter::ASpaceCharacter()
 {
@@ -69,8 +70,8 @@ ASpaceCharacter::ASpaceCharacter()
 	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp")); 
 
 	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
-
-	//WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
+	
+	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
 	
 }
 
@@ -672,6 +673,15 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		}
 		if(ExecuteAction)
 			EnhancedInput->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryExecutionInput);
+		if (SwapWeaponAction)
+		{
+			EnhancedInput->BindAction(
+				SwapWeaponAction, 
+				ETriggerEvent::Started, 
+				this, 
+				&ASpaceCharacter::SwapWeapon
+			);
+		}
 	}
 }
 void ASpaceCharacter::SetState(ECharacterState NewState)
@@ -713,4 +723,32 @@ FVector ASpaceCharacter::GetExecutionPosition(AActor* Target, float ForwardOffse
 		FVector(0, 0, UpOffset);    // 위로 Offset
 
 	return ExecPos;
+}
+void ASpaceCharacter::SwapWeapon()
+{
+	if (!WeaponComp || !Shooter) return;
+
+	// ========================
+	// 1) 현재 무기의 상태 저장
+	// ========================
+	WeaponComp->RuntimeState.CurrentAmmo = Shooter->CurrentAmmo;
+	WeaponComp->RuntimeState.ReserveAmmo = Shooter->MaxAmmo;
+
+	WeaponComp->WeaponStates.Add(WeaponComp->WeaponRowName, WeaponComp->RuntimeState);
+
+	// ========================
+	// 2) RowName 변경
+	// ========================
+	if (WeaponComp->WeaponRowName == FName("HandgunBasic"))
+		WeaponComp->WeaponRowName = FName("RifleBasic");
+	else
+		WeaponComp->WeaponRowName = FName("HandgunBasic");
+
+	// ========================
+	// 3) 무기 재초기화
+	// ========================
+	WeaponComp->InitializeWeapon(this, Shooter);
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green,
+		FString::Printf(TEXT("Swapped to %s"), *WeaponComp->WeaponRowName.ToString()));
 }

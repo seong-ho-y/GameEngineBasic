@@ -34,6 +34,8 @@ public:
 	float ReloadTime = 5.f;
 
 protected:
+	UFUNCTION()
+	void HandleWeaponInitialized();
 	virtual void BeginPlay() override;
 
 public:

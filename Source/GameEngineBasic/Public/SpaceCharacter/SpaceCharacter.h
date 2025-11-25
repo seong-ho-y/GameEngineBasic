@@ -65,7 +65,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UShooterComp* Shooter;
 
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWeaponComponent* WeaponComp;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -116,6 +116,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ReloadAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* SwapWeaponAction;
 
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -299,6 +302,7 @@ protected:
 	void SetState(ECharacterState NewState);
 
 	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
+	void SwapWeapon();
 
 public:
 	bool bIsBoosting = false;

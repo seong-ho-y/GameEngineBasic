@@ -27,8 +27,7 @@ USTRUCT(BlueprintType)
 struct FWeaponData : public FTableRowBase
 {
     GENERATED_BODY()
-
-public:
+	
 
     /* --------------------------- 기본 정보 --------------------------- */
 
@@ -113,6 +112,19 @@ public:
     TSubclassOf<AProjectile> SlashProjectileClass;
 };
 
+USTRUCT(BlueprintType)
+struct FWeaponRuntimeState
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 CurrentAmmo = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 ReserveAmmo = 0;
+	
+};
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponInitialized);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UWeaponComponent : public UActorComponent
@@ -123,8 +135,10 @@ public:
 	// Sets default values for this component's properties
 	UWeaponComponent();
 
-	void InitializeWeapon(ASpaceCharacter* Player, UShooterComp* InShooterComp);
+	FOnWeaponInitialized WeaponInitialized;
 
+	void InitializeWeapon(ASpaceCharacter* Player, UShooterComp* InShooterComp);
+	
 
 	virtual void HandleFirePressed();
 	virtual void HandleFireReleased();
@@ -135,13 +149,22 @@ public:
 	FVector GetMuzzleLoc() const;
 	void SpawnAndAttachWeaponMesh();
 
-	UPROPERTY(EditAnywhere, Category="Weapon Data")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Data")
 	UDataTable* WeaponTable;
 
-	UPROPERTY(EditAnywhere, Category="Weapon Data")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category="Weapon Data")
 	FName WeaponRowName;
+
+	UPROPERTY()
+	FWeaponRuntimeState RuntimeState;
+
+	UPROPERTY()
+	TMap<FName, FWeaponRuntimeState> WeaponStates;
+
+	
 protected:
 
+	virtual void BeginPlay() override;
 	UPROPERTY()
 	ASpaceCharacter* OwnerCharacter;
 

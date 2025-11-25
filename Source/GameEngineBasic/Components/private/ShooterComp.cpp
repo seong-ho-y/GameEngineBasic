@@ -14,6 +14,11 @@ UShooterComp::UShooterComp()
 }
 
 
+void UShooterComp::HandleWeaponInitialized()
+{
+	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
+}
+
 // Called when the game starts
 void UShooterComp::BeginPlay()
 {
@@ -23,6 +28,13 @@ void UShooterComp::BeginPlay()
 	/*UE_LOG(LogTemp, Warning, TEXT("[%s] ShooterComp BeginPlay: bUseArcHoming=%d"),
 		*GetOwner()->GetName(), bUseArcHoming);
 	 */
+	/*GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
+	FString::Printf(TEXT("ShooterComp Owner = %s"),
+	*GetOwner()->GetName()));
+	*/
+	UWeaponComponent* WeaponComp = GetOwner()->FindComponentByClass<UWeaponComponent>();
+	if (!WeaponComp) return;
+	WeaponComp->WeaponInitialized.AddDynamic(this, &UShooterComp::HandleWeaponInitialized);
 }
 
 
@@ -264,7 +276,10 @@ void UShooterComp::SetProjectile()
 {
 	// 플레이어 무기라면 무조건 WeaponComponent 우선
 	if (GetOwner()->FindComponentByClass<UWeaponComponent>())
+	{
+		GEngine->AddOnScreenDebugMessage(5844, 3.f, FColor::Magenta, TEXT("SetProjectile Finished by WeaponComp"));
 		return;
+	}
 	
 	// ---- AI/적용 fallback ----
 	TSubclassOf<AProjectile>* FoundClass = ProjectileMap.Find(CurrentProjectileType);

@@ -14,6 +14,15 @@ UWeaponComponent::UWeaponComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UWeaponComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
+	FString::Printf(TEXT("WeaponComp Owner = %s"),
+	*GetOwner()->GetName()));
+}
+
+
 void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* InShooterComp)
 {
 	OwnerCharacter = Player;
@@ -27,27 +36,63 @@ void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* I
 			WeaponData = *Row;
 			
 		}
-		GEngine->AddOnScreenDebugMessage(-1, 6.f, FColor::Blue,
-	FString::Printf(TEXT("WeaponTable=%s | RowName=%s | hasRow=%d"),
-		*WeaponTable->GetName(),
-		*WeaponRowName.ToString(),
-		Row != nullptr));
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 6.f, FColor::Red,TEXT("NoWeapon"));
+		FString TableName = WeaponTable ? WeaponTable->GetName() : TEXT("NULL");
+
+		GEngine->AddOnScreenDebugMessage(
+			-1, 6.f, FColor::Red,
+			FString::Printf(
+				TEXT("NoWeapon → Table=%s | RowName=%s"),
+				*TableName,
+				*WeaponRowName.ToString()
+			)
+		);
+
+		return;
 	}
-	
-	// 1) ShooterComp에 무기 스탯 적용
+	// ============================
+	//  2) WeaponState 로드 또는 초기화
+	// ============================
+
+	if (WeaponStates.Contains(WeaponRowName))
+	{
+		RuntimeState = WeaponStates[WeaponRowName];   // 기존 상태 불러오기
+	}
+	else
+	{
+		RuntimeState = FWeaponRuntimeState();         // 완전 초기 상태 생성
+		RuntimeState.CurrentAmmo = WeaponData.FullAmmo;
+		RuntimeState.ReserveAmmo = WeaponData.MaxAmmo;
+
+		WeaponStates.Add(WeaponRowName, RuntimeState);
+	}
+
+	// ============================
+	//  3) ShooterComp에 값 설정
+	// ============================
 	ShooterComp->PendingDamage = WeaponData.Damage;
-	ShooterComp->ReloadTime = WeaponData.ReloadTime;
-	ShooterComp->CurrentAmmo =  WeaponData.FullAmmo;
-	ShooterComp->FullAmmo = WeaponData.FullAmmo;
-	ShooterComp->MaxAmmo = WeaponData.MaxAmmo;
+	ShooterComp->ReloadTime   = WeaponData.ReloadTime;
+	ShooterComp->FireRate     = WeaponData.FireRate;
+
+	ShooterComp->CurrentAmmo  = RuntimeState.CurrentAmmo;
+	ShooterComp->FullAmmo     = WeaponData.FullAmmo;
+	ShooterComp->MaxAmmo      = RuntimeState.ReserveAmmo;
+
 	ShooterComp->ProjectileClass = WeaponData.ProjectileClass;
 
+	// ============================
+	//  4) Weapon Mesh 스폰
+	// ============================
 	SpawnAndAttachWeaponMesh();
+
+	// ============================
+	//  5) HUD 업데이트 브로드캐스트
+	// ============================
+	WeaponInitialized.Broadcast();
 }
+
 
 
 FVector UWeaponComponent::GetAimDirection() const
@@ -183,3 +228,4 @@ void UWeaponComponent::SpawnAndAttachWeaponMesh()
 		SocketName
 	);
 }
+
