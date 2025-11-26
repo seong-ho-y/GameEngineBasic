@@ -32,7 +32,6 @@
 #include <SpaceCharacter/States/S_Boost.h>
 #include <SpaceCharacter/States/S_FlyAim.h>
 #include <SpaceCharacter/States/S_FlyCharge.h>
-
 #include "WeaponComponent.h"
 
 ASpaceCharacter::ASpaceCharacter()
@@ -69,6 +68,9 @@ ASpaceCharacter::ASpaceCharacter()
 	TargetingComp = CreateDefaultSubobject<UTargetingSystemComponent>(TEXT("TargetingComp")); 
 
 	ExecutionComp = CreateDefaultSubobject<UExecutionComp>(TEXT("ExecutionComp"));
+	
+	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
+	
 }
 
 void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
@@ -197,7 +199,6 @@ void ASpaceCharacter::BeginPlay()
 
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
-
 	if (StateMap.Num() == 0)
 	{
 		StateMap.Add(ECharacterState::Locomotion, NewObject<US_Idle>(this));
@@ -231,7 +232,8 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionStart.AddDynamic(this, &ASpaceCharacter::OnExecutionStart);
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
-
+	if (WeaponComp)
+		WeaponComp->InitializeWeapon(this, Shooter);
 }
 
 void ASpaceCharacter::HandleSprintOrBoostInput(const FInputActionValue& Value)
@@ -420,7 +422,13 @@ void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 	if (CurrentState != ECharacterState::Aiming)
 		return;
 
-	// 지상 Aim에서는 기존처럼 "차지 지연 타이머" 작동
+	
+	if (WeaponComp)
+		WeaponComp->HandleFirePressed();
+
+
+	//지상 Aim에서는 기존처럼 "차지 지연 타이머" 작동
+	/*
 	GetWorldTimerManager().SetTimer(
 		ChargeDelayHandle,
 		this,
@@ -428,6 +436,7 @@ void ASpaceCharacter::OnFireStarted(const FInputActionInstance& /*Instance*/)
 		ChargeStartDelay,
 		false
 	);
+	*/
 }
 
 void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
@@ -439,6 +448,12 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		return;
 	}
 
+	
+	if (WeaponComp)
+		WeaponComp->HandleFireReleased();
+
+	
+	/*
 	// 만약 ChargeDelayHandle 타이머가 여전히 활성화 상태라면 (즉, StartCharge가 호출되기 전)
 	if (GetWorldTimerManager().IsTimerActive(ChargeDelayHandle))
 	{
@@ -465,6 +480,7 @@ void ASpaceCharacter::OnFireCompleted(const FInputActionInstance& /*Instance*/)
 		PlayFireMontage();
 		return;
 	}
+	*/
 }
 
 void ASpaceCharacter::PlayFireMontage()
@@ -655,6 +671,15 @@ void ASpaceCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		}
 		if(ExecuteAction)
 			EnhancedInput->BindAction(ExecuteAction, ETriggerEvent::Started, this, &ASpaceCharacter::TryExecutionInput);
+		if (SwapWeaponAction)
+		{
+			EnhancedInput->BindAction(
+				SwapWeaponAction, 
+				ETriggerEvent::Started, 
+				this, 
+				&ASpaceCharacter::SwapWeapon
+			);
+		}
 	}
 }
 void ASpaceCharacter::SetState(ECharacterState NewState)
@@ -696,4 +721,42 @@ FVector ASpaceCharacter::GetExecutionPosition(AActor* Target, float ForwardOffse
 		FVector(0, 0, UpOffset);    // 위로 Offset
 
 	return ExecPos;
+}
+void ASpaceCharacter::SwapWeapon()
+{
+	if (!WeaponComp || !Shooter) return;
+
+	// 0) 현재 무기 Mesh 제거 (시각적 잔상 방지)
+	WeaponComp->ClearWeaponMesh();
+
+	// 1) 현재 무기 런타임 상태 저장 (탄약 등)
+	WeaponComp->SaveRuntimeState();
+
+	// 2) 다음 RowName 결정 (순환 구조)
+	const FName OldRow = WeaponComp->WeaponRowName;
+	FName NewRow;
+
+	if (OldRow == FName("HandgunBasic"))
+	{
+		NewRow = FName("RifleBasic");
+	}
+	else if (OldRow == FName("RifleBasic"))
+	{
+		NewRow = FName("BlastBasic");
+	}
+	else
+	{
+		NewRow = FName("HandgunBasic");
+	}
+
+	// 3) RowName 변경만 해주고
+	WeaponComp->WeaponRowName = NewRow;
+
+	// 4) 다시 Initialize → DT 로딩 + RuntimeState 로딩 + Behavior 선택 + Mesh 스폰 + HUD 갱신
+	WeaponComp->InitializeWeapon(this, Shooter);
+
+	GEngine->AddOnScreenDebugMessage(
+		-1, 2.f, FColor::Green,
+		FString::Printf(TEXT("Swapped to %s"), *WeaponComp->WeaponRowName.ToString())
+	);
 }
