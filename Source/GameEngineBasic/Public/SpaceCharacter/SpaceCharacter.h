@@ -11,6 +11,7 @@
 #include "InputActionValue.h"
 #include "InputAction.h"
 #include "TargetingSystemComponent.h"
+#include "WeaponComponent.h"
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
@@ -66,6 +67,9 @@ protected:
 	UShooterComp* Shooter;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UWeaponComponent* WeaponComp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UFuelComponent* Fuel;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -116,6 +120,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ReloadAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* SwapWeaponAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* InteractAction;
@@ -340,6 +347,8 @@ protected:
 	void SetState(ECharacterState NewState);
 
 	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
+	void SwapWeapon();
+
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
@@ -375,4 +384,7 @@ public:
 
 	// Death
 	bool bIsDead = false;
+
+	UPROPERTY()
+	TMap<FName, FWeaponRuntimeState> WeaponStates;
 };
