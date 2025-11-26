@@ -24,6 +24,7 @@ class UExecutionComp;
 class AProjectile;
 class AAblityUnlockItem;
 class US_Charging;
+class IU_Interactable;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -100,6 +101,9 @@ protected:
 	UInputAction* SprintAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* DashAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -120,6 +124,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* SwapWeaponAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* InteractAction;
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ExecuteAction;
@@ -144,13 +150,20 @@ public:
 	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
 
 public:
+	// Interactable
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TScriptInterface<IU_Interactable> CurrentInteractTarget;
+
 	// Particle System Components
 	UPROPERTY()
 	UParticleSystemComponent* ActiveChargeEffect;
 
 	// Anim Montages
 	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FireMontage;
+	UAnimMontage* ChargeFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* SingleFireMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* FlyUpMontage;
@@ -182,6 +195,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	UParticleSystem* DeathExplosionEffect;
+
+	// Niagara Systems
+	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
+	UNiagaraComponent* DashVfx;
 
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
@@ -260,39 +277,67 @@ public:
 
 	void ExplodeAndDestroy();
 
+	// Dashing Getters
+	UFUNCTION(BlueprintCallable)
+	bool IsDashing() const { return bIsDashing; }
+
 public:
 	virtual void BeginPlay() override;
 
-	void HandleSprintOrBoostInput(const FInputActionValue& Value);
-	void StartSprint();
-	void StopSprint();
-	void ToggleFlyingMode();
-
+	// Movement
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 
 	void StartJump();
 	void StopJump();
 
+	//Sprint
+	void OnSprintPressed();
+	void OnSprintReleased();
+	void StartSprint();
+	void StopSprint();
+	
+	// Dash
+	void StartDash();
+	void StopDash();
+	FVector GetDashDirection() const;
+	uint16 DashRootMotionID = (uint16)ERootMotionSourceID::Invalid;
+
+	// Boost
+	void StartBoost();
+
+	// Flying
+	void ToggleFlyingMode();
+
+	// Aim
 	void StartAim();
 	void StopAim();
 	void UpdateCameraTransition(float DeltaTime);
 
+	// Fire
 	void OnFireStarted(const struct FInputActionInstance& Instance);
 	void OnFireCompleted(const struct FInputActionInstance& Instance);
-	void PlayFireMontage();
+	void PlayChargeFireMontage();
+	void PlaySingleFireMontage();
 
+	// Charge
 	void StartCharge();
 
+	// Interact
+	void TryInteract();
+
+	// Execution
 	void TryExecutionInput();
 	UFUNCTION()
 	void OnExecutionStart(AActor* Target);
 	UFUNCTION()
 	void OnExecutionEnd(AActor* Target);
 
+	// GetDamage
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	                         class AController* EventInstigator, AActor* DamageCauser) override;
 
+	// State
 	void ChangeState(ECharacterState NewState);
 	ECharacterState GetCurrentState() const { return CurrentState; }
 protected:
@@ -307,33 +352,37 @@ protected:
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
-	bool bIsSprinting = false;
 	bool bIsFlyingMode = false;
+	bool bSprintHeld = false;
+	bool bIsSprinting = false;
+	bool bIsDashing = false;
 
 	float ChargeStartTime = 0.f;
 	float TargetSpeed = 0.f;
 
 public:
+	FTimerHandle DashTimerHandle;
 	FTimerHandle BoostHandle;
+	FTimerHandle SprintHoldTimer;
 	FTimerHandle FlightDelayHandle;
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
 
-	// ī�޶� �⺻ �Ÿ�
+	// Aim Length
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
-	// Aim �� ī�޶� ��ġ ������
+	// Aim Socket Offset
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	// ī�޶� ����
+	// Camera
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
 
 	float SprintInterpSpeed = 5.f;
 
-	// ��� ����
+	// Death
 	bool bIsDead = false;
 
 	UPROPERTY()

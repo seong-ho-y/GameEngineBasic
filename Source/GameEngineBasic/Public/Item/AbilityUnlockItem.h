@@ -4,6 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Item/U_Interactable.h"
+#include "Components/TimelineComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraSystem.h"
+
 #include "AbilityUnlockItem.generated.h"
 
 // ---------------------------
@@ -20,9 +25,11 @@ enum class EAbilityType : uint8
 
 class USphereComponent;
 class UStaticMeshComponent;
+class UWidgetComponent;
+class USceneComponent;
 
 UCLASS()
-class GAMEENGINEBASIC_API AAbilityUnlockItem : public AActor
+class GAMEENGINEBASIC_API AAbilityUnlockItem : public AActor, public IU_Interactable
 {
 	GENERATED_BODY()
 	
@@ -31,16 +38,33 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere)
-	USphereComponent* CollisionSphere;
+	USceneComponent* SceneRoot;
 
 	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* Mesh;
+	USphereComponent* CollisionSphere;
+
+	UPROPERTY(VisibleAnywhere, Category = "Box")
+	UStaticMeshComponent* BoxBody;
+
+	UPROPERTY(VisibleAnywhere, Category = "Box")
+	UStaticMeshComponent* BoxLid;
 
 	UPROPERTY(EditAnywhere, Category = "Ability")
 	EAbilityType AbilityToUnlock = EAbilityType::Sprint;
 
+	UPROPERTY(VisibleAnywhere, Category = "UI")
+	class UWidgetComponent* InteractWidget;
+
+	UPROPERTY(EditAnywhere, Category = "Box")
+	UCurveFloat* LidOpenCurve;
+
+	UPROPERTY(VisibleAnywhere, Category = "FX")
+	UNiagaraComponent* Effect;
+
+
 protected:
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override; 
+	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 	void OnOverlapBegin(
@@ -48,4 +72,18 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 BodyIndex, bool bFromSweep,
 		const FHitResult& SweepResult
 	);
+
+	UFUNCTION()
+	void OnOverlapEnd(
+		UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 BodyIndex
+	);
+
+	UFUNCTION()
+	void HandleLidOpenProgress(float Value);
+
+public:
+	virtual void Interact(ASpaceCharacter* Character) override;
+
+	FTimeline LidOpenTimeline;
 };

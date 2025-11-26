@@ -2,6 +2,7 @@
 
 
 #include "Component/FuelComponent.h"
+#include "SpaceCharacter/SpaceCharacter.h"
 
 UFuelComponent::UFuelComponent()
 {
@@ -58,6 +59,10 @@ void UFuelComponent::ConsumeFlying(float DeltaTime)
 
 void UFuelComponent::Recharge(float DeltaTime)
 {
+	auto Character = Cast<ASpaceCharacter>(GetOwner());
+    if (Character->bIsSprinting)
+        return;
+
     float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel + RechargeRate * DeltaTime, 0.f, MaxFuel);
     if (CurrentFuel != OldFuel)
