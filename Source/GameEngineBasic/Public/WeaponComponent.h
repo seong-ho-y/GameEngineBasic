@@ -7,77 +7,90 @@
 #include "WeaponComponent.generated.h"
 
 class AProjectile;
-class UShooterComp;
 class ASpaceCharacter;
+class UShooterComp;
+class UWeaponBehavior;           // ★ Behavior 베이스
+class UPrimaryWeaponBehavior;    // ★ Primary용
+class UChargeWeaponBehavior;     // ★ Charge용
 
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
-    None,
-    Gatling,         // 기관총
-    MachineGun,      // 고연사 머신건
-    EnergyBlast,     // 에너지 블라스트 (차지형)
-    LaserCannon,     // 레이저 캐논 (차지/관통/히트스캔)
-    MissileLauncher, // 미사일 런처
-    EnergyBlade      // 근접 블레이드
+    Base,
+    Rifle,         // 연사
+    Charge,     // 차지
+	ShotGun	// 샷건
 };
 
 USTRUCT(BlueprintType)
 struct FWeaponData : public FTableRowBase
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 	
 
-    /* --------------------------- 기본 정보 --------------------------- */
+	/* --------------------------- 기본 정보 --------------------------- */
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EWeaponType WeaponType = EWeaponType::None;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EWeaponType WeaponType = EWeaponType::Base;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FString DisplayName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString DisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMesh* WeaponMesh = nullptr;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UTexture2D* Icon = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector MeshScale = FVector(1.f, 1.f, 1.f);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector LocPivot = FVector(0.f, 0.f, 0.f);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FRotator RotPivot = FRotator(0.f, 0.f, 0.f);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D* Icon = nullptr;
 
-    /* --------------------------- 스탯 --------------------------- */
+	/* --------------------------- 스탯 --------------------------- */
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Damage = 10.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage = 10.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float FireRate = 0.1f; // 연사력 or 발사 쿨다운
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float FireRate = 0.1f; // 연사력 or 발사 쿨다운
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float ReloadTime = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float ReloadTime = 1.0f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 MaxAmmo = 30;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxAmmo = 30;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 FullAmmo = 30;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 FullAmmo = 30;
 
-    /* --------------------------- 사거리 / 투사체 --------------------------- */
+	/* --------------------------- 사거리 / 투사체 --------------------------- */
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Range = 10000.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Range = 10000.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<AProjectile> ProjectileClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<AProjectile> ProjectileClass;
 
-    /* --------------------------- 차지형 무기 옵션 --------------------------- */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bIsAuto;
+	
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bIsChargeWeapon = false;
+	/* --------------------------- 차지형 무기 옵션 --------------------------- */
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float ChargeTime = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsChargeWeapon = false;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float OverchargeTime = 2.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float ChargeTime = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float OverchargeTime = 2.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UParticleSystem* ChargeVFX;
@@ -90,26 +103,11 @@ struct FWeaponData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UParticleSystem* OverChargeSFX;
-    /* --------------------------- 이동 디버프 (머신건/레이저캐논) --------------------------- */
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float MoveSpeedMultiplier = 1.0f; // 발사중 이속 감소 (예: 0.7)
+	/* ------------------------ 스프레드 옵션 -------------------------*/
 
-    /* --------------------------- 미사일 옵션 --------------------------- */
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 MissileCount = 4;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bUseHoming = true;
-
-    /* --------------------------- 검기 옵션 --------------------------- */
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bHasMeleeSlashWave = false;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<AProjectile> SlashProjectileClass;
+	UPROPERTY(EditAnywhere,  BlueprintReadWrite)
+	float ProjectileNum = 1;
 };
 
 USTRUCT(BlueprintType)
@@ -135,19 +133,24 @@ public:
 	// Sets default values for this component's properties
 	UWeaponComponent();
 
+	UPROPERTY()
 	FOnWeaponInitialized WeaponInitialized;
+
+	UPROPERTY()
+	UWeaponBehavior* Behavior;
 
 	void InitializeWeapon(ASpaceCharacter* Player, UShooterComp* InShooterComp);
 	
 
 	virtual void HandleFirePressed();
 	virtual void HandleFireReleased();
-
-	virtual bool CanFire() const;
-	virtual void PerformFire();
+	
 	FVector GetAimPoint() const;
 	FVector GetMuzzleLoc() const;
 	void SpawnAndAttachWeaponMesh();
+	void SaveRuntimeState();
+	void ApplyWeaponStatsToShooter();
+	void ClearWeaponMesh();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Data")
 	UDataTable* WeaponTable;
@@ -158,23 +161,33 @@ public:
 	UPROPERTY()
 	FWeaponRuntimeState RuntimeState;
 
-	UPROPERTY()
-	TMap<FName, FWeaponRuntimeState> WeaponStates;
-
 	
 protected:
 
 	virtual void BeginPlay() override;
-	UPROPERTY()
-	ASpaceCharacter* OwnerCharacter;
+
 
 	UPROPERTY()
 	UStaticMeshComponent* WeaponMeshComp = nullptr;
 	
 	UPROPERTY()
-	UShooterComp* ShooterComp;
+	UWeaponComponent* CurrentWeaponBehavior;
+	
+	// Behavior 클래스 선택/생성용 헬퍼
+	void SetupBehaviorFromData();
+
+	// Behavior를 직접 세팅하고 Initialize까지 해주는 함수 (원하면 public로 빼도 됨)
+	void SetBehavior(TSubclassOf<UWeaponBehavior> BehaviorClass);
+	
+	
 
 public:
+	UPROPERTY()
+	ASpaceCharacter* OwnerCharacter;
+	
+	UPROPERTY()
+	UShooterComp* ShooterComp;
+	
 	UPROPERTY(EditAnywhere)
 	FWeaponData WeaponData;
 	
@@ -182,9 +195,5 @@ public:
 	FName MuzzleSocketName = "MuzzleSocket";
 	
 	virtual FVector GetAimDirection() const; // If there are more than one aim logic, you can override in child weapon
-public:	
-	// Called every frame
-	//virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	void SetWeaponMesh(UStaticMeshComponent* InWeaponMeshComp);
 
 };

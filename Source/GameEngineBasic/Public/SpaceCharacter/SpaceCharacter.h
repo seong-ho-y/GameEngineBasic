@@ -335,4 +335,7 @@ public:
 
 	// ��� ����
 	bool bIsDead = false;
+
+	UPROPERTY()
+	TMap<FName, FWeaponRuntimeState> WeaponStates;
 };

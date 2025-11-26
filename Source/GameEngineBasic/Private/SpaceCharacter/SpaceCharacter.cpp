@@ -32,9 +32,7 @@
 #include <SpaceCharacter/States/S_Boost.h>
 #include <SpaceCharacter/States/S_FlyAim.h>
 #include <SpaceCharacter/States/S_FlyCharge.h>
-
 #include "WeaponComponent.h"
-#include "Iris/Serialization/ObjectNetSerializer.h"
 
 ASpaceCharacter::ASpaceCharacter()
 {
@@ -728,27 +726,37 @@ void ASpaceCharacter::SwapWeapon()
 {
 	if (!WeaponComp || !Shooter) return;
 
-	// ========================
-	// 1) 현재 무기의 상태 저장
-	// ========================
-	WeaponComp->RuntimeState.CurrentAmmo = Shooter->CurrentAmmo;
-	WeaponComp->RuntimeState.ReserveAmmo = Shooter->MaxAmmo;
+	// 0) 현재 무기 Mesh 제거 (시각적 잔상 방지)
+	WeaponComp->ClearWeaponMesh();
 
-	WeaponComp->WeaponStates.Add(WeaponComp->WeaponRowName, WeaponComp->RuntimeState);
+	// 1) 현재 무기 런타임 상태 저장 (탄약 등)
+	WeaponComp->SaveRuntimeState();
 
-	// ========================
-	// 2) RowName 변경
-	// ========================
-	if (WeaponComp->WeaponRowName == FName("HandgunBasic"))
-		WeaponComp->WeaponRowName = FName("RifleBasic");
+	// 2) 다음 RowName 결정 (순환 구조)
+	const FName OldRow = WeaponComp->WeaponRowName;
+	FName NewRow;
+
+	if (OldRow == FName("HandgunBasic"))
+	{
+		NewRow = FName("RifleBasic");
+	}
+	else if (OldRow == FName("RifleBasic"))
+	{
+		NewRow = FName("BlastBasic");
+	}
 	else
-		WeaponComp->WeaponRowName = FName("HandgunBasic");
+	{
+		NewRow = FName("HandgunBasic");
+	}
 
-	// ========================
-	// 3) 무기 재초기화
-	// ========================
+	// 3) RowName 변경만 해주고
+	WeaponComp->WeaponRowName = NewRow;
+
+	// 4) 다시 Initialize → DT 로딩 + RuntimeState 로딩 + Behavior 선택 + Mesh 스폰 + HUD 갱신
 	WeaponComp->InitializeWeapon(this, Shooter);
 
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green,
-		FString::Printf(TEXT("Swapped to %s"), *WeaponComp->WeaponRowName.ToString()));
+	GEngine->AddOnScreenDebugMessage(
+		-1, 2.f, FColor::Green,
+		FString::Printf(TEXT("Swapped to %s"), *WeaponComp->WeaponRowName.ToString())
+	);
 }

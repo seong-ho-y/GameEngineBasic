@@ -32,10 +32,11 @@ public:
 	FVector ExternalMuzzleLoc;
 	FRotator ExternalMuzzleRot;
 	float ReloadTime = 5.f;
-
-protected:
+	
 	UFUNCTION()
 	void HandleWeaponInitialized();
+protected:
+
 	virtual void BeginPlay() override;
 
 public:

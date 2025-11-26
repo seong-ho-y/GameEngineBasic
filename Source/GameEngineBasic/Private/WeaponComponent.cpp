@@ -2,9 +2,15 @@
 
 
 #include "WeaponComponent.h"
+
+#include "WeaponBehavior.h"
+#include "PrimaryWeaponBehavior.h"
+#include "ChargeWeaponBehavior.h"
+#include "IPropertyTable.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "Camera/CameraComponent.h"
+
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
@@ -28,71 +34,104 @@ void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* I
 	OwnerCharacter = Player;
 	ShooterComp = InShooterComp;
 
+	// 1) DataTable에서 무기 데이터 로드
 	if (WeaponTable && WeaponRowName != NAME_None)
 	{
-		const FWeaponData* Row = WeaponTable->FindRow<FWeaponData>(WeaponRowName, TEXT(""));
-		if (Row)
-		{
-			WeaponData = *Row;
-			
+		if (const FWeaponData* Row = WeaponTable->FindRow<FWeaponData>(WeaponRowName, TEXT("InitializeWeapon")))
+			{
+				WeaponData = *Row;
+			}
 		}
-	}
 	else
 	{
-		FString TableName = WeaponTable ? WeaponTable->GetName() : TEXT("NULL");
-
+		const FString TableName = WeaponTable ? WeaponTable->GetName() : TEXT("NULL");
 		GEngine->AddOnScreenDebugMessage(
-			-1, 6.f, FColor::Red,
-			FString::Printf(
-				TEXT("NoWeapon → Table=%s | RowName=%s"),
-				*TableName,
-				*WeaponRowName.ToString()
-			)
-		);
-
+				-1, 6.f, FColor::Red,
+				FString::Printf(
+					TEXT("NoWeapon → Table=%s | RowName=%s"),
+					*TableName,
+					*WeaponRowName.ToString()));
 		return;
 	}
-	// ============================
-	//  2) WeaponState 로드 또는 초기화
-	// ============================
 
-	if (WeaponStates.Contains(WeaponRowName))
-	{
-		RuntimeState = WeaponStates[WeaponRowName];   // 기존 상태 불러오기
-	}
+	// 2) RuntimeState (탄약 상태) 로드 또는 초기화
+	if (OwnerCharacter->WeaponStates.Contains(WeaponRowName))
+		{
+			RuntimeState = OwnerCharacter->WeaponStates[WeaponRowName];
+		}
 	else
-	{
-		RuntimeState = FWeaponRuntimeState();         // 완전 초기 상태 생성
-		RuntimeState.CurrentAmmo = WeaponData.FullAmmo;
-		RuntimeState.ReserveAmmo = WeaponData.MaxAmmo;
+		{
+			RuntimeState.CurrentAmmo = WeaponData.FullAmmo;
+			RuntimeState.ReserveAmmo = WeaponData.MaxAmmo;
 
-		WeaponStates.Add(WeaponRowName, RuntimeState);
-	}
+			OwnerCharacter->WeaponStates.Add(WeaponRowName, RuntimeState);
+		}
 
-	// ============================
-	//  3) ShooterComp에 값 설정
-	// ============================
-	ShooterComp->PendingDamage = WeaponData.Damage;
-	ShooterComp->ReloadTime   = WeaponData.ReloadTime;
-	ShooterComp->FireRate     = WeaponData.FireRate;
+		// 3) ShooterComp에 값 적용 (Damage, FireRate, Ammo 등)
+	ApplyWeaponStatsToShooter();
 
-	ShooterComp->CurrentAmmo  = RuntimeState.CurrentAmmo;
-	ShooterComp->FullAmmo     = WeaponData.FullAmmo;
-	ShooterComp->MaxAmmo      = RuntimeState.ReserveAmmo;
+		// 4) Behavior 선택/생성 (★ 새로 추가되는 부분)
+	SetupBehaviorFromData();
 
-	ShooterComp->ProjectileClass = WeaponData.ProjectileClass;
-
-	// ============================
-	//  4) Weapon Mesh 스폰
-	// ============================
+		// 5) 무기 Mesh 스폰/부착
 	SpawnAndAttachWeaponMesh();
 
-	// ============================
-	//  5) HUD 업데이트 브로드캐스트
-	// ============================
+		// 6) HUD 업데이트 브로드캐스트
 	WeaponInitialized.Broadcast();
 }
 
+
+void UWeaponComponent::SetBehavior(TSubclassOf<UWeaponBehavior> BehaviorClass)
+{
+	if (!BehaviorClass)
+	{
+		Behavior = nullptr;
+		return;
+	}
+
+	// 같은 클래스면 그냥 재초기화만 해도 됨
+	if (Behavior && Behavior->GetClass() == BehaviorClass)
+	{
+		Behavior->Initialize(this);
+		return;
+	}
+
+	// 새 Behavior 생성
+	Behavior = NewObject<UWeaponBehavior>(this, BehaviorClass);
+	if (Behavior)
+	{
+		Behavior->Initialize(this);
+	}
+}
+
+void UWeaponComponent::SetupBehaviorFromData()
+{
+	// WeaponData.WeaponType 기반으로 선택
+	TSubclassOf<UWeaponBehavior> BehaviorClass = nullptr;
+
+	switch (WeaponData.WeaponType)
+	{
+	case EWeaponType::Base:
+	case EWeaponType::Rifle:
+		BehaviorClass = UPrimaryWeaponBehavior::StaticClass();
+		break;
+
+	case EWeaponType::Charge:
+		BehaviorClass = UChargeWeaponBehavior::StaticClass();
+		break;
+
+	case EWeaponType::ShotGun:
+		// 나중에 ShotgunBehavior 추가할 때 여기 연결
+		// BehaviorClass = UShotgunBehavior::StaticClass();
+		break;
+
+	default:
+		BehaviorClass = nullptr;
+		break;
+	}
+
+	SetBehavior(BehaviorClass);
+}
 
 
 FVector UWeaponComponent::GetAimDirection() const
@@ -109,35 +148,24 @@ FVector UWeaponComponent::GetAimDirection() const
 	return (AimPoint - MuzzleLoc).GetSafeNormal();
 }
 
-void UWeaponComponent::SetWeaponMesh(UStaticMeshComponent* InWeaponMeshComp)
-{
-	WeaponMeshComp = InWeaponMeshComp;
-}
 
 void UWeaponComponent::HandleFirePressed()
 {
-	PerformFire();
+	if (Behavior)
+	{
+		Behavior->OnFirePressed();
+	}
 }
 
 void UWeaponComponent::HandleFireReleased()
 {
-	
+	if (Behavior)
+	{
+		Behavior->OnFireReleased();
+	}
 }
 
-bool UWeaponComponent::CanFire() const
-{
-	return true;
-}
 
-void UWeaponComponent::PerformFire()
-{
-	if (!ShooterComp || !OwnerCharacter)
-		return;
-	
-	ShooterComp->SetFireDirection(GetAimDirection());
-	ShooterComp->TryFire();
-
-}
 
 FVector UWeaponComponent::GetAimPoint() const
 {
@@ -219,6 +247,7 @@ void UWeaponComponent::SpawnAndAttachWeaponMesh()
 
 	WeaponMeshComp->SetStaticMesh(WeaponData.WeaponMesh);
 
+
 	// 무기 소켓이름은 DT 또는 Blueprint로 지정
 	FName SocketName = TEXT("WeaponSocket");
 
@@ -227,5 +256,73 @@ void UWeaponComponent::SpawnAndAttachWeaponMesh()
 		FAttachmentTransformRules::SnapToTargetIncludingScale,
 		SocketName
 	);
+
+	WeaponMeshComp->SetRelativeScale3D(WeaponData.MeshScale);
+	WeaponMeshComp->SetRelativeLocationAndRotation(WeaponData.LocPivot, WeaponData.RotPivot);
+	UE_LOG(LogTemp, Warning, TEXT("Scale: %s"),
+	*WeaponData.MeshScale.ToString());
 }
 
+
+void UWeaponComponent::SaveRuntimeState()
+{
+	RuntimeState.CurrentAmmo = ShooterComp->CurrentAmmo;
+	RuntimeState.ReserveAmmo = ShooterComp->MaxAmmo;
+	OwnerCharacter->WeaponStates[WeaponRowName] = RuntimeState;
+}
+
+
+void UWeaponComponent::ApplyWeaponStatsToShooter()
+{
+	if (!ShooterComp) return;
+
+	if (OwnerCharacter->WeaponStates.Contains(WeaponRowName))
+	{
+		ShooterComp->CurrentAmmo = OwnerCharacter->WeaponStates[WeaponRowName].CurrentAmmo;
+		ShooterComp->MaxAmmo     = OwnerCharacter->WeaponStates[WeaponRowName].ReserveAmmo;
+	}
+	else
+	{
+		ShooterComp->CurrentAmmo = WeaponData.FullAmmo;
+		ShooterComp->MaxAmmo = WeaponData.MaxAmmo;
+	}
+	ShooterComp->PendingDamage = WeaponData.Damage;
+	ShooterComp->ReloadTime    = WeaponData.ReloadTime;
+	ShooterComp->FireRate      = WeaponData.FireRate;
+	ShooterComp->ProjectileClass = WeaponData.ProjectileClass;
+
+	ShooterComp->FullAmmo    = WeaponData.FullAmmo;
+}
+void UWeaponComponent::ClearWeaponMesh()
+{
+	if (!OwnerCharacter || !OwnerCharacter->GetMesh())
+		return;
+
+	USkeletalMeshComponent* PlayerMesh = OwnerCharacter->GetMesh();
+
+	// PlayerMesh의 모든 자식 컴포넌트 탐색
+	TArray<USceneComponent*> Children;
+	PlayerMesh->GetChildrenComponents(true, Children);
+
+	for (USceneComponent* Child : Children)
+	{
+		// Weapon Mesh는 StaticMeshComponent 형태
+		UStaticMeshComponent* SM = Cast<UStaticMeshComponent>(Child);
+		if (!SM) continue;
+
+		// 너가 붙인 무기 Mesh인지 판별
+		// 이름으로 필터링 (WeaponMesh, GunMesh, etc)
+		const FString Name = SM->GetName();
+
+		if (Name.Contains(TEXT("Weapon")) ||
+			Name.Contains(TEXT("Gun"))     ||
+			SM == WeaponMeshComp)  // 기존 저장된 MeshComp 대비
+		{
+			SM->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+			SM->DestroyComponent();
+		}
+	}
+
+	// 레퍼런스도 정리
+	WeaponMeshComp = nullptr;
+}
