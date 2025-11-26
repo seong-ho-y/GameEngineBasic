@@ -2,7 +2,9 @@
 
 
 #include "TargetingSystemComponent.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
+#include "GameFramework/PlayerController.h"
 #include "EngineUtils.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"

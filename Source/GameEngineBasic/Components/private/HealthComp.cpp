@@ -42,7 +42,7 @@ float UHealthComp::ApplyHealthDamage(float Damage)
 	float IncomingDamage = Damage;
 
 	// 1) 쉴드가 있다면 → 먼저 처리
-	if (ShieldComp)
+	if (ShieldComp && ShieldComp->IsShieldActive())
 	{
 		IncomingDamage = ShieldComp->ApplyShieldDamage(Damage);
 	}
