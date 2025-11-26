@@ -10,6 +10,7 @@
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Engine/World.h"
+#include "SpaceCharacter/SpaceCharacter.h"
 
 
 

@@ -27,9 +27,6 @@ protected:
 
 private:
 	UPROPERTY()
-	AShieldActor* ShieldActor;
-
-	UPROPERTY()
 	bool bShieldActive = false;
 
 	UPROPERTY()

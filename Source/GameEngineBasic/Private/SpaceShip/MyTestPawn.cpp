@@ -15,6 +15,8 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
 #include "EnhancedInputSubsystems.h"
+#include "SpaceCharacter/SpaceCharacter.h"
+#include "GameFramework/PlayerController.h"
 
 #include "Projectile.h"
 #include "Particles/ParticleSystem.h"
@@ -26,7 +28,7 @@ AMyTestPawn::AMyTestPawn()
 	PrimaryActorTick.bCanEverTick = true;
 
 	ShipMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShipMesh"));
-	RootComponent = ShipMesh; // 루트 컴포넌트로 설정
+	RootComponent = ShipMesh;
 
 	ShipMesh->SetSimulatePhysics(true);
 	ShipMesh->SetEnableGravity(false);
@@ -35,7 +37,7 @@ AMyTestPawn::AMyTestPawn()
 	ShipMesh->SetAngularDamping(1.2f);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	SpringArm->SetupAttachment(RootComponent);
+	SpringArm->SetupAttachment(ShipMesh);
 	SpringArm->TargetArmLength = 800.f;
 	SpringArm->bUsePawnControlRotation = false;
 	SpringArm->bEnableCameraLag = true;
@@ -45,11 +47,12 @@ AMyTestPawn::AMyTestPawn()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 
-	ShieldActorComp = CreateDefaultSubobject<UChildActorComponent>(TEXT("ShieldActorComp"));
-	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
-	ShieldActorComp->SetupAttachment(ShipMesh);
-	ShieldActorComp->SetChildActorClass(AShieldActor::StaticClass());
+	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
+	CollisionComp->SetCollisionProfileName(TEXT("OverlapAll"));
+	CollisionComp->InitSphereRadius(500.f);
+	CollisionComp->SetupAttachment(RootComponent);
 
+	ShieldComp = CreateDefaultSubobject<UShieldComp>(TEXT("ShieldComp"));
 	ShipMovement = CreateDefaultSubobject<UMyShipMovement>(TEXT("ShipMovement"));
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 	HealthComp = CreateDefaultSubobject<UHealthComp>(TEXT("HealthComp"));
@@ -64,6 +67,16 @@ void AMyTestPawn::BeginPlay()
 	{
 		HealthComp->OnHealthChanged_Ver2.AddDynamic(this, &AMyTestPawn::OnHealthChanged);
 		HealthComp->OnDeath.AddDynamic(this, &AMyTestPawn::OnDeath);
+	}
+	if(ShieldComp)
+	{
+		ShieldComp->OnShieldActivated.AddDynamic(this, &AMyTestPawn::OnShieldActivated);
+	}
+	if (CollisionComp)
+	{
+		CollisionComp->OnComponentEndOverlap.AddDynamic(this, &AMyTestPawn::OnOverlapEnd);
+		CollisionComp->OnComponentBeginOverlap.AddDynamic(this, &AMyTestPawn::OnOverlapBegin);
+
 	}
 }
 
@@ -94,6 +107,8 @@ void AMyTestPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		
 		EnhancedInput->BindAction(IA_Brake, ETriggerEvent::Started, this, &AMyTestPawn::Brake_Pressed);
 		EnhancedInput->BindAction(IA_Brake, ETriggerEvent::Completed, this, &AMyTestPawn::Brake_Released);
+	
+		EnhancedInput->BindAction(IA_Shield, ETriggerEvent::Started, this, &AMyTestPawn::OnShieldKeyPressed);
 	}
 
 	else {
@@ -156,6 +171,20 @@ void AMyTestPawn::FireCompleted(const FInputActionValue& /*Value*/)
 	UE_LOG(LogTemp, Warning, TEXT("FireCompleted"));
 }
 
+void AMyTestPawn::OnShieldActivated()
+{
+	// 실드 활성화 처리
+	UE_LOG(LogTemp, Warning, TEXT("Shield Activated!"));
+}
+
+void AMyTestPawn::OnShieldKeyPressed(const FInputActionInstance& Instance)
+{
+	if (ShieldComp)
+	{
+		ShieldComp->ActivateShield();
+	}
+}
+
 void AMyTestPawn::OnShieldBroken(AActor* OwnerActor)
 {
 	// 실드 깨졌을 때 처리
@@ -189,4 +218,46 @@ void AMyTestPawn::OnDeath(AActor* OwnerActor)
 
 	Destroy();
 	
+}
+
+
+void AMyTestPawn::Interact(ASpaceCharacter* Character)
+{
+	if (!Character) return;
+
+	APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (!PC) return;
+
+	// 1) 캐릭터 입력 중지
+	Character->DisableInput(PC);
+
+	// 2) 캐릭터 숨기기 및 충돌 끄기
+	Character->SetActorHiddenInGame(true);
+	Character->SetActorEnableCollision(false);
+
+	// 3) PlayerController가 우주선 Possess
+	PC->Possess(this);
+
+	// 4) 우주선 조종 시작
+	EnableInput(PC);
+
+	UE_LOG(LogTemp, Log, TEXT("Player Boarding Ship!"));
+}
+
+void AMyTestPawn::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (ASpaceCharacter* Character = Cast<ASpaceCharacter>(OtherActor))
+	{
+		Character->CurrentInteractTarget = this;
+		// 필요하면 InteractWidget 표시
+	}
+}
+
+void AMyTestPawn::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex)
+{
+	if (ASpaceCharacter* Character = Cast<ASpaceCharacter>(OtherActor))
+	{
+		if (Character->CurrentInteractTarget == this)
+			Character->CurrentInteractTarget = nullptr;
+	}
 }

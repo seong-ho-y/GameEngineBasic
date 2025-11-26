@@ -167,6 +167,8 @@ void UShooterComp::Fire_Implementation()
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLoc);
 	}
+	PendingDamage = 10.f;     // 기본값 초기화	
+	PendingScale = 1.f;       // 기본값 초기화
 }
 
 

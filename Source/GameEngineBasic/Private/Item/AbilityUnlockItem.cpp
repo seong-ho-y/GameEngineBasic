@@ -32,11 +32,6 @@ AAbilityUnlockItem::AAbilityUnlockItem()
 	BoxLid = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoxLid"));
 	BoxLid->SetupAttachment(BoxBody);
 
-	CollisionSphere->OnComponentBeginOverlap.AddDynamic(
-		this,
-		&AAbilityUnlockItem::OnOverlapBegin
-	);
-
 	InteractWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractWidget"));
 	InteractWidget->SetupAttachment(SceneRoot);
 	InteractWidget->SetWidgetSpace(EWidgetSpace::World);
@@ -53,7 +48,8 @@ void AAbilityUnlockItem::BeginPlay()
 	Super::BeginPlay();	
 
 	CollisionSphere->OnComponentEndOverlap.AddDynamic(this, &AAbilityUnlockItem::OnOverlapEnd);
-
+	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AAbilityUnlockItem::OnOverlapBegin);
+	
 	if (LidOpenCurve)
 	{
 		FOnTimelineFloat Progress;
