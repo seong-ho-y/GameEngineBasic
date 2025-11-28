@@ -106,8 +106,11 @@ struct FWeaponData : public FTableRowBase
 
 	/* ------------------------ 스프레드 옵션 -------------------------*/
 
-	UPROPERTY(EditAnywhere,  BlueprintReadWrite)
-	float ProjectileNum = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 SpreadCount = 1; // 한 번에 발사할 탄 수
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float SpreadAngle = 5.f; // 탄 퍼짐 각도
 };
 
 USTRUCT(BlueprintType)
