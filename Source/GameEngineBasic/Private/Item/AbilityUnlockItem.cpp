@@ -6,6 +6,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
+#include "NiagaraComponent.h"
 
 #include "Blueprint/UserWidget.h"
 #include "SpaceCharacter/SpaceCharacter.h"
