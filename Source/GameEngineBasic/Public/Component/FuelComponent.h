@@ -22,7 +22,7 @@ protected:
     virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-protected:
+public:
     UPROPERTY(EditAnywhere, Category = "Fuel")
     float MaxFuel = 100.f;
 

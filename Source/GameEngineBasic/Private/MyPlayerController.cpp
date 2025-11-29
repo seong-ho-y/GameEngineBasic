@@ -1,11 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MyPlayerController.h"
+
 #include "EnhancedInputSubsystems.h"
+#include "SpaceCharacter/DeathWidget.h"
+
 #include "SpaceShip/MyTestPawn.h"
-#include "Kismet/GameplayStatics.h"
 #include "SpaceCharacter/SpaceCharacter.h"
-//#include "SpaceShip/MySpaceShip.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "GameMode/MyGameMode.h"
 
 void AMyPlayerController::BeginPlay()
 {
@@ -45,4 +49,36 @@ void AMyPlayerController::OnPossess(APawn* InPawn)
 
         }
     }
+}
+
+void AMyPlayerController::ShowDeathWidget()
+{
+    if (!DeathWidgetclass) return;
+
+    DeathWidget = CreateWidget<UDeathWidget>(this, DeathWidgetclass);
+
+    if (DeathWidget)
+    {
+        DeathWidget->AddToViewport();
+
+        FInputModeUIOnly InputMode;
+        
+		SetInputMode(InputMode);
+        bShowMouseCursor = true;
+    }
+}
+
+void AMyPlayerController::RequestRespawn()
+{
+    if (DeathWidget)
+    {
+        DeathWidget->RemoveFromParent();
+        DeathWidget = nullptr;
+    }
+
+    bShowMouseCursor = false;
+    SetInputMode(FInputModeGameOnly());
+
+    if (AMyGameMode* GM = Cast<AMyGameMode>(UGameplayStatics::GetGameMode(this)))
+        GM->RespawnPlayer(this);
 }

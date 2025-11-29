@@ -6,7 +6,6 @@
 #include "GameFramework/Actor.h"
 #include "Item/U_Interactable.h"
 #include "Components/TimelineComponent.h"
-#include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
 
 #include "AbilityUnlockItem.generated.h"
@@ -27,6 +26,7 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UWidgetComponent;
 class USceneComponent;
+class UNiagaraComponent;
 
 UCLASS()
 class GAMEENGINEBASIC_API AAbilityUnlockItem : public AActor, public IU_Interactable
@@ -43,21 +43,25 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* CollisionSphere;
 
+	// ---------- Box ----------
 	UPROPERTY(VisibleAnywhere, Category = "Box")
 	UStaticMeshComponent* BoxBody;
 
 	UPROPERTY(VisibleAnywhere, Category = "Box")
 	UStaticMeshComponent* BoxLid;
 
-	UPROPERTY(EditAnywhere, Category = "Ability")
-	EAbilityType AbilityToUnlock = EAbilityType::Sprint;
-
-	UPROPERTY(VisibleAnywhere, Category = "UI")
-	class UWidgetComponent* InteractWidget;
-
 	UPROPERTY(EditAnywhere, Category = "Box")
 	UCurveFloat* LidOpenCurve;
 
+	// ---------- Ability ----------
+	UPROPERTY(EditAnywhere, Category = "Ability")
+	EAbilityType AbilityToUnlock = EAbilityType::Sprint;
+
+	// ---------- UI ----------
+	UPROPERTY(VisibleAnywhere, Category = "UI")
+	class UWidgetComponent* InteractWidget;
+
+	// ---------- Niagara ----------
 	UPROPERTY(VisibleAnywhere, Category = "FX")
 	UNiagaraComponent* Effect;
 
@@ -79,6 +83,7 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 BodyIndex
 	);
 
+	// ---------- Timeline Functions ----------
 	UFUNCTION()
 	void HandleLidOpenProgress(float Value);
 
