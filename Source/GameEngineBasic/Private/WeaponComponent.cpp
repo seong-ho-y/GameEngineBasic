@@ -7,6 +7,7 @@
 #include "PrimaryWeaponBehavior.h"
 #include "ChargeWeaponBehavior.h"
 #include "IPropertyTable.h"
+#include "MultiWeaponBehavior.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "Camera/CameraComponent.h"
@@ -121,8 +122,7 @@ void UWeaponComponent::SetupBehaviorFromData()
 		break;
 
 	case EWeaponType::ShotGun:
-		// 나중에 ShotgunBehavior 추가할 때 여기 연결
-		// BehaviorClass = UShotgunBehavior::StaticClass();
+		BehaviorClass = UMultiWeaponBehavior::StaticClass();
 		break;
 
 	default:

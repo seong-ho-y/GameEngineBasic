@@ -1,38 +1,45 @@
 #include "MultiWeaponBehavior.h"
 #include "WeaponComponent.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
-#include "Engine/World.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Projectile.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Engine/World.h"
 
 void UMultiWeaponBehavior::OnFirePressed_Implementation()
 {
 	if (!OwnerWeapon || !OwnerWeapon->ShooterComp) return;
 
-	// DataTable 설정 로드
+	// DataTable 설정 가져오기
 	SpreadCount = OwnerWeapon->WeaponData.SpreadCount;
 	SpreadAngle = OwnerWeapon->WeaponData.SpreadAngle;
 
-	// ───────────────────────────────
-	// 1) ShooterComp로 "1발만" TryFire 호출
-	//    (쿨타임 / 탄약 / Reload 정상 작동)
-	// ───────────────────────────────
-	bool bDidFire = OwnerWeapon->ShooterComp->TryFire();
-	if (!bDidFire) return;
-
-	// ShooterComp가 Spawn한 Projectile은 Player Shotgun에서는 사용하지 않음
-	// → 기본 1발 스폰을 제거하려면 ShooterComp.Fire() 소스 수정이 필요하지만
-	//   "Player만" 사용이므로 기본 Projectile은 그냥 손대지 않음.
-	//   대신 Multi-Spawn의 위력을 더 크게 한다 (샷건 특성)
-
-	// ───────────────────────────────
-	// 2) Behavior가 SpreadCount 만큼 직접 생성
-	// ───────────────────────────────
-	SpawnMultiProjectiles();
+	// Primary와 동일: 즉시 한 번 발사
+	FireOnce();
 }
 
-void UMultiWeaponBehavior::SpawnMultiProjectiles()
+void UMultiWeaponBehavior::OnFireReleased_Implementation()
+{
+	// Multi는 AutoFire 없음 (Shotgun 용)
+}
+
+void UMultiWeaponBehavior::FireOnce()
+{
+	if (!OwnerWeapon || !OwnerWeapon->ShooterComp) return;
+
+	// 💥 Primary와 동일한 흐름: AimDirection → TryFire()
+	FVector AimDir = OwnerWeapon->GetAimDirection();
+	OwnerWeapon->ShooterComp->SetFireDirection(AimDir);
+
+	bool bDidFire = OwnerWeapon->ShooterComp->TryFire();
+	if (!bDidFire)
+		return;
+
+	// ShooterComp::Fire()가 1발 스폰했음
+	// 그 뒤에 우리가 산탄 추가 스폰
+	SpawnExtraProjectiles();
+}
+
+void UMultiWeaponBehavior::SpawnExtraProjectiles()
 {
 	if (!OwnerWeapon || !OwnerWeapon->ShooterComp) return;
 
@@ -44,17 +51,18 @@ void UMultiWeaponBehavior::SpawnMultiProjectiles()
 
 	for (int32 i = 0; i < SpreadCount; i++)
 	{
-		FVector ShotDir = MakeSpreadDirection(BaseDir);
+		FVector ShotDir = GetSpreadDirection(BaseDir);
 
 		AProjectile* Proj = World->SpawnActor<AProjectile>(
 			OwnerWeapon->WeaponData.ProjectileClass,
-			MuzzleLoc,          // 위치
-			ShotDir.Rotation()  // 회전
+			MuzzleLoc,
+			ShotDir.Rotation()
 		);
 
 		if (Proj && Proj->GetProjectileMovement())
 		{
-			Proj->DamageAmount = OwnerWeapon->WeaponData.Damage;
+			// ShooterComp가 설정한 PendingDamage 사용!
+			Proj->DamageAmount = OwnerWeapon->ShooterComp->PendingDamage;
 
 			Proj->GetProjectileMovement()->Velocity =
 				ShotDir * Proj->GetProjectileMovement()->InitialSpeed;
@@ -62,14 +70,14 @@ void UMultiWeaponBehavior::SpawnMultiProjectiles()
 	}
 }
 
-FVector UMultiWeaponBehavior::MakeSpreadDirection(const FVector& BaseDir) const
+FVector UMultiWeaponBehavior::GetSpreadDirection(const FVector& BaseDir) const
 {
 	const float YawOffset = FMath::FRandRange(-SpreadAngle, SpreadAngle);
 	const float PitchOffset = FMath::FRandRange(-SpreadAngle, SpreadAngle);
 
-	FRotator NewRot = BaseDir.Rotation();
-	NewRot.Yaw += YawOffset;
-	NewRot.Pitch += PitchOffset;
+	FRotator Rot = BaseDir.Rotation();
+	Rot.Yaw += YawOffset;
+	Rot.Pitch += PitchOffset;
 
-	return NewRot.Vector();
+	return Rot.Vector();
 }
