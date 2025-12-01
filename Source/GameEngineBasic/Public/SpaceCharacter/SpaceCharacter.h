@@ -149,6 +149,8 @@ public:
 
 	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
 
+	FORCEINLINE class UWeaponComponent* GetWeaponComponent() const { return WeaponComp; }
+
 public:
 	// Interactable
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
