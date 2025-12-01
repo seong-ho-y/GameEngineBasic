@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "PlayerStatsComponent.h"
 #include "TargetingSystemComponent.h"
 #include "WeaponComponent.h"
 #include "SpaceCharacter.generated.h"
@@ -56,7 +57,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
+	
 	// Component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPlayerStatsComponent* StatsComp;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
@@ -86,6 +91,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
 	UExecutionComp* ExecutionComp;
+
+	// 🔹 PlayerState에서 스탯+무기 적용하는 헬퍼
+	UFUNCTION()
+	void InitFromPlayerState();
 
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")

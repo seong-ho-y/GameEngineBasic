@@ -33,7 +33,12 @@
 #include <SpaceCharacter/States/S_Boost.h>
 #include <SpaceCharacter/States/S_FlyAim.h>
 #include <SpaceCharacter/States/S_FlyCharge.h>
+
+#include "InventoryComponent.h"
+#include "MyPlayerState.h"
 #include "WeaponComponent.h"
+
+class AMyPlayerState;
 
 ASpaceCharacter::ASpaceCharacter()
 {
@@ -61,6 +66,7 @@ ASpaceCharacter::ASpaceCharacter()
 	GetCharacterMovement()->JumpZVelocity = 600.0f;
 	GetCharacterMovement()->AirControl = 0.2f;
 
+	StatsComp = CreateDefaultSubobject<UPlayerStatsComponent>(TEXT("PlayerStatsComp"));
 	Shooter = CreateDefaultSubobject<UShooterComp>(TEXT("ShooterComp"));
 	Fuel = CreateDefaultSubobject<UFuelComponent>(TEXT("FuelComp"));
 	WingComp = CreateDefaultSubobject<UWingComponent>(TEXT("WingComp"));
@@ -77,10 +83,77 @@ ASpaceCharacter::ASpaceCharacter()
 	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
 }
 
+void ASpaceCharacter::InitFromPlayerState()
+{
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] 호출됨"));
+
+    AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+
+    if (!PS)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] PlayerState 없음"));
+    }
+    else
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] PlayerState 존재"));
+    }
+
+    if (!PS || !PS->Inventory)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] Inventory 없음 -> 다음 틱 재시도"));
+
+        if (UWorld* World = GetWorld())
+        {
+            World->GetTimerManager().SetTimerForNextTick(
+                FTimerDelegate::CreateUObject(this, &ASpaceCharacter::InitFromPlayerState)
+            );
+        }
+        return;
+    }
+
+    // Stats
+    if (StatsComp)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] StatsComp->ApplyParts 실행"));
+        StatsComp->ApplyParts();
+    }
+
+    // Weapon
+    if (!WeaponComp || !Shooter)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] WeaponComp 또는 Shooter == NULL !!"));
+        return;
+    }
+
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] WeaponComp & Shooter OK"));
+
+    FName WeaponRow = PS->Inventory->GetCurrentWeapon();
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
+        FString::Printf(TEXT("[InitFromPlayerState] GetCurrentWeapon = %s"), *WeaponRow.ToString()));
+
+    if (WeaponRow == NAME_None)
+    {
+        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] WeaponRow == None !!!!!"));
+        return;
+    }
+
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("[InitFromPlayerState] InitializeWeapon 호출 준비"));
+
+    WeaponComp->WeaponRowName = WeaponRow;
+
+    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow,
+        FString::Printf(TEXT("[InitFromPlayerState] InitializeWeapon 실행!!! Row=%s"), *WeaponRow.ToString()));
+
+    WeaponComp->InitializeWeapon(this, Shooter);
+}
+
+
 void ASpaceCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	InitFromPlayerState();
+	
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
 	if (StateMap.Num() == 0)
@@ -116,8 +189,6 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionStart.AddDynamic(this, &ASpaceCharacter::OnExecutionStart);
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
-	if (WeaponComp)
-		WeaponComp->InitializeWeapon(this, Shooter);
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
