@@ -73,7 +73,7 @@ void UChargeWeaponBehavior::PerformChargedFire()
 
 	float Ratio = GetChargeRatio();
 	float FinalDamage = OwnerWeapon->WeaponData.Damage *
-		FMath::Lerp(1.f, 5.f, Ratio);
+		FMath::Lerp(1.f, 10.f, Ratio);
 
 	OwnerWeapon->ShooterComp->PendingDamage = FinalDamage;
 	OwnerWeapon->ShooterComp->ProjectileClass =

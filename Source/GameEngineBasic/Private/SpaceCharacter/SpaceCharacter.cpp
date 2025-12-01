@@ -2,6 +2,7 @@
 
 
 #include "SpaceCharacter/SpaceCharacter.h"
+#include "MyPlayerController.h"
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -438,27 +439,23 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 	if (bIsDead) return;
 	bIsDead = true;
 
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
+	{
+		if (AMyPlayerController* MyPC = Cast<AMyPlayerController>(PC))
+		{
+			MyPC->ShowDeathWidget();   // 새 함수
+		}
+	}
+
 	if(DeathMontage)
 		PlayAnimMontage(DeathMontage);
-
-	if (Controller)
-	{
-		Controller->StopMovement();
-		Controller->UnPossess();
-	}
 
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
-	GetWorldTimerManager().SetTimer(
-		DeathTimerHandle,
-		this,
-		&ASpaceCharacter::ExplodeAndDestroy,
-		RagdollDuration,
-		false
-	);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ASpaceCharacter::ExplodeAndDestroy()
@@ -838,10 +835,11 @@ void ASpaceCharacter::SwapWeapon()
 	{
 		NewRow = FName("BlastBasic");
 	}
-	else
+	else if (OldRow == FName("BlastBasic"))
 	{
-		NewRow = FName("HandgunBasic");
+		NewRow = FName("ShotgunBasic");
 	}
+	else NewRow = FName("HandgunBasic");
 
 	// 3) RowName 변경만 해주고
 	WeaponComp->WeaponRowName = NewRow;

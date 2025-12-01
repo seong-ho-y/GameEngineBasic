@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "MyPlayerController.h"
 #include "MyGameMode.generated.h"
 
 
@@ -14,4 +15,16 @@ class GAMEENGINEBASIC_API AMyGameMode : public AGameModeBase
 	
 public:
 	AMyGameMode();
+
+protected:
+	virtual void BeginPlay() override;
+
+public:
+
+	UPROPERTY(EditAnywhere, Category = "Respawn")
+	AActor* DefaultSpawnPoint;
+
+
+	UFUNCTION(BlueprintCallable)
+	void RespawnPlayer(AController* Controller);
 };
