@@ -189,6 +189,10 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionStart.AddDynamic(this, &ASpaceCharacter::OnExecutionStart);
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
+	if (StatsComp)
+	{
+		StatsComp->ApplyParts();
+	}
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)

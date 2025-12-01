@@ -1,28 +1,45 @@
 // InventoryComponent.cpp
 #include "InventoryComponent.h"
+#include "SpaceCharacter/SpaceCharacter.h"
 
-void UInventoryComponent::EquipWeapon(FName RowName)
+
+UInventoryComponent::UInventoryComponent()
 {
-	Weapon.WeaponRow = RowName;
+	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UInventoryComponent::EquipPart(EPartSlot Slot, FName RowName)
+void UInventoryComponent::BeginPlay()
 {
-	switch (Slot)
-	{
-	case EPartSlot::Core: Parts.CorePart = RowName; break;
-	case EPartSlot::Upper: Parts.UpperPart = RowName; break;
-	case EPartSlot::Lower: Parts.LowerPart = RowName; break;
-	}
+	Super::BeginPlay();
+
+}
+
+void UInventoryComponent::EquipPart(EPartSlot Slot, FName PartRowName)
+{
+	EquippedParts.Add(Slot, PartRowName);
+	
 }
 
 FName UInventoryComponent::GetPart(EPartSlot Slot) const
 {
-	switch (Slot)
+	if (const FName* Found = EquippedParts.Find(Slot))
 	{
-	case EPartSlot::Core: return Parts.CorePart;
-	case EPartSlot::Upper: return Parts.UpperPart;
-	case EPartSlot::Lower: return Parts.LowerPart;
-	default: return NAME_None;
+		return *Found;
 	}
+	return NAME_None;
+}
+
+const FPartData* UInventoryComponent::GetPartData(EPartSlot Slot) const
+{
+	if (!PartTable) return nullptr;
+
+	FName RowName = GetPart(Slot);
+	if (RowName == NAME_None) return nullptr;
+
+	return PartTable->FindRow<FPartData>(RowName, TEXT("GetPartData"));
+}
+
+void UInventoryComponent::EquipWeapon(FName RowName)
+{
+	Weapon.WeaponRow = RowName;
 }

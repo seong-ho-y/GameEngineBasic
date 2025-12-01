@@ -45,11 +45,12 @@ public:
 	FBaseStats FinalStats;
 
 	// 나중에 파츠 DataTable 연결할 용도 (없으면 그냥 null 두면 됨)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stats")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stats")
 	UDataTable* PartTable;
 
 public:
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	// PlayerState → Inventory → 파츠 → 스탯 적용
 	void ApplyParts();
