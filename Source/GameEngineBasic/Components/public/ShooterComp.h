@@ -128,10 +128,11 @@ public:
 
 	UPROPERTY()
 	float ReloadTimeTotal = 0.f;
-
-private:
+	
 	UPROPERTY()
 	bool bIsReadyToFire = true;
+private:
+	
 
 	bool bIsReloading = false;
 

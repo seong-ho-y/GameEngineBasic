@@ -835,10 +835,11 @@ void ASpaceCharacter::SwapWeapon()
 	{
 		NewRow = FName("BlastBasic");
 	}
-	else
+	else if (OldRow == FName("BlastBasic"))
 	{
-		NewRow = FName("HandgunBasic");
+		NewRow = FName("ShotgunBasic");
 	}
+	else NewRow = FName("HandgunBasic");
 
 	// 3) RowName 변경만 해주고
 	WeaponComp->WeaponRowName = NewRow;
