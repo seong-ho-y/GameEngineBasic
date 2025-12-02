@@ -309,7 +309,7 @@ void ASpaceCharacter::StartJump()
 		if (Anim && FlyUpMontage && Anim->Montage_IsPlaying(FlyUpMontage))
 			return;
 
-		const float UpLaunchPower = 2000.f;
+		const float UpLaunchPower = 5000.f;
 
 		LaunchCharacter(FVector::UpVector * UpLaunchPower, false, false);
 
@@ -320,25 +320,23 @@ void ASpaceCharacter::StartJump()
 		}
 	}
 
+	
 	Jump();
 }
 
 void ASpaceCharacter::StopJump()
 {
-	StopJumping();
-
 	if (CurrentState == ECharacterState::Flying)
 	{
 		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 		{
 			Anim->Montage_Stop(0.1f, FlyUpMontage);
-
-			if (bIsBoosting)
-				return;
-
 			WingComp->StopAll();
 		}
 	}
+
+	StopJumping();
+	
 }
 
 void ASpaceCharacter::OnSprintPressed() // Sprint 판단
@@ -373,10 +371,7 @@ void ASpaceCharacter::OnSprintReleased()
 void ASpaceCharacter::StartSprint()
 {
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
-	if (!PS) return;
-
-	if (bIsBoosting || !PS->CanUseAbility(EAbilityType::Sprint))
-		return;
+	if (!PS || !PS->CanUseAbility(EAbilityType::Sprint)) return;
 
 	bIsSprinting = true;
 	TargetSpeed = RunSpeed;
@@ -385,7 +380,6 @@ void ASpaceCharacter::StartSprint()
 
 void ASpaceCharacter::StopSprint()
 {
-	if (bIsBoosting) return;
 	bIsSprinting = false;
 	TargetSpeed = WalkSpeed;
 	WingComp->StopAll();

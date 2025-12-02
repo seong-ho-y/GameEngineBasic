@@ -74,21 +74,13 @@ void UInventoryComponent::EquipWeapon(FName RowName)
 void UInventoryComponent::OnWeaponUnlocked(FName WeaponRowName)
 {
 	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(
-			-1, 3.f, FColor::Yellow,
-			FString::Printf(TEXT("[Inventory] Weapon Unlocked: %s"),
-				*WeaponRowName.ToString())
-		);
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,FString::Printf(TEXT("[Inventory] Weapon Unlocked: %s"),*WeaponRowName.ToString()));
 }
 
 void UInventoryComponent::OnPartUnlocked(FName PartRowName)
 {
 	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(
-			-1, 3.f, FColor::Yellow,
-			FString::Printf(TEXT("[Inventory] Part Unlocked: %s"),
-				*PartRowName.ToString())
-		);
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,FString::Printf(TEXT("[Inventory] Part Unlocked: %s"),*PartRowName.ToString()));
 }
 
 bool UInventoryComponent::IsWeaponEquippable(FName WeaponRowName) const
