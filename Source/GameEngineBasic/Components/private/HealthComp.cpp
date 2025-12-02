@@ -31,6 +31,12 @@ void UHealthComp::InitStats()
 	BroadcastStatus();
 }
 
+void UHealthComp::RestoreFullHealth()
+{
+	CurrentHealth = MaxHealth;
+	BroadcastStatus();
+}
+
 float UHealthComp::ApplyHealthDamage(float Damage)
 {
 	if (bIsInvincible || Damage <= 0.f)

@@ -31,8 +31,10 @@ void AMyGameMode::BeginPlay()
     FVector SpawnLoc;
     FRotator SpawnRot;
 
+    bool bIsRespawn = UGameplayStatics::HasOption(OptionsString, TEXT("IsRespawn"));
+
     // 1) 세이브된 Bonfire가 있으면 그 위치로
-    if (USaveSystemManager::GetSavedSpawnPoint(SpawnLoc, SpawnRot))
+    if (bIsRespawn && USaveSystemManager::GetSavedSpawnPoint(SpawnLoc, SpawnRot))
     {
         Char->SetActorLocation(SpawnLoc);
         Char->SetActorRotation(SpawnRot);
@@ -55,9 +57,10 @@ void AMyGameMode::BeginPlay()
     {
         Shield->CurrentShield = Shield->MaxShield;
     }
-
+    /*
     if (APawn* Pawn = PC->GetPawn())
         USaveSystemManager::LoadPawnState(Pawn);
+        */
 }
 
 void AMyGameMode::RespawnPlayer(AController* Controller)
@@ -65,5 +68,5 @@ void AMyGameMode::RespawnPlayer(AController* Controller)
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("RespawnPlayer Called"));
 
 	FName CurrentLevelName(*GetWorld()->GetName());
-	UGameplayStatics::OpenLevel(this, CurrentLevelName);
+	UGameplayStatics::OpenLevel(this, CurrentLevelName, true, TEXT("?IsRespawn"));
 }
