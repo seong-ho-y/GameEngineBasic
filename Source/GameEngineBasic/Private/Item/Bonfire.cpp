@@ -5,6 +5,7 @@
 #include "GameEngineBasic/System/SaveSystemManager.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 
+#include "GameEngineBasic/Components/public/HealthComp.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -23,7 +24,8 @@ ABonfire::ABonfire()
     // ----- Collision Sphere -----
     CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
     CollisionSphere->InitSphereRadius(300.f);
-    CollisionSphere->SetCollisionProfileName(TEXT("OverlapAll"));
+    CollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+    CollisionSphere->SetCollisionResponseToChannel(ECC_Player, ECR_Overlap);
 	CollisionSphere->SetupAttachment(RootComponent);
 
     // ----- Mesh -----
@@ -84,6 +86,7 @@ void ABonfire::Interact(ASpaceCharacter* Character)
 {
     if (!Character) return;
 
+    Character->GetHealthComponent()->RestoreFullHealth();
     // 거점 활성화
     bActivated = true;
 

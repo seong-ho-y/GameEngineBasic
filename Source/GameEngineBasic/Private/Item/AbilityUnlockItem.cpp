@@ -25,6 +25,7 @@ AAbilityUnlockItem::AAbilityUnlockItem()
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
 	CollisionSphere->SetCollisionProfileName(TEXT("OverlapAll"));
 	CollisionSphere->InitSphereRadius(300.f);
+	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	CollisionSphere->SetupAttachment(SceneRoot);
 
 	BoxBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoxBody"));
@@ -37,6 +38,10 @@ AAbilityUnlockItem::AAbilityUnlockItem()
 	InteractWidget->SetupAttachment(SceneRoot);
 	InteractWidget->SetWidgetSpace(EWidgetSpace::World);
 	InteractWidget->SetDrawSize(FVector2D(128.f, 128.f));
+	InteractWidget->SetVisibility(false);
+
+	UnlockWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("UnlockWidget"));
+	UnlockWidget->SetupAttachment(SceneRoot);
 	InteractWidget->SetVisibility(false);
 
 	Effect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Effect"));

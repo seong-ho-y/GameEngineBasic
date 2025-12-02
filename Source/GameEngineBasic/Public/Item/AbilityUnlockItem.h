@@ -61,6 +61,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "UI")
 	class UWidgetComponent* InteractWidget;
 
+	UPROPERTY(VisibleAnywhere, Category = "UI")
+	class UWidgetComponent* UnlockWidget;
+
 	// ---------- Niagara ----------
 	UPROPERTY(VisibleAnywhere, Category = "FX")
 	UNiagaraComponent* Effect;
