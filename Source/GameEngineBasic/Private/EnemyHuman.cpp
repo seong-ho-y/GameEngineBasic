@@ -84,9 +84,8 @@ void AEnemyHuman::BeginPlay()
 				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 				TEXT("MeleeSocket")
 			);
-
-			Blade->SetActorHiddenInGame(false);
-			Blade->DeactivateHitbox();
+			Blade->OwnerCharacter = this;
+			Blade->SetActorHiddenInGame(true);
 		}
 	}
 

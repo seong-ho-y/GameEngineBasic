@@ -59,7 +59,6 @@ public:
 	void StartMeleeAttack();
 	void OnMeleeBegin();
 	void OnMeleeEnd();
-	void OnMeleeFinished();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UPawnSensingComponent* PawnSensingComp;
