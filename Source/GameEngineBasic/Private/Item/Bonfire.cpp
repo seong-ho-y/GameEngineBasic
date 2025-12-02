@@ -25,7 +25,6 @@ ABonfire::ABonfire()
     CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
     CollisionSphere->InitSphereRadius(300.f);
     CollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
-    CollisionSphere->SetCollisionResponseToChannel(ECC_Player, ECR_Overlap);
 	CollisionSphere->SetupAttachment(RootComponent);
 
     // ----- Mesh -----
