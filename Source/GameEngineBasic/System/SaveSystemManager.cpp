@@ -35,7 +35,7 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
 
         if (Char->GetShooterComponent())
         {
-            SaveObj->CurrentAmmo = Char->GetShooterComponent()->CurrentAmmo;
+            SaveObj->CurrentAmmo = Char->GetShooterComponent()->MaxAmmo;
             SaveObj->FullAmmo = Char->GetShooterComponent()->FullAmmo;
             SaveObj->MaxAmmo = Char->GetShooterComponent()->MaxAmmo;
         }
@@ -77,8 +77,9 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
         UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSave"), 0)
     );
 
-    Pawn->SetActorLocation(SaveObj->SavedLocation);
-    Pawn->SetActorRotation(SaveObj->SavedRotation);
+    
+    //Pawn->SetActorLocation(SaveObj->SavedLocation);
+    //Pawn->SetActorRotation(SaveObj->SavedRotation);
 
     // SpaceCharacter
     if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(Pawn))
