@@ -40,10 +40,6 @@ AAbilityUnlockItem::AAbilityUnlockItem()
 	InteractWidget->SetDrawSize(FVector2D(128.f, 128.f));
 	InteractWidget->SetVisibility(false);
 
-	UnlockWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("UnlockWidget"));
-	UnlockWidget->SetupAttachment(SceneRoot);
-	InteractWidget->SetVisibility(false);
-
 	Effect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Effect"));
 	Effect->SetupAttachment(SceneRoot);
 	Effect->bAutoActivate = true;
@@ -99,7 +95,29 @@ void AAbilityUnlockItem::Interact(ASpaceCharacter* Character)
 	Character->UnlockAbility(AbilityToUnlock);
 
 	if (InteractWidget)
+	{
 		InteractWidget->SetVisibility(false);
+	}
+
+	if (AbilityUI)
+	{
+		if (UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), AbilityUI))
+		{
+			Widget->AddToViewport(100); // ZOrder 높게
+
+			// 3초 뒤 자동 제거
+			FTimerHandle RemoveTimer;
+			GetWorld()->GetTimerManager().SetTimer(
+				RemoveTimer,
+				FTimerDelegate::CreateLambda([Widget]()
+					{
+						Widget->RemoveFromParent();
+					}),
+				3.0f,
+				false
+			);
+		}
+	}
 
 	LidOpenTimeline.Play();
 

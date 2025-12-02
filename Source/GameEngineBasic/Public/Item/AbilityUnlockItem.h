@@ -20,6 +20,7 @@ enum class EAbilityType : uint8
 	Flying     UMETA(DisplayName = "Flying"),
 	Dash       UMETA(DisplayName = "Dash"),
 	Shield     UMETA(DisplayName = "Shield"),
+	Boost	  UMETA(DisplayName = "Boost"),
 };
 
 class USphereComponent;
@@ -61,8 +62,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "UI")
 	class UWidgetComponent* InteractWidget;
 
-	UPROPERTY(VisibleAnywhere, Category = "UI")
-	class UWidgetComponent* UnlockWidget;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UUserWidget> AbilityUI;
 
 	// ---------- Niagara ----------
 	UPROPERTY(VisibleAnywhere, Category = "FX")

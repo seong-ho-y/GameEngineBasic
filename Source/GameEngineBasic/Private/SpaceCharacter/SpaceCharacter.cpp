@@ -36,6 +36,7 @@
 
 #include "InventoryComponent.h"
 #include "MyPlayerState.h"
+#include "PlayerStatsComponent.h"
 #include "WeaponComponent.h"
 
 class AMyPlayerState;
@@ -144,7 +145,6 @@ void ASpaceCharacter::InitFromPlayerState()
 
     WeaponComp->InitializeWeapon(this, Shooter);
 }
-
 
 void ASpaceCharacter::BeginPlay()
 {
@@ -309,7 +309,7 @@ void ASpaceCharacter::StartJump()
 		if (Anim && FlyUpMontage && Anim->Montage_IsPlaying(FlyUpMontage))
 			return;
 
-		const float UpLaunchPower = 2000.f;
+		const float UpLaunchPower = 5000.f;
 
 		LaunchCharacter(FVector::UpVector * UpLaunchPower, false, false);
 
@@ -320,25 +320,23 @@ void ASpaceCharacter::StartJump()
 		}
 	}
 
+	
 	Jump();
 }
 
 void ASpaceCharacter::StopJump()
 {
-	StopJumping();
-
 	if (CurrentState == ECharacterState::Flying)
 	{
 		if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 		{
 			Anim->Montage_Stop(0.1f, FlyUpMontage);
-
-			if (bIsBoosting)
-				return;
-
 			WingComp->StopAll();
 		}
 	}
+
+	StopJumping();
+	
 }
 
 void ASpaceCharacter::OnSprintPressed() // Sprint 판단
@@ -372,7 +370,9 @@ void ASpaceCharacter::OnSprintReleased()
 
 void ASpaceCharacter::StartSprint()
 {
-	if (bIsBoosting || !bCanSprint) return;
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS || !PS->CanUseAbility(EAbilityType::Sprint)) return;
+
 	bIsSprinting = true;
 	TargetSpeed = RunSpeed;
 	WingComp->PlaySprint();
@@ -380,7 +380,6 @@ void ASpaceCharacter::StartSprint()
 
 void ASpaceCharacter::StopSprint()
 {
-	if (bIsBoosting) return;
 	bIsSprinting = false;
 	TargetSpeed = WalkSpeed;
 	WingComp->StopAll();
@@ -388,9 +387,11 @@ void ASpaceCharacter::StopSprint()
 
 void ASpaceCharacter::StartDash()
 {
-	if (GetCharacterMovement()->IsFalling())
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS || !PS->CanUseAbility(EAbilityType::Dash))
 		return;
-	if (!bCanDash || bIsFlyingMode)
+
+	if (GetCharacterMovement()->IsFalling() || bIsFlyingMode)
 		return;
 
 	bIsDashing = true;
@@ -449,6 +450,10 @@ FVector ASpaceCharacter::GetDashDirection() const
 
 void ASpaceCharacter::StartBoost()
 {
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS || !PS->CanUseAbility(EAbilityType::Boost))
+		return;
+
 	auto Move = GetCharacterMovement();
 	if (!Move) return;
 
@@ -492,6 +497,10 @@ void ASpaceCharacter::OnShieldDeactivated()
 
 void ASpaceCharacter::OnShieldKeyPressed(const FInputActionInstance& /*Instance*/)
 {
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS || !PS->CanUseAbility(EAbilityType::Shield))
+		return;
+
 	if (ShieldComp)
 		ShieldComp->ActivateShield();
 }
@@ -516,20 +525,41 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 			MyPC->ShowDeathWidget();   // 새 함수
 		}
 	}
-
-	if(DeathMontage)
-		PlayAnimMontage(DeathMontage);
-
 	if (GetCapsuleComponent())
 	{
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		ShieldComp->DeactivateShield();
 	}
+	
+	if (DeathMontage)
+	{
+		// 몽타주를 재생하고 총 길이를 반환받습니다.
+		float MontageLength = PlayAnimMontage(DeathMontage);
 
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// 몽타주 데이터에서 BlendOut 시간을 가져오면 더 정확하지만, 
+		// 보통 끝부분에서 Idle로 섞이는 것을 방지하기 위해 
+		// 총 길이보다 약간 일찍(예: 0.2초 전) 멈추거나, 
+		// 몽타주 에셋 설정에서 'Enable Auto Blend Out'을 꺼야 합니다.
+		// 여기서는 코드로 마지막 프레임 직전에 멈추도록 설정합니다.
+
+		float FreezeDelay = (MontageLength > 0.25f) ? (MontageLength - 0.05f) : MontageLength;
+
+		// 타이머 설정: 애니메이션이 끝나기 직전에 FreezeDeathPose 함수 호출
+		GetWorldTimerManager().SetTimer(
+			DeathTimerHandle,
+			this,
+			&ASpaceCharacter::ExplodeAndDestroy,
+			FreezeDelay,
+			false
+		);
+	}
 }
 
 void ASpaceCharacter::ExplodeAndDestroy()
 {
+	GetMesh()->bPauseAnims = true;
+
 	if (DeathExplosionEffect && GetMesh())
 	{
 		UGameplayStatics::SpawnEmitterAttached(
@@ -544,7 +574,8 @@ void ASpaceCharacter::ExplodeAndDestroy()
 
 void ASpaceCharacter::ToggleFlyingMode()
 {
-	if (!bCanFly)
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS || !PS->CanUseAbility(EAbilityType::Flying))
 		return;
 
 	if (CurrentState == ECharacterState::Flying)
@@ -833,22 +864,9 @@ void ASpaceCharacter::TryInteract()
 
 void ASpaceCharacter::UnlockAbility(EAbilityType Ability)
 {
-	switch (Ability)
+	if (AMyPlayerState* PS = GetPlayerState<AMyPlayerState>())
 	{
-	case EAbilityType::Sprint:
-		bCanSprint = true;
-		break;
-
-	case EAbilityType::Flying:
-		bCanFly = true;
-		break;
-
-	case EAbilityType::Dash:
-		bCanDash = true;
-		break;
-	case EAbilityType::Shield:
-		bCanShield = true;
-		break;
+		PS->UnlockAbility(Ability);
 	}
 
 	if (UAnimMontage** MontagePtr = AbilityUnlockMontages.Find(Ability))
