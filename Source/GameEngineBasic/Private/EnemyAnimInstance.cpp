@@ -50,6 +50,14 @@ void UEnemyAnimInstance::UpdateState()
 		FullBodyState = EFullBodyState::Knock;
 		return;
 	}
+	if (bIsDashAttacking)
+	{
+		FullBodyState = EFullBodyState::DashAttack;
+	}
+	if (bIsKicking)
+	{
+		FullBodyState = EFullBodyState::Kick;
+	}
 	else
 	{
 		FullBodyState = EFullBodyState::Default;
@@ -63,7 +71,9 @@ void UEnemyAnimInstance::UpdateState()
 
 
 	// --- 상체 상태 ---
-	if (bShooting)
+	if (bIsMeleeAttacking)
+		UpperBodyState = EUpperBodyState::Melee;
+	else if (bShooting)
 		UpperBodyState = EUpperBodyState::Shoot;
 	else if (bReloading)
 		UpperBodyState = EUpperBodyState::Reload;
@@ -127,5 +137,20 @@ void UEnemyAnimInstance::AnimNotify_KnockEnd()
 	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(OwnerChar))
 	{
 		Enemy->bIsKnocked = false;
+	}
+}
+void UEnemyAnimInstance::AnimNotify_MeleeBegin()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->OnMeleeBegin();
+	}
+}
+
+void UEnemyAnimInstance::AnimNotify_MeleeEnd()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->OnMeleeEnd();
 	}
 }

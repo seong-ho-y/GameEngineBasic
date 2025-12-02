@@ -33,6 +33,8 @@ enum class EFullBodyState : uint8
 {
 	Default,
 	Knock,
+	DashAttack,
+	Kick,
 	Execution,
 	Dead
 };
@@ -78,7 +80,16 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="State")
 	bool bIsInAir = false;
+public:
+	UPROPERTY(BlueprintReadOnly, Category = "State")
+	bool bIsMeleeAttacking = false;
 
+	UPROPERTY(BlueprintReadOnly, Category = "State")
+	bool bIsDashAttacking = false;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "State")
+	bool bIsKicking = false;
+	
 	UPROPERTY(BlueprintReadOnly, Category="State")
 	bool bIsAiming = false;
 
@@ -121,4 +132,9 @@ private:
 	void UpdateAimParams(float DeltaSeconds);
 	UFUNCTION()
 	void AnimNotify_KnockEnd();
+	UFUNCTION()
+	void AnimNotify_MeleeBegin();
+
+	UFUNCTION()
+	void AnimNotify_MeleeEnd();
 };
