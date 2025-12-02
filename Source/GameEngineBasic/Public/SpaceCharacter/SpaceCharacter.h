@@ -26,6 +26,7 @@ class AProjectile;
 class AAblityUnlockItem;
 class US_Charging;
 class IU_Interactable;
+class AMyPlayerState;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -254,19 +255,6 @@ public:
 
 	
 public:
-	// Item Unlocks
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanSprint = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanFly = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanDash = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanShield = false;
-
 	UFUNCTION(BlueprintCallable)
 	void UnlockAbility(EAbilityType Ability);
 

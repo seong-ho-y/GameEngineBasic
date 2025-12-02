@@ -87,16 +87,13 @@ void ABonfire::Interact(ASpaceCharacter* Character)
     if (!Character) return;
 
     Character->GetHealthComponent()->RestoreFullHealth();
-    // ���� Ȱ��ȭ
+    
     bActivated = true;
 
-    // 1) ���� ��ġ�� SpawnPoint�� ����
-    USaveSystemManager::SaveSpawnPoint(GetActorLocation(), GetActorRotation());
-
-    // 2) ĳ���� ������ ����
+    // Save State And Location)
     USaveSystemManager::SavePawnState(Character);
 
-	// 3) UI �� ����Ʈ ó��   
+	// UI   
     if (InteractWidget)
         InteractWidget->SetVisibility(false);
 

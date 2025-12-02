@@ -88,6 +88,20 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	FEquippedWeapon Weapon;
 
+	// ================================ 잠금 해제 이벤트 바인딩 ================================
+	UFUNCTION()
+	void OnWeaponUnlocked(FName WeaponRowName);
+
+	UFUNCTION()
+	void OnPartUnlocked(FName PartRowName);
+
+	// ================================ 장착 가능 여부 확인 ================================
+	UFUNCTION(BlueprintCallable)
+	bool IsWeaponEquippable(FName WeaponRowName) const;
+
+	UFUNCTION(BlueprintCallable)
+	bool IsPartEquippable(FName PartRowName) const;
+
 public:
 	void EquipWeapon(FName RowName);
 	void EquipPart(EPartSlot Slot, FName RowName);

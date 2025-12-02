@@ -1,6 +1,7 @@
 // InventoryComponent.cpp
 #include "InventoryComponent.h"
 #include "SpaceCharacter/SpaceCharacter.h"
+#include "GameEngineBasic/Public/MyPlayerState.h"
 
 
 UInventoryComponent::UInventoryComponent()
@@ -68,4 +69,56 @@ const FPartData* UInventoryComponent::GetPartData(EPartSlot Slot) const
 void UInventoryComponent::EquipWeapon(FName RowName)
 {
 	Weapon.WeaponRow = RowName;
+}
+
+void UInventoryComponent::OnWeaponUnlocked(FName WeaponRowName)
+{
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(
+			-1, 3.f, FColor::Yellow,
+			FString::Printf(TEXT("[Inventory] Weapon Unlocked: %s"),
+				*WeaponRowName.ToString())
+		);
+}
+
+void UInventoryComponent::OnPartUnlocked(FName PartRowName)
+{
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(
+			-1, 3.f, FColor::Yellow,
+			FString::Printf(TEXT("[Inventory] Part Unlocked: %s"),
+				*PartRowName.ToString())
+		);
+}
+
+bool UInventoryComponent::IsWeaponEquippable(FName WeaponRowName) const
+{
+	ASpaceCharacter* OwnerChar = Cast<ASpaceCharacter>(GetOwner());
+	if (!OwnerChar) return false;
+
+	AMyPlayerState* PS = OwnerChar->GetPlayerState<AMyPlayerState>();
+	if (!PS) return false;
+
+	// 기본 무기는 항상 가능
+	if (WeaponRowName == "HandgunBasic")
+		return true;
+
+	return PS->UnlockStatus.UnlockedWeapons.Contains(WeaponRowName);
+}
+
+bool UInventoryComponent::IsPartEquippable(FName PartRowName) const
+{
+	ASpaceCharacter* OwnerChar = Cast<ASpaceCharacter>(GetOwner());
+	if (!OwnerChar) return false;
+
+	AMyPlayerState* PS = OwnerChar->GetPlayerState<AMyPlayerState>();
+	if (!PS) return false;
+
+	// 기본 파츠는 항상 사용 가능
+	if (PartRowName == "C_Base" ||
+		PartRowName == "Up_Base" ||
+		PartRowName == "Low_Base")
+		return true;
+
+	return PS->UnlockStatus.UnlockedParts.Contains(PartRowName);
 }
