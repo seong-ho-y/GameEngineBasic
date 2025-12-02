@@ -155,7 +155,7 @@ public:
 	void ApplyWeaponStatsToShooter();
 	void ClearWeaponMesh();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Data")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Weapon Data")
 	UDataTable* WeaponTable;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly,Category="Weapon Data")
