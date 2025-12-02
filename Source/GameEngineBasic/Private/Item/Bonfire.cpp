@@ -5,6 +5,7 @@
 #include "GameEngineBasic/System/SaveSystemManager.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 
+#include "GameEngineBasic/Components/public/HealthComp.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
@@ -23,7 +24,8 @@ ABonfire::ABonfire()
     // ----- Collision Sphere -----
     CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
     CollisionSphere->InitSphereRadius(300.f);
-    CollisionSphere->SetCollisionProfileName(TEXT("OverlapAll"));
+    CollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+   // CollisionSphere->SetCollisionResponseToChannel(ECC_Player, ECR_Overlap);
 	CollisionSphere->SetupAttachment(RootComponent);
 
     // ----- Mesh -----
@@ -84,16 +86,17 @@ void ABonfire::Interact(ASpaceCharacter* Character)
 {
     if (!Character) return;
 
-    // °ÅÁ¡ È°¼ºÈ­
+    Character->GetHealthComponent()->RestoreFullHealth();
+    // ï¿½ï¿½ï¿½ï¿½ È°ï¿½ï¿½È­
     bActivated = true;
 
-    // 1) ÇöÀç À§Ä¡¸¦ SpawnPoint·Î ÀúÀå
+    // 1) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ SpawnPointï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     USaveSystemManager::SaveSpawnPoint(GetActorLocation(), GetActorRotation());
 
-    // 2) Ä³¸¯ÅÍ ½ºÅÈÀ» ÀúÀå
+    // 2) Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     USaveSystemManager::SavePawnState(Character);
 
-	// 3) UI ¹× ÀÌÆåÆ® Ã³¸®   
+	// 3) UI ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® Ã³ï¿½ï¿½   
     if (InteractWidget)
         InteractWidget->SetVisibility(false);
 
