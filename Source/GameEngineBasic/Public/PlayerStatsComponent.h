@@ -27,7 +27,7 @@ struct FBaseStats
 	float BoostRegen = 1.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Weight = 0.f;
+	float MaxFuel = 100.f;
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))

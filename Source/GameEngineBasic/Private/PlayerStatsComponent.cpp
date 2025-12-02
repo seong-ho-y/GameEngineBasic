@@ -4,6 +4,7 @@
 #include "InventoryComponent.h"
 
 // 게임플레이 관련
+#include "Component/FuelComponent.h"
 #include "Component/ShieldComp.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -110,7 +111,7 @@ void UPlayerStatsComponent::ApplyParts()
 		FinalStats.MoveSpeed  += Part->MoveSpeedBonus;
 		FinalStats.BoostUse   += Part->BoostUseBonus;
 		FinalStats.BoostRegen += Part->BoostRegenBonus;
-		FinalStats.Weight     += Part->WeightBonus;
+
 	}
 
 	//-------------------------------------------------------
@@ -125,7 +126,7 @@ void UPlayerStatsComponent::ApplyParts()
 			FinalStats.MoveSpeed,
 			FinalStats.BoostUse,
 			FinalStats.BoostRegen,
-			FinalStats.Weight
+			FinalStats.MaxFuel
 		);
 
 		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, FinalMsg);
@@ -137,6 +138,7 @@ void UPlayerStatsComponent::ApplyParts()
 	if (auto Move = OwnerChar->GetCharacterMovement())
 	{
 		Move->MaxWalkSpeed = FinalStats.MoveSpeed;
+		OwnerChar->WalkSpeed = FinalStats.MoveSpeed;
 	}
 
 	if (OwnerChar->HealthComp)
@@ -144,6 +146,12 @@ void UPlayerStatsComponent::ApplyParts()
 
 	if (OwnerChar->ShieldComp)
 		OwnerChar->ShieldComp->MaxShield = FinalStats.MaxShield;
+	if (OwnerChar->Fuel)
+	{
+		OwnerChar->Fuel->MaxFuel = FinalStats.MaxFuel;
+		OwnerChar->Fuel->BoostCost = FinalStats.BoostUse;
+		OwnerChar->Fuel->RechargeRate = FinalStats.BoostRegen;
+	}
 }
 
 void UPlayerStatsComponent::TickComponent(float DeltaTime, ELevelTick TickType,
@@ -161,7 +169,7 @@ void UPlayerStatsComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 			FinalStats.MoveSpeed,
 			FinalStats.BoostUse,
 			FinalStats.BoostRegen,
-			FinalStats.Weight
+			FinalStats.MaxFuel
 		);
 
 		GEngine->AddOnScreenDebugMessage(
