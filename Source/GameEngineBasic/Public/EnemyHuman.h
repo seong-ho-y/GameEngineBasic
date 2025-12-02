@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EnemyAnimInstance.h"
+#include "EnemyBlade.h"
 #include "EnemyShieldComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 
@@ -52,6 +53,12 @@ public:
 	void EndBoost();
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	UFUNCTION(BlueprintCallable)
+	bool IsMeleeFinished() const;
+	void StartMeleeAttack();
+	void OnMeleeBegin();
+	void OnMeleeEnd();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UPawnSensingComponent* PawnSensingComp;
@@ -81,7 +88,10 @@ public:
 	bool bIsKnocked;
 	bool bIsDead;
 	bool bIsExecuting;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	TSubclassOf<AEnemyBlade> BladeBP;
+	UPROPERTY()
+	AEnemyBlade* Blade;
 
 	void OnBoostTick(); // ← 타이머 콜백
 	UFUNCTION()
@@ -106,13 +116,38 @@ protected:
 	UPROPERTY()
 	UParticleSystemComponent* ActiveBoostPSC = nullptr;
 
+	/** 근접 공격 데미지 */
+	UPROPERTY(EditAnywhere, Category="Melee")
+	float MeleeDamage = 25.f;
 
+	/** 근접 공격의 범위 (캡슐, 구체, 반원 등) */
+	UPROPERTY(EditAnywhere, Category="Melee")
+	float MeleeRange = 120.f;
+
+	/** 히트박스가 켜져있는 동안만 true */
+	bool bMeleeHitboxActive = false;
+
+	/** Task 종료 판단용 */
+	bool bMeleeFinished = false;
+
+	/** 어떤 본(Bone) 기준으로 반경 체크할지 */
+	UPROPERTY(EditAnywhere, Category="Melee")
+	FName MeleeHitSocket = "MeleeSocket";
+	
+
+	/** 이미 타격된 액터 중복 방지를 위한 캐시 */
+	UPROPERTY()
+	TSet<AActor*> MeleeAlreadyHitActors;
+	
 	// ==== Animation Montages ====
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* BoostMontage;
 
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* FireMontage;
+	
+	UPROPERTY(EditAnywhere, Category="Animation|Montage")
+	UAnimMontage* MeleeMontage;
 
 	UPROPERTY(EditAnywhere, Category="Animation|Montage")
 	UAnimMontage* ReloadMontage;

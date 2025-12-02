@@ -5,6 +5,7 @@
 
 #include "AIController.h"
 #include "EnemyAnimInstance.h"
+#include "EnemyBlade.h"
 #include "EnemyShieldComponent.h"
 #include "Component/ExecutionComp.h"
 #include "Components/CapsuleComponent.h"
@@ -69,8 +70,27 @@ void AEnemyHuman::BeginPlay()
 			DynamicMIDs.Add(MID);
 		}
 	}
-	
+	if (BladeBP)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+
+		Blade = GetWorld()->SpawnActor<AEnemyBlade>(BladeBP, Params);
+
+		if (Blade)
+		{
+			Blade->AttachToComponent(
+				GetMesh(),
+				FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+				TEXT("MeleeSocket")
+			);
+			Blade->OwnerCharacter = this;
+			Blade->SetActorHiddenInGame(true);
+		}
+	}
+
 }
+
 
 float AEnemyHuman::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                               class AController* EventInstigator, AActor* DamageCauser)
@@ -206,7 +226,69 @@ void AEnemyHuman::Tick(float DeltaTime)
 		SetOutlineEnabled(true);
 	else
 		SetOutlineEnabled(false);
-	
+	// ============================
+	//      MELEE HITBOX LOGIC
+	// ============================
+	if (bMeleeHitboxActive)
+	{
+		if (!GetMesh())
+			return;
+
+		FVector Origin = GetMesh()->GetSocketLocation(MeleeHitSocket);
+		FCollisionShape Shape = FCollisionShape::MakeSphere(MeleeRange);
+#if WITH_EDITOR
+		DrawDebugSphere(
+			GetWorld(),
+			Origin,			// 현재 손 소켓 위치
+			MeleeRange,		// 원형 범위
+			12,
+			FColor::Red,
+			false,
+			0.1f
+		);
+#endif
+		TArray<FHitResult> Hits;
+		FCollisionObjectQueryParams ObjParams;
+		ObjParams.AddObjectTypesToQuery(ECC_GameTraceChannel4); // <- Player Object Channel
+
+		bool bHit = GetWorld()->SweepMultiByObjectType(
+			Hits,
+			Origin,
+			Origin,
+			FQuat::Identity,
+			ObjParams,
+			Shape
+		);
+
+		if (bHit)
+		{
+			for (const FHitResult& Hit : Hits)
+			{
+				AActor* HitActor = Hit.GetActor();
+				if (!HitActor) continue;
+				if (HitActor == this) continue;
+
+				// 중복 타격 방지
+				if (MeleeAlreadyHitActors.Contains(HitActor))
+					continue;
+
+				MeleeAlreadyHitActors.Add(HitActor);
+
+				UE_LOG(LogTemp, Warning, TEXT("EnemyHuman Melee Hit: %s"), *HitActor->GetName());
+
+				// 데미지 적용
+				UGameplayStatics::ApplyPointDamage(
+					HitActor,
+					MeleeDamage,
+					GetActorForwardVector(),
+					Hit,
+					GetController(),
+					this,
+					nullptr
+				);
+			}
+		}
+	}
 	USkeletalMeshComponent* LocalMesh = GetMesh();
 	if (bPulseActive)
 	{
@@ -380,4 +462,51 @@ void AEnemyHuman::DisabledMovementAndAI()
 	//SetActorTickEnabled(false);
 
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Movement & AI Disabled"));
+}
+
+
+void AEnemyHuman::StartMeleeAttack()
+{
+	if (!MeleeMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EnemyHuman::StartMeleeAttack - MeleeMontage is NULL"));
+		bMeleeFinished = true;
+		return;
+	}
+
+	bMeleeFinished = false;
+	bMeleeHitboxActive = false;
+	MeleeAlreadyHitActors.Empty();
+	
+	if (UEnemyAnimInstance* Anim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		Anim->bIsMeleeAttacking = true;     // ← 애니메이션에 공격 신호 전달
+	}
+	
+	PlayAnimMontage(MeleeMontage);
+
+	UE_LOG(LogTemp, Warning, TEXT("EnemyHuman::StartMeleeAttack - Montage Started"));
+}
+
+void AEnemyHuman::OnMeleeBegin()
+{
+	if (Blade)
+	{
+		Blade->SetActorHiddenInGame(false);  // 검 보이게
+		Blade->ActivateHitbox();             // CollisionOn + 트레일 시작
+	}
+}
+
+void AEnemyHuman::OnMeleeEnd()
+{
+	if (Blade)
+	{
+		Blade->DeactivateHitbox();              // CollisionOff + 트레일 종료
+		Blade->SetActorHiddenInGame(true);      // 검 숨기기
+	}
+}
+
+bool AEnemyHuman::IsMeleeFinished() const
+{
+	return bMeleeFinished;
 }
