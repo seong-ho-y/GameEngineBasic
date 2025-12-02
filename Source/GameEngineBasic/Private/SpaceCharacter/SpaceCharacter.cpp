@@ -110,13 +110,11 @@ void ASpaceCharacter::InitFromPlayerState()
         }
         return;
     }
-
-    // Stats
-    if (StatsComp)
-    {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] StatsComp->ApplyParts 실행"));
-        StatsComp->ApplyParts();
+    if (PS->Inventory)
+	{
+    	PS->Inventory->CachedStats = StatsComp;
     }
+	StatsComp->ApplyParts();
 
     // Weapon
     if (!WeaponComp || !Shooter)
@@ -151,7 +149,7 @@ void ASpaceCharacter::InitFromPlayerState()
 void ASpaceCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	InitFromPlayerState();
 	
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
@@ -189,10 +187,7 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionStart.AddDynamic(this, &ASpaceCharacter::OnExecutionStart);
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
-	if (StatsComp)
-	{
-		StatsComp->ApplyParts();
-	}
+
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)

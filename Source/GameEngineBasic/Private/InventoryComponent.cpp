@@ -11,14 +11,40 @@ UInventoryComponent::UInventoryComponent()
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void UInventoryComponent::EquipPart(EPartSlot Slot, FName PartRowName)
 {
 	EquippedParts.Add(Slot, PartRowName);
-	
+
+	if (GEngine)
+	{
+		FString SlotName =
+			(Slot == EPartSlot::Core)  ? TEXT("Core") :
+			(Slot == EPartSlot::Upper) ? TEXT("Upper") :
+										 TEXT("Lower");
+
+		GEngine->AddOnScreenDebugMessage(
+			-1, 3.f, FColor::Green,
+			FString::Printf(TEXT("[EquipPart] Slot = %s | Row = %s"),
+				*SlotName,
+				*PartRowName.ToString())
+		);
+	}
+
+	if (CachedStats)
+	{
+		CachedStats->ApplyParts();
+	}
+	else
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(
+				-1, 3.f, FColor::Red,
+				TEXT("[EquipPart] CachedStats == NULL (ApplyParts 호출 못함)"));
+	}
 }
+
 
 FName UInventoryComponent::GetPart(EPartSlot Slot) const
 {

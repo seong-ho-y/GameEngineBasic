@@ -96,4 +96,6 @@ public:
 	FName GetPart(EPartSlot Slot) const;
 	const FPartData* GetPartData(EPartSlot Slot) const;
 
+	UPROPERTY()
+	UPlayerStatsComponent* CachedStats;
 };
