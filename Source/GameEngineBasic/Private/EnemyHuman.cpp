@@ -812,3 +812,25 @@ void AEnemyHuman::PlayDashEffects(const FVector& DashDirection)
 		);
 	}
 }
+void AEnemyHuman::PlayBladeAppearSFX()
+{
+	if (BladeAppearSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			BladeAppearSFX,
+			GetActorLocation()
+		);
+	}
+}
+void AEnemyHuman::PlayBladeSwingSFX()
+{
+	if (BladeSwingSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			BladeSwingSFX,
+			GetActorLocation()
+		);
+	}
+}

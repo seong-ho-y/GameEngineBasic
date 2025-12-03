@@ -47,6 +47,13 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void OnLeftBladeBegin();
 	void OnLeftBladeEnd();
+	void PlayBladeAppearSFX();
+	void PlayBladeSwingSFX();
+	UPROPERTY(EditAnywhere, Category="SFX|Melee")
+	USoundBase* BladeAppearSFX;
+
+	UPROPERTY(EditAnywhere, Category="SFX|Melee")
+	USoundBase* BladeSwingSFX;
 
 	/* ===========================
 	 *  상태 / 실행 / 넉백 관련
