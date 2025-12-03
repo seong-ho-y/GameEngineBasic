@@ -73,7 +73,7 @@ void AAbilityUnlockItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 	{
 		Character->CurrentInteractTarget = this;
 
-		if (InteractWidget)
+		if (InteractWidget && !bActivated)
 			InteractWidget->SetVisibility(true);
 	}
 }
@@ -93,6 +93,8 @@ void AAbilityUnlockItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActo
 void AAbilityUnlockItem::Interact(ASpaceCharacter* Character)
 {
 	Character->UnlockAbility(AbilityToUnlock);
+
+	bActivated = true;
 
 	if (InteractWidget)
 	{
