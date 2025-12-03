@@ -15,6 +15,7 @@ enum class ELowerBodyState : uint8
 	WalkBlendSpace,
 	Boost,
 	Jump,
+	ShortDash,
 	Land
 };
 
@@ -34,7 +35,6 @@ enum class EFullBodyState : uint8
 	Default,
 	Knock,
 	DashAttack,
-	Kick,
 	Execution,
 	Dead
 };
@@ -55,6 +55,8 @@ public:
 	EFullBodyState FullBodyState = EFullBodyState::Default;
 	
 	bool bShooting;
+	bool bIsShortDashing = false;
+	bool bIsJumping = false;
 	bool bReloading;
 	bool bAiming;
 
@@ -86,6 +88,9 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "State")
 	bool bIsDashAttacking = false;
+
+	UPROPERTY()
+	bool bBoostMontagePlaying = false;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "State")
 	bool bIsKicking = false;
@@ -97,7 +102,7 @@ public:
 	bool bIsFiring = false;
 
 	UPROPERTY(BlueprintReadOnly, Category = "State")
-	bool bIsBoosting;
+	bool bIsBoosting = false;
 	
 	/** ===== 에임(상체) 파라미터 (AimOffset 등) ===== */
 	UPROPERTY(BlueprintReadOnly, Category="Aiming")
@@ -137,4 +142,10 @@ private:
 
 	UFUNCTION()
 	void AnimNotify_MeleeEnd();
+	UFUNCTION()
+	void AnimNotify_DashStart();
+	UFUNCTION()
+	void AnimNotify_LeftBladeBegin();
+	UFUNCTION()
+	void AnimNotify_LeftBladeEnd();
 };
