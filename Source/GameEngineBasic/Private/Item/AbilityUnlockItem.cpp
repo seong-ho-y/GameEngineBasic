@@ -25,6 +25,7 @@ AAbilityUnlockItem::AAbilityUnlockItem()
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
 	CollisionSphere->SetCollisionProfileName(TEXT("OverlapAll"));
 	CollisionSphere->InitSphereRadius(300.f);
+	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	CollisionSphere->SetupAttachment(SceneRoot);
 
 	BoxBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoxBody"));
@@ -72,7 +73,7 @@ void AAbilityUnlockItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AAc
 	{
 		Character->CurrentInteractTarget = this;
 
-		if (InteractWidget)
+		if (InteractWidget && !bActivated)
 			InteractWidget->SetVisibility(true);
 	}
 }
@@ -93,8 +94,32 @@ void AAbilityUnlockItem::Interact(ASpaceCharacter* Character)
 {
 	Character->UnlockAbility(AbilityToUnlock);
 
+	bActivated = true;
+
 	if (InteractWidget)
+	{
 		InteractWidget->SetVisibility(false);
+	}
+
+	if (AbilityUI)
+	{
+		if (UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), AbilityUI))
+		{
+			Widget->AddToViewport(100); // ZOrder 높게
+
+			// 3초 뒤 자동 제거
+			FTimerHandle RemoveTimer;
+			GetWorld()->GetTimerManager().SetTimer(
+				RemoveTimer,
+				FTimerDelegate::CreateLambda([Widget]()
+					{
+						Widget->RemoveFromParent();
+					}),
+				3.0f,
+				false
+			);
+		}
+	}
 
 	LidOpenTimeline.Play();
 

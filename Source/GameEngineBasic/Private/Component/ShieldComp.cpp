@@ -48,7 +48,7 @@ void UShieldComp::BeginPlay()
 
 void UShieldComp::ActivateShield()
 {
-	if (!ShieldCollision || !bCanShield) return;
+	if (!ShieldCollision) return;
 	StartShieldCoolDown();
 
 	if (CurrentShield <= 0.f)

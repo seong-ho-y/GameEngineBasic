@@ -2,14 +2,18 @@
 
 
 #include "Item/Bonfire.h"
+
 #include "GameEngineBasic/System/SaveSystemManager.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 
+#include "GameEngineBasic/Components/public/HealthComp.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "NiagaraComponent.h"
 
+
+#include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -23,7 +27,8 @@ ABonfire::ABonfire()
     // ----- Collision Sphere -----
     CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
     CollisionSphere->InitSphereRadius(300.f);
-    CollisionSphere->SetCollisionProfileName(TEXT("OverlapAll"));
+    CollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
+   // CollisionSphere->SetCollisionResponseToChannel(ECC_Player, ECR_Overlap);
 	CollisionSphere->SetupAttachment(RootComponent);
 
     // ----- Mesh -----
@@ -62,7 +67,7 @@ void ABonfire::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* Other
     {
         Character->CurrentInteractTarget = this;
 
-        if (InteractWidget)
+        if (InteractWidget && !bActivated)
             InteractWidget->SetVisibility(true);
     }
 }
@@ -80,23 +85,68 @@ void ABonfire::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherAc
     }
 }
 
+void ABonfire::StartNiagara(ASpaceCharacter* Character)
+{
+    if (Character->HealVfx)
+    {
+        Character->HealVfx->SetActive(true, true);
+        Character->HealVfx->Activate(true);
+    }
+
+    GetWorldTimerManager().SetTimer(
+        NiagaraTimerHandle,
+        this,
+        &ABonfire::StopNiagara,
+        0.2,
+        false
+    );
+}
+
+void ABonfire::StopNiagara()
+{
+	auto Char = Cast<ASpaceCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+    if (Char)
+    {
+        Char->HealVfx->Deactivate();
+	}
+}
+
 void ABonfire::Interact(ASpaceCharacter* Character)
 {
     if (!Character) return;
 
-    // 거점 활성화
+    Character->GetHealthComponent()->RestoreFullHealth();
+    StartNiagara(Character);
     bActivated = true;
-
-    // 1) 현재 위치를 SpawnPoint로 저장
-    USaveSystemManager::SaveSpawnPoint(GetActorLocation(), GetActorRotation());
-
-    // 2) 캐릭터 스탯을 저장
+    
+    // Save State And Location)
     USaveSystemManager::SavePawnState(Character);
 
-	// 3) UI 및 이펙트 처리   
+	// UI   
     if (InteractWidget)
         InteractWidget->SetVisibility(false);
 
+    if (AbilityUI)
+    {
+        if (UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), AbilityUI))
+        {
+            Widget->AddToViewport(100); // ZOrder 높게
+
+            // 3초 뒤 자동 제거
+            FTimerHandle RemoveTimer;
+            GetWorld()->GetTimerManager().SetTimer(
+                RemoveTimer,
+                FTimerDelegate::CreateLambda([Widget]()
+                    {
+                        Widget->RemoveFromParent();
+                    }),
+                3.0f,
+                false
+            );
+        }
+    }
+
+	// FX
     if (Effect)
         Effect->Deactivate();
 }

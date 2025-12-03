@@ -5,6 +5,7 @@
 
 #include "GameEngineBasic/System/SaveSystem.h"
 #include "SpaceCharacter/SpaceCharacter.h"
+#include "GameEngineBasic/Public/MyPlayerState.h"
 #include "SpaceShip/MyTestPawn.h"
 
 #include "GameEngineBasic/Components/public/HealthComp.h"
@@ -25,17 +26,20 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
     SaveObj->SavedLocation = Pawn->GetActorLocation();
     SaveObj->SavedRotation = Pawn->GetActorRotation();
 
+	AMyPlayerState* PS = Cast<AMyPlayerState>(Pawn->GetPlayerState());
+	if (!PS) return;
+    SaveObj->bCanSprint = PS->AbilityStatus.bCanSprint;
+    SaveObj->bCanDash = PS->AbilityStatus.bCanDash;
+    SaveObj->bCanFly = PS->AbilityStatus.bCanFly;
+    SaveObj->bCanShield = PS->AbilityStatus.bCanShield;
+
+
     // *** SpaceCharacter ***
     if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(Pawn))
     {
-        SaveObj->bCanSprint = Char->bCanSprint;
-        SaveObj->bCanDash = Char->bCanDash;
-        SaveObj->bCanFly = Char->bCanFly;
-        SaveObj->bCanShield = Char->bCanShield;
-
         if (Char->GetShooterComponent())
         {
-            SaveObj->CurrentAmmo = Char->GetShooterComponent()->CurrentAmmo;
+            SaveObj->CurrentAmmo = Char->GetShooterComponent()->MaxAmmo;
             SaveObj->FullAmmo = Char->GetShooterComponent()->FullAmmo;
             SaveObj->MaxAmmo = Char->GetShooterComponent()->MaxAmmo;
         }
@@ -77,17 +81,21 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
         UGameplayStatics::LoadGameFromSlot(TEXT("PlayerSave"), 0)
     );
 
-    Pawn->SetActorLocation(SaveObj->SavedLocation);
-    Pawn->SetActorRotation(SaveObj->SavedRotation);
+    AMyPlayerState* PS = Cast<AMyPlayerState>(Pawn->GetPlayerState());
+    if (PS)
+    {
+        PS->AbilityStatus.bCanSprint = SaveObj->bCanSprint;
+        PS->AbilityStatus.bCanDash = SaveObj->bCanDash;
+        PS->AbilityStatus.bCanFly = SaveObj->bCanFly;
+        PS->AbilityStatus.bCanShield = SaveObj->bCanShield;
+    }
+    
+    //Pawn->SetActorLocation(SaveObj->SavedLocation);
+    //Pawn->SetActorRotation(SaveObj->SavedRotation);
 
     // SpaceCharacter
     if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(Pawn))
     {
-        Char->bCanSprint = SaveObj->bCanSprint;
-        Char->bCanDash = SaveObj->bCanDash;
-        Char->bCanFly = SaveObj->bCanFly;
-        Char->bCanShield = SaveObj->bCanShield;
-
         if (Char->GetShooterComponent())
         {
             Char->GetShooterComponent()->CurrentAmmo = SaveObj->CurrentAmmo;

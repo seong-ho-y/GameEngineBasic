@@ -44,6 +44,7 @@ public:
 
 	// ========== FUNCTIONS ==========
 	void InitStats();
+	void RestoreFullHealth();
 
 	// ========== GETTERS ==========
 	float GetCurrentHealth() const { return CurrentHealth; }

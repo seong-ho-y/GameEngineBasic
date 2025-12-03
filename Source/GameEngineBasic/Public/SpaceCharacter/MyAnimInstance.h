@@ -14,7 +14,6 @@ class GAMEENGINEBASIC_API UMyAnimInstance : public UAnimInstance
     GENERATED_BODY()
 
 protected:
-
     UPROPERTY(BlueprintReadOnly, Category = "Character|Movement")
     float Speed;
 

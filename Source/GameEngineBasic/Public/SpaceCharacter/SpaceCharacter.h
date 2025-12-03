@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "PlayerStatsComponent.h"
 #include "TargetingSystemComponent.h"
 #include "WeaponComponent.h"
 #include "SpaceCharacter.generated.h"
@@ -25,6 +26,7 @@ class AProjectile;
 class AAblityUnlockItem;
 class US_Charging;
 class IU_Interactable;
+class AMyPlayerState;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -56,36 +58,44 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
+public:
 	// Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPlayerStatsComponent* StatsComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShooterComp* Shooter;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWeaponComponent* WeaponComp;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UFuelComponent* Fuel;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWingComponent* WingComp;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UHealthComp* HealthComp;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UTargetingSystemComponent* TargetingComp;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UExecutionComp* ExecutionComp;
+
+	// 🔹 PlayerState에서 스탯+무기 적용하는 헬퍼
+	UFUNCTION()
+	void InitFromPlayerState();
 
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -129,6 +139,7 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ExecuteAction;
+
 	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
 	UParticleSystem* ExecutionTeleportVFX;
 
@@ -202,6 +213,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
 	UNiagaraComponent* DashVfx;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
+	UNiagaraComponent* HealVfx;
+
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float WalkSpeed = 500.f;
@@ -245,19 +259,6 @@ public:
 
 	
 public:
-	// Item Unlocks
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanSprint = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanFly = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanDash = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability|Unlock")
-	bool bCanShield = false;
-
 	UFUNCTION(BlueprintCallable)
 	void UnlockAbility(EAbilityType Ability);
 
@@ -302,6 +303,8 @@ public:
 	// Dash
 	void StartDash();
 	void StopDash();
+	void StartDashEffect();
+	void StopDashEffect();
 	FVector GetDashDirection() const;
 	uint16 DashRootMotionID = (uint16)ERootMotionSourceID::Invalid;
 
@@ -369,6 +372,7 @@ public:
 	FTimerHandle FlightDelayHandle;
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
+	FTimerHandle DashEffectTimerHandle;
 
 	// Aim Length
 	float DefaultArmLength = 300.f;
