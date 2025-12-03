@@ -20,7 +20,7 @@ EBTNodeResult::Type UBTT_TakeOff::ExecuteTask(UBehaviorTreeComponent& OwnerComp,
 	if (!Enemy) return EBTNodeResult::Failed;
 
 	Enemy->StartTakeOff(UpSpeed, Duration);
-
+	Enemy->PlayTakeOffEffects();
 	return EBTNodeResult::InProgress;
 }
 

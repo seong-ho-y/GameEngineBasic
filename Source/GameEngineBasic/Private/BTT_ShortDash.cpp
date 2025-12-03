@@ -50,11 +50,16 @@ EBTNodeResult::Type UBTT_ShortDash::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 	if (!WorldDir.IsNearlyZero())
 	{
+		Enemy->PlayDashEffects(WorldDir);
 		Enemy->StartShortDash(WorldDir, DashSpeed, DashDuration);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShortDash: WorldDir is zero, using Target->Forward"));
+		FVector Fallback = TargetForward.GetSafeNormal2D();
+    
+		// ★ Dash Effects 실행
+		Enemy->PlayDashEffects(Fallback);
 		Enemy->StartShortDash(TargetForward.GetSafeNormal2D(), DashSpeed, DashDuration);
 	}
 
