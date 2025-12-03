@@ -30,7 +30,7 @@ AMyTestPawn::AMyTestPawn()
 	ShipMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShipMesh"));
 	RootComponent = ShipMesh;
 
-	ShipMesh->SetSimulatePhysics(true);
+	ShipMesh->SetSimulatePhysics(false);
 	ShipMesh->SetEnableGravity(false);
 	ShipMesh->SetCollisionProfileName(TEXT("ShipBody"));
 	ShipMesh->SetLinearDamping(0.3f);
@@ -237,6 +237,7 @@ void AMyTestPawn::Interact(ASpaceCharacter* Character)
 
 	// 3) PlayerController가 우주선 Possess
 	PC->Possess(this);
+	ShipMesh->SetSimulatePhysics(true);
 
 	// 4) 우주선 조종 시작
 	EnableInput(PC);

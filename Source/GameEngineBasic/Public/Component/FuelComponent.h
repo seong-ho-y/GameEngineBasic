@@ -55,6 +55,7 @@ public:
 
     void Consume(float Amount);
     void ConsumeFlying(float DeltaTime);
+    void ConsumeDash(float Amount);
     void Recharge(float DeltaTime);
 
     float GetBoostCost() const { return BoostCost; }

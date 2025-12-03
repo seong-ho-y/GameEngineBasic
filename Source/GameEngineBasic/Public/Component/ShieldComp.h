@@ -86,3 +86,4 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnShieldBroken OnShieldBroken;
 };
+

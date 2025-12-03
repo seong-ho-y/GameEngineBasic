@@ -139,6 +139,7 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* ExecuteAction;
+
 	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
 	UParticleSystem* ExecutionTeleportVFX;
 
@@ -211,6 +212,9 @@ public:
 	// Niagara Systems
 	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
 	UNiagaraComponent* DashVfx;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
+	UNiagaraComponent* HealVfx;
 
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
@@ -299,6 +303,8 @@ public:
 	// Dash
 	void StartDash();
 	void StopDash();
+	void StartDashEffect();
+	void StopDashEffect();
 	FVector GetDashDirection() const;
 	uint16 DashRootMotionID = (uint16)ERootMotionSourceID::Invalid;
 
@@ -366,6 +372,7 @@ public:
 	FTimerHandle FlightDelayHandle;
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
+	FTimerHandle DashEffectTimerHandle;
 
 	// Aim Length
 	float DefaultArmLength = 300.f;

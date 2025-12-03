@@ -13,7 +13,6 @@ UFuelComponent::UFuelComponent()
 void UFuelComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void UFuelComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -55,6 +54,11 @@ void UFuelComponent::Consume(float Amount)
 void UFuelComponent::ConsumeFlying(float DeltaTime)
 {
     Consume(FlyingConsumeRate * DeltaTime);
+}
+
+void UFuelComponent::ConsumeDash(float Amount)
+{
+	Consume(Amount);
 }
 
 void UFuelComponent::Recharge(float DeltaTime)

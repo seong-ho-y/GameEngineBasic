@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Item/U_Interactable.h"
+
+
 #include "Bonfire.generated.h"
 
 class USphereComponent;
@@ -50,6 +52,9 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "UI")
     class UWidgetComponent* InteractWidget;
 
+    UPROPERTY(EditAnywhere,  Category = "UI")
+    TSubclassOf <UUserWidget> AbilityUI;
+
     // ---------- Data ----------
     UPROPERTY(EditAnywhere, Category = "Checkpoint")
     FName CheckpointID = TEXT("Checkpoint");
@@ -69,4 +74,8 @@ protected:
     void OnOverlapEnd(
         UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 BodyIndex);
+
+    FTimerHandle NiagaraTimerHandle;
+	void StartNiagara(ASpaceCharacter* Character);
+	void StopNiagara();
 };
