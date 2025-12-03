@@ -10,11 +10,23 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "PlayerStatsComponent.h"
+#include "TargetingSystemComponent.h"
+#include "WeaponComponent.h"
 #include "SpaceCharacter.generated.h"
 
 class UShooterComp;
+class UHealthComp;
+class UShieldComp;
+class UFuelComponent;
+class UWingComponent;
+class UExecutionComp;
+
 class AProjectile;
+class AAblityUnlockItem;
 class US_Charging;
+class IU_Interactable;
+class AMyPlayerState;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -24,7 +36,8 @@ enum class ECharacterState : uint8
 	Charging,
 	Flying,
 	Boosting,
-	Jumping
+	FlyAim,
+	FlyCharge
 };
 
 UCLASS()
@@ -45,32 +58,44 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
-	// --- SprintøÎ ---
-	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
-	UParticleSystem* SprintEffect;
-
-	UPROPERTY(VisibleAnywhere, Category = "VFX|Sprint")
-	TArray<UParticleSystemComponent*> ActiveSprintEffects;
-
-	UPROPERTY(EditAnywhere, Category = "VFX|Sprint")
-	float SprintInterpSpeed = 5.0f;
-
-	// --- FlyingøÎ ---
-	UPROPERTY(EditAnywhere, Category = "VFX|Flying")
-	UParticleSystem* FlyingEffect;
-
-	UPROPERTY(VisibleAnywhere, Category = "VFX|Flying")
-	TArray<UParticleSystemComponent*> ActiveFlyingEffects;
-
+public:
 	// Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UPlayerStatsComponent* StatsComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
-	UPROPERTY(VisibleAnywhere, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShooterComp* Shooter;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UWeaponComponent* WeaponComp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UFuelComponent* Fuel;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UWingComponent* WingComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UHealthComp* HealthComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UShieldComp* ShieldComp;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UTargetingSystemComponent* TargetingComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UExecutionComp* ExecutionComp;
+
+	// üîπ PlayerStateÏóêÏÑú Ïä§ÌÉØ+Î¨¥Í∏∞ Ï†ÅÏö©ÌïòÎäî Ìó¨Ìçº
+	UFUNCTION()
+	void InitFromPlayerState();
 
 	// Input
 	UPROPERTY(EditAnywhere, Category = "Input")
@@ -80,7 +105,13 @@ protected:
 	UInputAction* MoveAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* BoostAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* SprintAction;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* DashAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* LookAction;
@@ -95,51 +126,106 @@ protected:
 	UInputAction* FireAction;
 
 	UPROPERTY(EditAnywhere, Category = "Input")
-	UInputAction* BoostAction;
+	UInputAction* ShieldAction;
 
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FireMontage;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ReloadAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* SwapWeaponAction;
 
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FlypreMontage;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* InteractAction;
+	
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ExecuteAction;
 
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* BoostMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Anim")
-	UAnimMontage* FlyUpMontage;
+	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
+	UParticleSystem* ExecutionTeleportVFX;
 
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
+
+	FORCEINLINE class UFuelComponent* GetFuelComponent() const { return Fuel; }
 
 	FORCEINLINE class UCameraComponent* GetFollowCameraComponent() const { return FollowCamera; }
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
+	FORCEINLINE class UWingComponent* GetWingComponent() const { return WingComp; }
+
+	FORCEINLINE class UHealthComp* GetHealthComponent() const { return HealthComp; }
+
+	FORCEINLINE class UShieldComp* GetShieldComponent() const { return ShieldComp; }
+
+	FORCEINLINE class UExecutionComp* GetExecutionComponent() const { return ExecutionComp; }
+
+	FORCEINLINE class UWeaponComponent* GetWeaponComponent() const { return WeaponComp; }
+
 public:
+	// Interactable
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TScriptInterface<IU_Interactable> CurrentInteractTarget;
+
+	// Particle System Components
+	UPROPERTY()
+	UParticleSystemComponent* ActiveChargeEffect;
+
+	// Anim Montages
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ChargeFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* SingleFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* FlyUpMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* BoostMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ShieldMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* HitMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* ExecuteMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
+	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
+
+	// Particle Systems
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* ChargingEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* ShieldEffect;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* DeathExplosionEffect;
+
+	// Niagara Systems
+	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
+	UNiagaraComponent* DashVfx;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Niagara")
+	UNiagaraComponent* HealVfx;
+
 	// Movement
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
 	float WalkSpeed = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State|Movement")
-	float RunSpeed = 750.f;
+	float RunSpeed = 1200.f;
 
-
-
-
-
-	// Fuel
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float MaxFuel = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float CurrentFuel = 100.f;
-
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelConsumeRate = 12.f;
-
-	UPROPERTY(EditAnywhere, Category = "Flight|Fuel")
-	float FuelRechargeRate = 6.f;
+	// ÔøΩÔøΩÔøΩ
+	UPROPERTY(EditAnywhere, Category = "State|Movement")
+	float RagdollDuration = 3.0f; 
 
 	// Boost
 	UPROPERTY(EditAnywhere, Category = "Flight|Boost")
@@ -171,80 +257,140 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Charge")
 	float MaxChargeTime = 6.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Charge")
-	UParticleSystem* ChargingEffect;
-
-	UPROPERTY()
-	UParticleSystemComponent* ActiveChargeEffect;
+	
+public:
+	UFUNCTION(BlueprintCallable)
+	void UnlockAbility(EAbilityType Ability);
 
 public:
+	// Shield
+	UFUNCTION()
+	void OnShieldActivated();
 
-	void SpawnEffectArray(UParticleSystem* Effect, TArray<UParticleSystemComponent*>& ActiveArray);
-	void StopEffectArray(TArray<UParticleSystemComponent*>& ActiveArray);
+	UFUNCTION()
+	void OnShieldDeactivated();
 
+	UFUNCTION()
+	void OnShieldKeyPressed(const FInputActionInstance& Instance);
+	void HandleReload();
 
+	// Die
+	UFUNCTION()
+	void OnCharacterDeath(AActor* DeadActor);
+
+	void ExplodeAndDestroy();
+
+	// Dashing Getters
+	UFUNCTION(BlueprintCallable)
+	bool IsDashing() const { return bIsDashing; }
+
+public:
 	virtual void BeginPlay() override;
-	void Boost();
-	void EndBoost();
 
+	// Movement
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 
 	void StartJump();
 	void StopJump();
 
+	//Sprint
+	void OnSprintPressed();
+	void OnSprintReleased();
+	void StartSprint();
+	void StopSprint();
+	
+	// Dash
+	void StartDash();
+	void StopDash();
+	void StartDashEffect();
+	void StopDashEffect();
+	FVector GetDashDirection() const;
+	uint16 DashRootMotionID = (uint16)ERootMotionSourceID::Invalid;
+
+	// Boost
+	void StartBoost();
+
+	// Flying
+	void ToggleFlyingMode();
+
+	// Aim
 	void StartAim();
 	void StopAim();
 	void UpdateCameraTransition(float DeltaTime);
 
+	// Fire
 	void OnFireStarted(const struct FInputActionInstance& Instance);
 	void OnFireCompleted(const struct FInputActionInstance& Instance);
-	void PlayFireMontage();
+	void PlayChargeFireMontage();
+	void PlaySingleFireMontage();
 
-	void ActivateFlyingMode();
-	void ToggleFlyingMode();
-	void ConsumeFuel(float DeltaTime);
-	void RechargeFuel(float DeltaTime);
-
-
+	// Charge
 	void StartCharge();
 
-public:
+	// Interact
+	void TryInteract();
+
+	// Execution
+	void TryExecutionInput();
+	UFUNCTION()
+	void OnExecutionStart(AActor* Target);
+	UFUNCTION()
+	void OnExecutionEnd(AActor* Target);
+
+	// GetDamage
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	                         class AController* EventInstigator, AActor* DamageCauser) override;
+
+	// State
+	void ChangeState(ECharacterState NewState);
+	ECharacterState GetCurrentState() const { return CurrentState; }
+protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void SetState(ECharacterState NewState);
-	void ChangeState(ECharacterState NewState);
 
-	void StartSprint();
-	void StopSprint();
-
-	ECharacterState GetCurrentState() const { return CurrentState; }
+	FVector GetExecutionPosition(AActor* Target, float ForwardOffset, float UpOffset);
+	void SwapWeapon();
 
 public:
 	bool bIsBoosting = false;
 	bool bIsAiming = false;
+	bool bIsFlyingMode = false;
+	bool bSprintHeld = false;
 	bool bIsSprinting = false;
+	bool bIsDashing = false;
+
 	float ChargeStartTime = 0.f;
 	float TargetSpeed = 0.f;
+
 public:
+	FTimerHandle DashTimerHandle;
 	FTimerHandle BoostHandle;
+	FTimerHandle SprintHoldTimer;
 	FTimerHandle FlightDelayHandle;
-	FTimerHandle ChargeDelayHandle;
+	FTimerHandle ChargeDelayHandle; 
+	FTimerHandle DeathTimerHandle;
+	FTimerHandle DashEffectTimerHandle;
 
-	// ∫Ò«‡ ∞¸∑√ ∫Øºˆ
-	float BoostFuelCost = 20.f;
-	bool bIsFlyingMode = false;
-
-	// ƒ´∏ﬁ∂Û ±‚∫ª ∞≈∏Æ
+	// Aim Length
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
 
-	// Aim Ω√ ƒ´∏ﬁ∂Û ¿ßƒ° ø¿«¡º¬
+	// Aim Socket Offset
 	FVector DefaultSocketOffset = FVector::ZeroVector;
 	FVector AimedSocketOffset = FVector(0.f, 60.f, -20.f);
 
-	// ƒ´∏ﬁ∂Û ∫Øºˆ
+	// Camera
 	float CameraInterpSpeed = 1000.f;
 	bool bIsCameraTransitioning = false;
+
+	float SprintInterpSpeed = 5.f;
+
+	// Death
+	bool bIsDead = false;
+
+	UPROPERTY()
+	TMap<FName, FWeaponRuntimeState> WeaponStates;
 };

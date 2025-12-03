@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "NiagaraSystem.h"
+#include "AnimNodes/AnimNode_RandomPlayer.h"
 #include "Components/ActorComponent.h"
 #include "EnemyShieldComponent.generated.h"
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnShieldBreak);
@@ -29,11 +31,16 @@ public:
 	float ApplyDamage(float Damage);
 	void RegenerateShield(float DeltaTime);
 	void RestoreShieldFull();
-
+	void ShieldBrokenVFX();
+	void ShieldResotreVFX();
+	
 	bool IsShieldBroken() const {return bIsShieldBroken;}
 	bool CanBeExecuted() const {return bCanExecuted;}
 	float GetShieldRatio() const {return CurrentShield/MaxShield;}
+	float GetCurrentShield() const {return CurrentShield;}
+	float GetMaxShield() const {return MaxShield;}
 
+	bool Inexecutable() const {return bCanExecuted;}
 	/** 쉴드 이벤트 */
 	UPROPERTY(BlueprintAssignable, Category="Shield|Event")
 	FOnShieldBreak OnShieldBreak;
@@ -41,6 +48,7 @@ public:
 	FOnShieldRestored OnShieldRestored;
 	UPROPERTY(BlueprintAssignable, Category="Shield|Event")
 	FOnShieldDamaged OnShieldDamaged;
+
 protected:
 	/** ===== 기본 스탯 ===== */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shield|Stat")
@@ -67,6 +75,25 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Shield|State")
 	bool bCanExecuted = false;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	USoundBase* ShieldBrokenSound;
+	
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	UNiagaraSystem* ShieldBrokenVfx;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	UParticleSystem* ShieldBrokenParticle;
+	
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	USoundBase* ShieldRestoreSound;
+
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	UParticleSystem* ShieldRestoreParticle;
+	
+	UPROPERTY(EditAnywhere, Category = "Shield|VFX")
+	UNiagaraSystem* ShieldResotreVfx;
+	
 
 	/** 내부 관리용 */
 	FTimerHandle TimerHandle_ExecutionReset;

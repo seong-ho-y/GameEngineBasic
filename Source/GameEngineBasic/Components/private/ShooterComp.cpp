@@ -1,7 +1,9 @@
-﻿
+﻿#include "../Components/public/ShooterComp.h"
 #include "HomingMissileProjectile.h"
-#include "GameEngineBasic/Components/public/ShooterComp.h"
+#include "MyPlayerHUD.h"
 #include "NiagaraFunctionLibrary.h"
+#include "WeaponComponent.h"
+#include "AnimNodes/AnimNode_RandomPlayer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -12,6 +14,11 @@ UShooterComp::UShooterComp()
 }
 
 
+void UShooterComp::HandleWeaponInitialized()
+{
+	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
+}
+
 // Called when the game starts
 void UShooterComp::BeginPlay()
 {
@@ -21,55 +28,65 @@ void UShooterComp::BeginPlay()
 	/*UE_LOG(LogTemp, Warning, TEXT("[%s] ShooterComp BeginPlay: bUseArcHoming=%d"),
 		*GetOwner()->GetName(), bUseArcHoming);
 	 */
+	/*GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
+	FString::Printf(TEXT("ShooterComp Owner = %s"),
+	*GetOwner()->GetName()));
+	*/
+	UWeaponComponent* WeaponComp = GetOwner()->FindComponentByClass<UWeaponComponent>();
+	if (!WeaponComp) return;
+	WeaponComp->WeaponInitialized.AddDynamic(this, &UShooterComp::HandleWeaponInitialized);
 }
 
 
-// Called every frame
 void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-}
 
-bool UShooterComp::TryFire()
-{
-	if (!CanFire())
-	{
-		return false;
-	}
-	Fire();
-	return true;
-}
+	if (!bIsReloading)
+		return;
 
-void UShooterComp::SetFireDirection(const FVector& NewDir)
-{
-	FireDirection = NewDir.GetSafeNormal();
-}
+	// Reload 진행 시간 감소
+	ReloadTimeRemaining -= DeltaTime;
+	ReloadTimeRemaining = FMath::Max(0.f, ReloadTimeRemaining);
 
-bool UShooterComp::CanFire() const
-{
-	// 1. Check Ammo
-	if (CurrentAmmo <= 0)
+	float Elapsed = ReloadTimeTotal - ReloadTimeRemaining;
+	float ReloadPercent = Elapsed / ReloadTimeTotal;
+	ReloadPercent = FMath::Clamp(ReloadPercent, 0.f, 1.f);
+
+	// 새로 계산된 Ammo 값
+	int32 NewAmmo = FMath::RoundToInt(ReloadPercent * FullAmmo);
+
+	// 현재 가지고 있는 최대로 채울 수 있는 ammo를 넘지 않도록
+	int32 MaxCanFill = FMath::Min(FullAmmo, MaxAmmo);
+
+	NewAmmo = FMath::Clamp(NewAmmo, 0, MaxCanFill);
+
+	// HUD 업데이트
+	if (NewAmmo != CurrentAmmo)
 	{
-		return false;
-	}
-	// 2. Check Cooldown
-	if (!bIsReadyToFire)
-	{
-		return false;
+		CurrentAmmo = NewAmmo;
+		OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
 	}
 
-	if (!ProjectileClass && ProjectileMap.Num() == 0)
+	// Reload 종료 조건 1 : 시간이 다 됨
+	if (ReloadTimeRemaining <= 0.f)
 	{
-		//UE_LOG(LogTemp, Error, TEXT("CanFire: No ProjectileClass and ProjectileMap is empty"));
-		return false;
+		ReloadSuccess();
+		return;
 	}
-	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
 
-	return true;
+	// Reload 종료 조건 2 : 더 이상 채울 Ammo가 없음
+	if (CurrentAmmo >= MaxCanFill)
+	{
+		ReloadSuccess();
+		return;
+	}
 }
 
 void UShooterComp::Fire_Implementation()
 {
+	GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp Fire Start"));
+	
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner)
 	{
@@ -84,8 +101,12 @@ void UShooterComp::Fire_Implementation()
 		return;
 	}
 	// 탄약감소
-	CurrentAmmo--;
-
+	if (bUseAmmo)
+	{
+		CurrentAmmo--;
+		OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
+	}
+	
 	// 쿨다운
 	bIsReadyToFire = false;
 	GetWorld()->GetTimerManager().SetTimer(
@@ -95,32 +116,12 @@ void UShooterComp::Fire_Implementation()
 		FireRate,
 		false);
 	// 총구 위치 계산
-	USceneComponent* MuzzleComp = MyOwner->FindComponentByClass<USkeletalMeshComponent>();
-	if (!MuzzleComp)
-	{
-		MuzzleComp = MyOwner->FindComponentByClass<UStaticMeshComponent>();
-	}
-
-	const FVector SpawnLoc = MuzzleComp
-		? MuzzleComp->GetSocketLocation(MuzzleSocketName)
-		: MyOwner->GetActorLocation();
-
-	FRotator SpawnRot;
-
-	if (!FireDirection.IsNearlyZero())
-	{
-		SpawnRot = FireDirection.Rotation();
-	}
-	else if (MuzzleComp)
-	{
-		SpawnRot = MuzzleComp->GetSocketRotation(MuzzleSocketName);
-	}
-	else
-	{
-		SpawnRot = MyOwner->GetActorRotation();
-	}
-
-	// Projectile 스폰
+	// 1. WeaponComp에서 할당된 Muzzle 있는지 확인
+	// 2. Owner의 SkeletalMesh or StaticMesh 접근해서 Muzzle 찾기
+	// 3. 없으면 Owner->GetActorLocation()
+	FVector SpawnLoc = bHasExternalMuzzleInfo ? ExternalMuzzleLoc : FindMuzzleLoc();
+	FRotator DummyRot;
+	// Projectile 스폰 파라미터 설정
 	FActorSpawnParameters Params;
 	Params.Owner = MyOwner;
 	Params.Instigator = MyOwner->GetInstigator();
@@ -130,7 +131,7 @@ void UShooterComp::Fire_Implementation()
 	AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
 		ProjectileClass,
 		SpawnLoc,
-		SpawnRot,
+		DummyRot,
 		Params);
 	// =========== 임시 로그 ===========
 	if (!Projectile)
@@ -143,6 +144,7 @@ void UShooterComp::Fire_Implementation()
 		   *SpawnLoc.ToString());
 	*/
 
+	// 프로젝타일 스폰 성공 시 데미지 & 방향 설정
 	if (Projectile)
 	{
 		Projectile->DamageAmount = PendingDamage;
@@ -151,9 +153,11 @@ void UShooterComp::Fire_Implementation()
 		if (Projectile->GetProjectileMovement())
 		{
 			const FVector Direction = FireDirection.IsNearlyZero()
-				? SpawnRot.Vector()
+				? FVector::ZeroVector
 				: FireDirection;
 
+
+			// 프로젝타일 방향 계산 후 설정
 			Projectile->GetProjectileMovement()->Velocity =
 				Direction * Projectile->GetProjectileMovement()->InitialSpeed;
 		}
@@ -172,14 +176,98 @@ void UShooterComp::Fire_Implementation()
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
 			MuzzleFlashEffect,
-			SpawnLoc,
-			SpawnRot);
+			SpawnLoc);
 	}
 	if (FireSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, SpawnLoc);
 	}
+	PendingDamage = 10.f;     // 기본값 초기화	
+	PendingScale = 1.f;       // 기본값 초기화
 }
+
+
+void UShooterComp::StartReload()
+{
+	if (bIsReloading)
+		return;
+
+	if (CurrentAmmo >= FullAmmo || CurrentAmmo >= MaxAmmo)
+		return; // 이미 FULL 이면 필요 없음
+
+	bIsReloading = true;
+
+	ReloadTimeTotal = ReloadTime;
+	ReloadTimeRemaining = ReloadTime;
+
+	UE_LOG(LogTemp, Log, TEXT("Reload Start: ReloadTime = %.2f"), ReloadTime);
+}
+
+
+void UShooterComp::ReloadSuccess()
+{
+	bIsReloading = false;
+
+	// MaxAmmo와 FullAmmo 비교
+	int32 MaxCanFill = FMath::Min(FullAmmo, MaxAmmo);
+
+	CurrentAmmo = MaxCanFill;
+	MaxAmmo -= CurrentAmmo;
+	
+	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
+
+	UE_LOG(LogTemp, Log, TEXT("Reload Success → Ammo = %d / %d"), CurrentAmmo, FullAmmo);
+}
+
+bool UShooterComp::TryFire()
+{
+	GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp TryFire Start"));
+	if (bIsReloading) return false;
+	
+	if (bUseAmmo && CurrentAmmo <= 0)
+	{
+		StartReload();
+		return false;
+	}
+	if (!CanFire())
+	{
+		return false;
+	}
+	Fire();
+	return true;
+}
+
+void UShooterComp::SetFireDirection(const FVector& NewDir)
+{
+	FireDirection = NewDir.GetSafeNormal();
+}
+
+bool UShooterComp::CanFire() const
+{
+	// 1. Check Ammo
+	if (bUseAmmo && CurrentAmmo <= 0)
+	{
+		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoAmmo"));
+		return false;
+	}
+	// 2. Check Cooldown
+	if (!bIsReadyToFire)
+	{
+		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NotReadyToFire"));
+		return false;
+	}
+
+	if (!ProjectileClass && ProjectileMap.Num() == 0)
+	{
+		//UE_LOG(LogTemp, Error, TEXT("CanFire: No ProjectileClass and ProjectileMap is empty"));
+		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoProjectileClass"));
+		return false;
+	}
+	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
+
+	return true;
+}
+
 
 void UShooterComp::ResetFireReady()
 {
@@ -188,22 +276,55 @@ void UShooterComp::ResetFireReady()
 
 void UShooterComp::SetProjectile()
 {
+	// 플레이어 무기라면 무조건 WeaponComponent 우선
+	if (GetOwner()->FindComponentByClass<UWeaponComponent>())
+	{
+		GEngine->AddOnScreenDebugMessage(5844, 3.f, FColor::Magenta, TEXT("SetProjectile Finished by WeaponComp"));
+		return;
+	}
+	
+	// ---- AI/적용 fallback ----
 	TSubclassOf<AProjectile>* FoundClass = ProjectileMap.Find(CurrentProjectileType);
 	if (FoundClass && *FoundClass)
 	{
 		ProjectileClass = *FoundClass;
-		/*UE_LOG(LogTemp, Warning, TEXT("SetProjectile: Map[%d] -> %s"),
-			(int32)CurrentProjectileType,
-			*ProjectileClass->GetName());
-		*/
+		return;
 	}
-	// 맵에는 없지만 기존 ProjectileClass가 있으면 그대로 사용 (정상 상황)
-	else if (ProjectileClass)
+
+	UE_LOG(LogTemp, Error, TEXT("ShooterComp: No ProjectileClass found!!"));
+}
+
+
+void UShooterComp::SetMuzzle(const FVector& Loc)
+{
+	bHasExternalMuzzleInfo = true;
+	ExternalMuzzleLoc = Loc;
+}
+void UShooterComp::ClearMuzzle()
+{
+	bHasExternalMuzzleInfo = false;
+}
+
+FVector UShooterComp::FindMuzzleLoc() const
+{
+	FVector SpawnLoc;
+	
+	// 1. 스켈레탈 메쉬를 먼저 확인
+	USceneComponent* MuzzleComp = GetOwner()->FindComponentByClass<USkeletalMeshComponent>();
+
+	// 2. 스켈레탈 메쉬 없으면 스태틱 메쉬 확인
+	if (!MuzzleComp)
+		MuzzleComp = GetOwner()->FindComponentByClass<UStaticMeshComponent>();
+
+	// 3. Mesh에서 MuzzleSocketName에 맞는 Muzzle 위치 가져오기
+	if (MuzzleComp)
 	{
-		UE_LOG(LogTemp, Verbose, TEXT("SetProjectile: Using existing ProjectileClass -> %s"), *ProjectileClass->GetName());
+		SpawnLoc = MuzzleComp->GetSocketLocation(MuzzleSocketName);
 	}
+	// 4. Muzzle이 없으면 그냥 액터의 위치 반환
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("SetProjectile: No Projectile for Type %d AND no fallback ProjectileClass"), (int32)CurrentProjectileType);
+		SpawnLoc = GetOwner()->GetActorLocation();
 	}
+	return SpawnLoc;
 }

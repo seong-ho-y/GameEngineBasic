@@ -16,6 +16,8 @@ enum class EProjectileType : uint8
 	Laser      UMETA(DisplayName = "Laser")
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAmmoChanged, int32, CurrentAmmo, int32, FullAmmo, int32, MaxAmmo);
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
 {
@@ -24,7 +26,17 @@ class GAMEENGINEBASIC_API UShooterComp : public UActorComponent
 public:
 	UShooterComp();
 
+	UPROPERTY(BlueprintAssignable, Category="Events")
+	FOnAmmoChanged OnAmmoChanged;
+	bool bHasExternalMuzzleInfo = false;
+	FVector ExternalMuzzleLoc;
+	FRotator ExternalMuzzleRot;
+	float ReloadTime = 5.f;
+	
+	UFUNCTION()
+	void HandleWeaponInitialized();
 protected:
+
 	virtual void BeginPlay() override;
 
 public:
@@ -49,6 +61,15 @@ public:
 	UFUNCTION()
 	void SetProjectile(); // ProjectileMap에서 자동 선택
 
+	UFUNCTION(BlueprintCallable)
+	void StartReload();
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadSuccess();
+	void SetMuzzle(const FVector& Loc);
+	void ClearMuzzle();
+	FVector FindMuzzleLoc() const;
+
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
@@ -67,8 +88,14 @@ public:
 	float FireRate = 0.01f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	int32 CurrentAmmo = 999;
+	int32 CurrentAmmo = 30;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 FullAmmo = 30;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	int32 MaxAmmo = 999;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	float PendingDamage = 10.f;
 
@@ -84,18 +111,33 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	FVector FireDirection = FVector::ZeroVector;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector MuzzleLocation = FVector::ZeroVector;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Homing")
 	bool bUseArcHoming = true;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Target")
 	AActor* CurrentTarget = nullptr;
 
-private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon|Option")
+	bool bUseAmmo = true;
+
+	UPROPERTY()
+	float ReloadTimeRemaining = 0.f;
+
+	UPROPERTY()
+	float ReloadTimeTotal = 0.f;
+	
 	UPROPERTY()
 	bool bIsReadyToFire = true;
+private:
+	
+
+	bool bIsReloading = false;
 
 	FTimerHandle FireRateTimerHandle;
-
+	FTimerHandle ReloadTimerHandle;
 public:
 
 };

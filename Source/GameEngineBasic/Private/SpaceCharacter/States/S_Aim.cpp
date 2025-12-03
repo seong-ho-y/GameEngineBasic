@@ -19,7 +19,6 @@ void US_Aim::Enter_Implementation(ASpaceCharacter* Character)
     Character->bUseControllerRotationYaw = true;
 
     Character->bIsCameraTransitioning = true;
-
 }
 
 void US_Aim::Tick_Implementation(ASpaceCharacter* Character, float DeltaTime)
@@ -34,5 +33,7 @@ void US_Aim::Tick_Implementation(ASpaceCharacter* Character, float DeltaTime)
 void US_Aim::Exit_Implementation(ASpaceCharacter* Character)
 {
     if (!Character) return;
-
+    
+    Character->bUseControllerRotationYaw = false;
+    Character->GetCharacterMovement()->bOrientRotationToMovement = true;
 }

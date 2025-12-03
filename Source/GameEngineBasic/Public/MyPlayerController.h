@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class AMyTestPawn;
 class ASpaceCharacter;
+class UDeathWidget;
 //class AMySpaceShip;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerPawnChanged, APawn*, NewPawn);
@@ -27,9 +28,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* ShipInputContext;
 
-
-	TObjectPtr<AMyTestPawn> VehiclePawn;
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
@@ -40,4 +38,16 @@ protected:
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnPlayerPawnChanged OnPlayerPawnChanged;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UDeathWidget> DeathWidgetclass;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void ShowDeathWidget();
+
+	UFUNCTION(BlueprintCallable)
+	void RequestRespawn();
+private:
+	UDeathWidget* DeathWidget;
 };

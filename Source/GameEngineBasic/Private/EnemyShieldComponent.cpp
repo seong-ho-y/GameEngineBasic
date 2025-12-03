@@ -3,6 +3,10 @@
 
 #include "EnemyShieldComponent.h"
 
+#include "EnemyHuman.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
+
 // Sets default values for this component's properties
 UEnemyShieldComponent::UEnemyShieldComponent()
 {
@@ -56,12 +60,14 @@ float UEnemyShieldComponent::ApplyDamage(float Damage)
 		UE_LOG(LogTemp,Log,TEXT("Shield Destroyed"));
 		bIsShieldBroken = true;
 		bCanExecuted = true;
+		ShieldBrokenVFX();
 		OnShieldBreak.Broadcast();
 
-		// 일정 시간 후 Execution 해제
+		// 일정 시간 후 Execution 해제 && 적 쉴드 복구
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_ExecutionReset, [this]()
 		{
 			bCanExecuted = false;
+			RestoreShieldFull(); //쉴드 전체 회복
 		}, ExecutionTime, false);
 	}
 	UE_LOG(LogTemp, Log, TEXT("[Enemy] Shield TakeDamaged : %f | Current Shield : %f"), Damage, CurrentShield)
@@ -82,11 +88,34 @@ void UEnemyShieldComponent::RegenerateShield(float DeltaTime)
 	}
 }
 
-/** 쉴드 완전 복구 (보스전 등에서 사용 가능) */
+// 쉴드 완전 복구 
 void UEnemyShieldComponent::RestoreShieldFull()
 {
+	AEnemyHuman* Owner = Cast<AEnemyHuman>(GetOwner());
+	if (!Owner) return;
+	if (Owner->bIsExecuting || Owner->bIsDead) return;
 	CurrentShield = MaxShield;
 	bIsShieldBroken = false;
 	bCanExecuted = false;
+	ShieldResotreVFX();
 	OnShieldRestored.Broadcast();
+}
+
+void UEnemyShieldComponent::ShieldBrokenVFX()
+{
+	if (ShieldBrokenVfx)
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),ShieldBrokenVfx,GetOwner()->GetActorLocation());
+	if (ShieldBrokenParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShieldBrokenParticle, GetOwner()->GetActorLocation());
+	if (ShieldBrokenSound)
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(),ShieldBrokenSound, GetOwner()->GetActorLocation());
+}
+void UEnemyShieldComponent::ShieldResotreVFX()
+{
+	if (ShieldResotreVfx)
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ShieldResotreVfx, GetOwner()->GetActorLocation());
+	if (ShieldRestoreParticle)
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ShieldRestoreParticle, GetOwner()->GetActorLocation());
+	if (ShieldRestoreSound)
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ShieldRestoreSound, GetOwner()->GetActorLocation());
 }

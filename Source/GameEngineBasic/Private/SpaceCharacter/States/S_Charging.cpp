@@ -3,13 +3,16 @@
 
 #include "SpaceCharacter/States/S_Charging.h"
 #include "SpaceCharacter/SpaceCharacter.h"
+
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "GameEngineBasic/Components/public/HealthComp.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Particles/ParticleSystemComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+
 #include "Animation/AnimInstance.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 void US_Charging::Enter_Implementation(ASpaceCharacter* Character)
 {
@@ -21,6 +24,8 @@ void US_Charging::Enter_Implementation(ASpaceCharacter* Character)
         Character->ChangeState(ECharacterState::Locomotion);
         return;
     }
+    Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+    Character->bUseControllerRotationYaw = true;
 
     bExploded = false;
     bInputLocked = false;
@@ -28,7 +33,6 @@ void US_Charging::Enter_Implementation(ASpaceCharacter* Character)
     ChargeStartTime = Character->GetWorld()->GetTimeSeconds();
     Character->bIsCharging = true;
     Character->CurrentChargeTime = 0.f;
-
 
     if (Character->ChargingEffect)
     {
@@ -61,7 +65,7 @@ void US_Charging::Tick_Implementation(ASpaceCharacter* Character, float DeltaTim
         Character->ActiveChargeEffect->SetWorldScale3D(FVector(Scale));
     }
 
-    if (Elapsed >= 3.f && !bInputLocked)
+    if (Elapsed >= 2.5f && !bInputLocked)
     {
         Character->bIsCameraTransitioning = false; // 카메라 전환 중지
         if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
@@ -69,11 +73,22 @@ void US_Charging::Tick_Implementation(ASpaceCharacter* Character, float DeltaTim
             PC->SetIgnoreMoveInput(true);
             PC->SetIgnoreLookInput(true);
         }
+
+        if (LockMontage)
+        {
+            UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+            if (AnimInstance)
+            {
+                AnimInstance->Montage_Play(LockMontage);
+                UE_LOG(LogTemp, Warning, TEXT("Lock Montage Played"));
+            }
+        }
+
         bInputLocked = true;
         UE_LOG(LogTemp, Warning, TEXT("Input Locked & Camera Frozen at 3s"));
     }
 
-    if (Elapsed >= 4.f && !bExploded)
+    if (Elapsed >= 4.5f && !bExploded)
     {
         bExploded = true;
         Character->bIsCharging = false;
@@ -81,17 +96,19 @@ void US_Charging::Tick_Implementation(ASpaceCharacter* Character, float DeltaTim
         FVector ExplosionLocation = Character->GetActorLocation();
         if (ExplosionEffect)
         {
+            UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+            AnimInstance->Montage_Play(DamagedMontage);
             UGameplayStatics::SpawnEmitterAtLocation(Character->GetWorld(), ExplosionEffect, ExplosionLocation);
         }
 
         if (UHealthComp* Health = Character->FindComponentByClass<UHealthComp>())
         {
-            Health->TakeDamage(10); // 피해량 조정 가능
+            Health->ApplyHealthDamage(10); // 피해량 조정 가능
         }
 
         UE_LOG(LogTemp, Warning, TEXT("Player exploded after overcharge!"));
+        Character->bIsAiming = false;
         Character->ChangeState(ECharacterState::Locomotion);
-
     }
 
     if (Elapsed >= Character->MaxChargeTime)
@@ -131,7 +148,7 @@ void US_Charging::Exit_Implementation(ASpaceCharacter* Character)
     if (!ShooterComp || !FollowCam) return;
 
     ShooterComp->PendingDamage = FMath::Lerp(5.f, 50.f, ChargeRatio);
-    ShooterComp->PendingScale = FMath::Lerp(1.f, 3.f, ChargeRatio);
+    ShooterComp->PendingScale = FMath::Lerp(1.f, 8.f, ChargeRatio);
 
     FVector CameraLoc = FollowCam->GetComponentLocation();
     FVector CameraDir = FollowCam->GetForwardVector();
@@ -144,5 +161,4 @@ void US_Charging::Exit_Implementation(ASpaceCharacter* Character)
     FVector FireDir = (TraceEnd - MuzzleLoc).GetSafeNormal();
     ShooterComp->SetFireDirection(FireDir);
     ShooterComp->TryFire();
-
 }

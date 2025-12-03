@@ -2,178 +2,113 @@
 
 
 #include "GameEngineBasic/Components/public/HealthComp.h"
+#include "Component/ShieldComp.h"
 #include "GameFramework/Actor.h"
-#include <sstream>
 
-// Sets default values for this component's properties
 UHealthComp::UHealthComp()
 {
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-
-// Called when the game starts
 void UHealthComp::BeginPlay()
 {
 	Super::BeginPlay();
 	InitStats();
-
-	// 시작 시 재생 타이머는 비활성 상태로 둠
+	/*
 	NextRegenTime = -FLT_MAX;
 	LastDamageTime = -FLT_MAX;
+	*/
 }
 
 void UHealthComp::InitStats()
 {
+	if (AActor* Owner = GetOwner())
+	{
+		ShieldComp = Owner->FindComponentByClass<UShieldComp>();
+	}
 	CurrentHealth = MaxHealth;
-	CurrentShield = (bUseShield ? MaxShield : 0);
-	BroadcastChanged();
+	CurrentHealth = MaxHealth;
+	BroadcastStatus();
 }
 
-// Called every frame
-void UHealthComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UHealthComp::RestoreFullHealth()
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// 쉴드가 가득 차 있지 않다면, 마지막 피격으로부터 Delay가 지날 때마다 +1
-	if (CurrentShield < MaxShield)
-	{
-		const float Now = GetWorld()->GetTimeSeconds();
-
-		// 아직 재생이 시작되지 않았다면 (피격 후 대기시간 경과 시점 설정)
-		if (NextRegenTime == -FLT_MAX && LastDamageTime != -FLT_MAX)
-		{
-			NextRegenTime = LastDamageTime + ShieldRegenDelay;
-		}
-
-		// 딱 "ShieldRegenDelay가 지날 때마다 +1" 이산 회복
-		while (NextRegenTime != -FLT_MAX && Now >= NextRegenTime && CurrentShield < MaxShield)
-		{
-			RestoreShield(1);
-			NextRegenTime += ShieldRegenDelay; // 다음 틱 예약
-		}
-	}
-	else
-	{
-		// 가득 찼으면 재생 타이머 리셋
-		NextRegenTime = -FLT_MAX;
-	}
+	CurrentHealth = MaxHealth;
+	BroadcastStatus();
 }
 
-bool UHealthComp::IsInvincible() const
+float UHealthComp::ApplyHealthDamage(float Damage)
 {
-	if (!bUseInvincibleFrame) return false;
-	float Now = GetWorld()->GetTimeSeconds();
-	return (Now - LastDamageTime < InvincibleDuration);
+	if (bIsInvincible || Damage <= 0.f)
+	{
+		return 0.f;
+	}
+
+	StartInvincibility();
+	float IncomingDamage = Damage;
+
+	// 1) 쉴드가 있다면 → 먼저 처리
+	if (ShieldComp && ShieldComp->IsShieldActive())
+	{
+		IncomingDamage = ShieldComp->ApplyShieldDamage(Damage);
+	}
+
+	// 2) 남은 데미지가 없으면 → 체력 감소 없음
+	if (IncomingDamage <= 0.f)
+	{
+		BroadcastStatus();
+		return 0.f;
+	}
+
+	float PreviousHealth = CurrentHealth;
+	CurrentHealth = FMath::Clamp(CurrentHealth - IncomingDamage, 0.f, MaxHealth);
+
+	if (CurrentHealth <= 0.f)
+	{
+		HandleDeath();
+	}
+
+	BroadcastStatus();
+	return PreviousHealth - CurrentHealth;
 }
 
-void UHealthComp::TakeDamage(int32 DamageAmount)
+void UHealthComp::StartInvincibility()
 {
-	if (DamageAmount <= 0) return;
+	bIsInvincible = true;
 
-	// 무적 체크
-	if (IsInvincible())
-		return;
-
-	LastDamageTime = GetWorld()->GetTimeSeconds();
-	OnDamageTaken.Broadcast(GetOwner());
-
-	// 쉴드 우선
-	if (bUseShield && CurrentShield > 0)
-	{
-		ApplyShieldDamage(DamageAmount);
-	}
-	else
-	{
-		ApplyHealthDamage(DamageAmount);
-	}
-
-	// 쉴드 회복 시작 예약
-	if (bUseShieldRegen && bUseShield)
-	{
-		StopShieldRegenTimer();
-		GetWorld()->GetTimerManager().SetTimer(
-			ShieldRegenTimerHandle,
-			this,
-			&UHealthComp::StartShieldRegenTimer,
-			ShieldRegenDelay,
-			false
-		);
-	}
-
-	// 디버그
-	if (bDebugHealthLog && GEngine)
-	{
-		std::stringstream ss;
-		ss << "HP:" << CurrentHealth << " SHIELD:" << CurrentShield;
-		GEngine->AddOnScreenDebugMessage(97, 1.5f, FColor::Cyan, ss.str().c_str());
-	}
-}
-void UHealthComp::StartShieldRegenTimer()
-{
-	if (!bUseShieldRegen || !bUseShield) return;
-	if (CurrentShield >= MaxShield) return;
+	GetWorld()->GetTimerManager().ClearTimer(InvincibleTimerHandle);
 
 	GetWorld()->GetTimerManager().SetTimer(
-		ShieldRegenTimerHandle,
-		[this]()
-		{
-			if (CurrentShield >= MaxShield)
-			{
-				StopShieldRegenTimer();
-				return;
-			}
-			RestoreShield(1);
-		},
-		ShieldRegenDelay,
-		true
+		InvincibleTimerHandle,
+		this,
+		&UHealthComp::EndInvincibility,
+		InvincibleDuration,
+		false
 	);
 }
 
-void UHealthComp::StopShieldRegenTimer()
+void UHealthComp::EndInvincibility()
 {
-	GetWorld()->GetTimerManager().ClearTimer(ShieldRegenTimerHandle);
-}
-void UHealthComp::RestoreShield(int Amount)
-{
-	if (!bUseShield || Amount <= 0) return;
-
-	int32 OldShield = CurrentShield;
-	CurrentShield = FMath::Clamp(CurrentShield + Amount, 0, MaxShield);
-
-	if (CurrentShield >= MaxShield)
-		StopShieldRegenTimer();
-
-	if (CurrentShield != OldShield)
-		BroadcastChanged();
+	bIsInvincible = false;
 }
 
-void UHealthComp::ApplyShieldDamage(int Amount)
+
+void UHealthComp::Heal(float Amount)
 {
-	if (!bUseShield || Amount <= 0 || CurrentShield <= 0) return;
+	if (Amount <= 0.f)
+		return;
 
-	CurrentShield = FMath::Clamp(CurrentShield - Amount, 0, MaxShield);
-
-	if (CurrentShield == 0)
-		OnShieldBroken.Broadcast(GetOwner());
-
-	BroadcastChanged();
+	CurrentHealth = FMath::Clamp(CurrentHealth + Amount, 0.f, MaxHealth);
+	BroadcastStatus();
 }
 
-void UHealthComp::ApplyHealthDamage(float Amount)
+void UHealthComp::BroadcastStatus()
 {
-	if (Amount <= 0 || CurrentHealth <= 0) return;
-
-	CurrentHealth = FMath::Clamp(CurrentHealth - Amount, 0, MaxHealth);
-
-	if (CurrentHealth == 0)
-		OnDeath.Broadcast(GetOwner());
-
-	UE_LOG(LogTemp, Warning, TEXT("[Enemy] Health Take Damaged : %f | Current Health : %f"),Amount, CurrentHealth);
-	BroadcastChanged();
+	OnHealthChanged.Broadcast(CurrentHealth);                
+	OnHealthChanged_Ver2.Broadcast(CurrentHealth, MaxHealth);
 }
 
-void UHealthComp::BroadcastChanged() const
+void UHealthComp::HandleDeath()
 {
-	OnHealthChanged.Broadcast(GetOwner(), CurrentHealth, CurrentShield);
+	OnDeath.Broadcast(GetOwner());
 }

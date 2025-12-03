@@ -4,15 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "GameFramework/Actor.h"
 #include "HealthComp.generated.h"
 
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnHealthChanged, AActor*, Owner, float, NewHealth, float, NewShield);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthChanged, float, NewHealth);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeath, AActor*, Owner);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShieldBroken, AActor*, Owner);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDamageTaken, AActor*, Owner);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged_Ver2, float, NewHealth, float, MaxHealth);
+
+class UShieldComp;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class GAMEENGINEBASIC_API UHealthComp : public UActorComponent
@@ -22,89 +22,60 @@ class GAMEENGINEBASIC_API UHealthComp : public UActorComponent
 public:
 	UHealthComp();
 
+private:
+	UPROPERTY()
+	UShieldComp* ShieldComp;
 protected:
 	virtual void BeginPlay() override;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// ���� ���� ��� �ð�(���� �ð�, ��). �� �ð��� ������ +1
-	float NextRegenTime = -FLT_MAX;
-
-public:
+public:	
 	// ======== CONFIG ========
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Health")
-	int32 MaxHealth = 60;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	float MaxHealth = 60.f;
 
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Shield")
-	int32 MaxShield = 5;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	float CurrentHealth = 60.f;
 
-	// �ǰ� �� ȸ�� ���۱��� ���
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shield")
-	float ShieldRegenDelay = 3.f;   
-
-	UFUNCTION(BlueprintCallable, Category = "Health")
-	int GetHealth() const { return CurrentHealth; }
-
-	UFUNCTION(BlueprintCallable, Category = "Health")
-	int GetShield() const { return CurrentShield; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health")
-	bool bUseShield = true;   // 쉴드 사용 여부
-
-	UPROPERTY(EditAnywhere, Category="Shield")
-	bool bUseShieldRegen = true;
-
-	UPROPERTY(EditAnywhere, Category="Invincible")
-	bool bUseInvincibleFrame = true;
-
-	UPROPERTY(EditAnywhere, Category="Invincible", meta=(EditCondition="bUseInvincibleFrame"))
-	float InvincibleDuration = 0.3f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
+	float InvincibleDuration = 1.f;
 
 	UPROPERTY(EditAnywhere, Category="Debug")
 	bool bDebugHealthLog = false;
 
-	// ========== STATE ==========
-	UPROPERTY(EditAnywhere, Category = "Stat")
-	float CurrentHealth = 60;
-	UPROPERTY(EditAnywhere, Category = "Stat")
-	float CurrentShield = 4;
-	float LastDamageTime = -FLT_MAX;
-
-	FTimerHandle ShieldRegenTimerHandle;
-
 	// ========== FUNCTIONS ==========
 	void InitStats();
-	void StartShieldRegenTimer();
-	void StopShieldRegenTimer();
+	void RestoreFullHealth();
 
-	bool IsInvincible() const;
+	// ========== GETTERS ==========
+	float GetCurrentHealth() const { return CurrentHealth; }
+	float GetMaxHealth() const { return MaxHealth; }
+	bool GetIsInvincible() const { return bIsInvincible; }
 
 public:
 	// ========== EXTERNAL API ==========
 	UFUNCTION(BlueprintCallable)
-	void TakeDamage(int32 DamageAmount = 1);
+	float ApplyHealthDamage(float Damage);
 
 	UFUNCTION(BlueprintCallable)
-	void RestoreShield(int32 Amount);
+	void Heal(float Amount);
 
-	UFUNCTION(BlueprintCallable)
-	void ApplyShieldDamage(int Amount);
-
-	UFUNCTION(BlueprintCallable)
-	void ApplyHealthDamage(float Amount);
-
-	// ========== DELEGATES ==========
-	UPROPERTY(BlueprintAssignable)
+	//  Events
+	UPROPERTY(BlueprintAssignable, Category = "HealthEvent")
 	FOnHealthChanged OnHealthChanged;
 
-	UPROPERTY(BlueprintAssignable)
+	UPROPERTY(BlueprintAssignable, Category = "HealthEvent")
+	FOnHealthChanged_Ver2 OnHealthChanged_Ver2;
+
+	UPROPERTY(BlueprintAssignable, Category = "HealthEvent")
 	FOnDeath OnDeath;
 
-	UPROPERTY(BlueprintAssignable)
-	FOnShieldBroken OnShieldBroken;
-
-	UPROPERTY(BlueprintAssignable)
-	FOnDamageTaken OnDamageTaken;
-
 private:
-	void BroadcastChanged() const;
+	bool bIsInvincible = false;
+	FTimerHandle InvincibleTimerHandle;
+
+	void StartInvincibility();
+	void EndInvincibility();
+
+	void BroadcastStatus();
+	void HandleDeath();
 };

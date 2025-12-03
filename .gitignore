@@ -9,6 +9,10 @@ Content/*
 !Content/Fab
 !Content/Megascans
 !Content/Modular_Scifi_Mechanic_Base
+!Content/Fab/Cruise_Missile_New_FBX_Sample
+!Content/Fab
+!Content/ParagonMuriel
+!Content/Fab/Sci-Fi_Crate
 
 # Rider (JetBrains IDE)
 .idea/
