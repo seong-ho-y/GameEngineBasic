@@ -28,6 +28,31 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateState();
 	UpdateLocomotionParams(DeltaSeconds);
 	UpdateAimParams(DeltaSeconds);
+	// ===============================
+	//     ★ 공중 Boost 몽타주 처리 ★
+	// ===============================
+	AEnemyHuman* Enemy = Cast<AEnemyHuman>(OwnerChar);
+	if (!Enemy) return;
+
+	UCharacterMovementComponent* Move = Enemy->GetCharacterMovement();
+	if (!Move) return;
+
+	// 공중 상태 기준
+	const bool bFalling = Move->IsFalling();
+
+	if (bFalling && !bBoostMontagePlaying)
+	{
+		if (Enemy->BoostMontage)
+		{
+			Montage_Play(Enemy->BoostMontage);
+			bBoostMontagePlaying = true;
+		}
+	}
+	else if (!bFalling && bBoostMontagePlaying)
+	{
+		Montage_Stop(0.2f);
+		bBoostMontagePlaying = false;
+	}
 }
 
 void UEnemyAnimInstance::UpdateState()
@@ -50,6 +75,11 @@ void UEnemyAnimInstance::UpdateState()
 		FullBodyState = EFullBodyState::Knock;
 		return;
 	}
+	if (bIsDashAttacking)
+	{
+		FullBodyState = EFullBodyState::DashAttack;
+		return;
+	}
 	else
 	{
 		FullBodyState = EFullBodyState::Default;
@@ -63,7 +93,9 @@ void UEnemyAnimInstance::UpdateState()
 
 
 	// --- 상체 상태 ---
-	if (bShooting)
+	if (bIsMeleeAttacking)
+		UpperBodyState = EUpperBodyState::Melee;
+	else if (bShooting)
 		UpperBodyState = EUpperBodyState::Shoot;
 	else if (bReloading)
 		UpperBodyState = EUpperBodyState::Reload;
@@ -127,5 +159,42 @@ void UEnemyAnimInstance::AnimNotify_KnockEnd()
 	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(OwnerChar))
 	{
 		Enemy->bIsKnocked = false;
+	}
+}
+void UEnemyAnimInstance::AnimNotify_MeleeBegin()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->OnMeleeBegin();
+	}
+}
+
+void UEnemyAnimInstance::AnimNotify_MeleeEnd()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->OnMeleeEnd();
+	}
+}
+
+void UEnemyAnimInstance::AnimNotify_DashStart()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->BeginDash();
+	}
+}
+void UEnemyAnimInstance::AnimNotify_LeftBladeBegin()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->OnLeftBladeBegin();
+	}
+}
+void UEnemyAnimInstance::AnimNotify_LeftBladeEnd()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->OnLeftBladeEnd();
 	}
 }
