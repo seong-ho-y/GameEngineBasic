@@ -10,6 +10,8 @@ Content/*
 !Content/Fab
 !Content/ParagonMuriel
 !Content/Fab/Sci-Fi_Crate
+!Content/SciFiturretasset
+!Content/Free_Sounds_Pack
 
 # Rider (JetBrains IDE)
 .idea/
