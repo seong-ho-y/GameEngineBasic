@@ -81,6 +81,10 @@ ASpaceCharacter::ASpaceCharacter()
 	DashVfx->SetupAttachment(GetMesh());
 	DashVfx->bAutoActivate = false;
 
+	HealVfx = CreateDefaultSubobject<UNiagaraComponent>(TEXT("HealVfx"));
+	HealVfx->SetupAttachment(GetMesh());
+	HealVfx->bAutoActivate = false;
+
 	WeaponComp = CreateDefaultSubobject<UWeaponComponent>(TEXT("WeaponComp"));
 }
 
@@ -394,6 +398,9 @@ void ASpaceCharacter::StartDash()
 	if (GetCharacterMovement()->IsFalling() || bIsFlyingMode)
 		return;
 
+	GetFuelComponent()->ConsumeDash(10);
+	StartDashEffect();
+
 	bIsDashing = true;
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 
@@ -403,20 +410,13 @@ void ASpaceCharacter::StartDash()
 	// 대쉬 중 방향고정
 	Move->bOrientRotationToMovement = false;
 	SetActorRotation(DashDir.Rotation());
-
 	Move->GroundFriction = 1.f;
-
-	if (DashVfx)
-	{
-		DashVfx->SetActive(true, true);
-		DashVfx->Activate(true);
-	}
 
 	GetWorldTimerManager().SetTimer(
 		DashTimerHandle,
 		this,
 		&ASpaceCharacter::StopDash,
-		0.2,
+		1.0f,
 		false
 	);
 }
@@ -424,18 +424,36 @@ void ASpaceCharacter::StartDash()
 void ASpaceCharacter::StopDash()
 {
 	bIsDashing = false;
-	UCharacterMovementComponent* Move = GetCharacterMovement();
-	if (!Move) return;
+}
 
+void ASpaceCharacter::StartDashEffect()
+{
+	if (DashVfx)
+	{
+		DashVfx->Activate(true);
+		DashVfx->SetActive(true, true);
+	}
+
+	GetWorldTimerManager().SetTimer(
+		DashEffectTimerHandle,
+		this,
+		&ASpaceCharacter::StopDashEffect,
+		0.2,
+		false
+	);
+}
+
+void ASpaceCharacter::StopDashEffect()
+{
 	if (DashVfx)
 	{
 		DashVfx->Deactivate();
-		DashVfx->SetActive(false);
 	}
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	if (!Move) return;
 
 	Move->bOrientRotationToMovement = true;
 	Move->GroundFriction = 8.f;
-	//Move->Velocity = FVector::ZeroVector;
 }
 
 FVector ASpaceCharacter::GetDashDirection() const

@@ -81,7 +81,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* IA_Shield;
 
-	// 캐스케이드
+	// Cascade
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 	UParticleSystem* ExplosionFX = nullptr;
 

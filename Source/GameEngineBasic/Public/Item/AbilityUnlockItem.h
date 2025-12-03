@@ -95,4 +95,7 @@ public:
 	virtual void Interact(ASpaceCharacter* Character) override;
 
 	FTimeline LidOpenTimeline;
+
+private:
+	bool bActivated = false;
 };
