@@ -11,6 +11,9 @@ Content/**
 !Content/Share/
 !Content/Share/**
 
+!Content/SharedAsset/
+!Content/SharedAsset/**
+
 !Content/Cyberp_RPG_UI_5_2/
 !Content/Cyberp_RPG_UI_5_2/**
 
