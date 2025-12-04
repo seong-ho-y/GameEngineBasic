@@ -148,4 +148,8 @@ private:
 	void AnimNotify_LeftBladeBegin();
 	UFUNCTION()
 	void AnimNotify_LeftBladeEnd();
+	UFUNCTION()
+	void AnimNotify_BladeAppear();
+	UFUNCTION()
+	void AnimNotify_BladeSwing();
 };

@@ -15,6 +15,7 @@
 #include "DrawDebugHelpers.h"
 #include "BrainComponent.h"
 #include "BTT_DashAttack.h"
+#include "NiagaraFunctionLibrary.h"
 //#include "NiagaraFunctionLibrary.h"  // BoostVfx 쓸 때 사용 가능
 
 
@@ -203,7 +204,14 @@ void AEnemyHuman::StartBoost(FVector Direction, float Speed, float Duration, flo
 			EAttachLocation::SnapToTarget, true);
 	}
 	*/
-
+	if (BoostSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			BoostSound,
+			GetActorLocation()
+		);
+	}
 	if (BoostPS)
 	{
 		ActiveBoostPSC = UGameplayStatics::SpawnEmitterAttached(
@@ -585,8 +593,6 @@ void AEnemyHuman::OnLeftBladeEnd()
 		LeftBlade->DeactivateHitbox();     // Collision Off
 		LeftBlade->SetActorHiddenInGame(true);
 	}
-	EndDash();
-	
 }
 
 void AEnemyHuman::BeginDash()
@@ -636,6 +642,56 @@ void AEnemyHuman::StartShortDash(const FVector& Dir, float Speed, float Duration
 	LaunchCharacter(DashDir_ * Speed, true, false);
 }
 
+void AEnemyHuman::PlayTakeOffEffects()
+{
+	// ==================
+	// 1) SFX
+	// ==================
+	if (TakeOffSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			TakeOffSFX,
+			GetActorLocation()
+		);
+	}
+
+	// ==================
+	// 2) 캐릭터 발 아래 Dust VFX
+	// ==================
+	if (TakeOffDustVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			TakeOffDustVFX,
+			GetActorLocation() - FVector(0,0,90.f)
+		);
+	}
+
+	// Cascade 버전도 원하면 같은 식으로 추가
+	if (TakeOffDustParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			TakeOffDustParticle,
+			GetActorLocation() - FVector(0,0,90.f)
+		);
+	}
+
+	// ==================
+	// 3) 짧은 충격파(Shockwave) VFX
+	// ==================
+	if (TakeOffShockVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			TakeOffShockVFX,
+			GetActorLocation(),
+			FRotator::ZeroRotator
+		);
+	}
+}
+
 /* ===========================
  *  TakeOff (위로 수직 점프)
  * ===========================
@@ -649,5 +705,132 @@ void AEnemyHuman::StartTakeOff(float UpSpeed, float Duration)
 		// ★ 순간 상승
 		LaunchCharacter(FVector(0.f, 0.f, UpSpeed), true, true);
 		
+	}
+}
+
+
+// ========================================================================
+// ========================================================================
+// ============================= Effects ==================================
+// ========================================================================
+// ========================================================================
+
+void AEnemyHuman::PlayDashEffects(const FVector& DashDirection)
+{
+	// ============================
+	// 1) Dash SFX
+	// ============================
+	if (DashSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			DashSFX,
+			GetActorLocation()
+		);
+	}
+
+	// ============================
+	// 2) Dash VFX (Niagara)
+	// ============================
+	if (DashVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			DashVFX,
+			GetActorLocation(),
+			DashDir.Rotation()
+		);
+	}
+
+	// ============================
+	// 2-1) Dash VFX (Cascade)
+	// ============================
+	if (DashParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			DashParticle,
+			GetActorTransform().GetLocation(),
+			DashDir.Rotation()
+		);
+	}
+
+	// ============================
+	// 3) Ghost Trail (Niagara)
+	// ============================
+	if (GhostTrailVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			GhostTrailVFX,
+			GetMesh(),
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true
+		);
+	}
+
+	// ============================
+	// 3-1) Ghost Trail (Cascade)
+	// ============================
+	if (GhostTrailParticle)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			GhostTrailParticle,
+			GetMesh(),
+			NAME_None,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			true
+		);
+	}
+
+	// ============================
+	// 4) Foot Sliding Dust (Niagara)
+	// ============================
+	if (DashDustVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			DashDustVFX,
+			GetActorLocation() - DashDir * 30.f
+		);
+	}
+
+	// ============================
+	// 4-1) Foot Sliding Dust (Cascade)
+	// ============================
+	if (DashDustParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			DashDustParticle,
+			GetActorLocation() - DashDir * 30.f,
+			FRotator::ZeroRotator
+		);
+	}
+}
+void AEnemyHuman::PlayBladeAppearSFX()
+{
+	if (BladeAppearSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			BladeAppearSFX,
+			GetActorLocation()
+		);
+	}
+}
+void AEnemyHuman::PlayBladeSwingSFX()
+{
+	if (BladeSwingSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			BladeSwingSFX,
+			GetActorLocation()
+		);
 	}
 }
