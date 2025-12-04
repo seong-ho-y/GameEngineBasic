@@ -59,6 +59,9 @@ Content/**
 !Content/VigilanteContent/
 !Content/VigilanteContent/**
 
+!Content/kb3d_missiontominerva/
+!Content/kb3d_missiontominerva/**
+
 # 아래에는 Binaries/Intermediate/Saved 등 원래 쓰던 Unreal 기본 ignore 다시 넣으면 됨
 
 # Rider (JetBrains IDE)
