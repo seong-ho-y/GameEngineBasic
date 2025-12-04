@@ -37,6 +37,11 @@ bool UFuelComponent::CanFly() const
     return CurrentFuel > 5.f;
 }
 
+bool UFuelComponent::CanDash() const
+{
+    return CurrentFuel > 10.f;
+}
+
 void UFuelComponent::Consume(float Amount)
 {
     GEngine->AddOnScreenDebugMessage(33, 1, FColor::Orange, TEXT("Consume Called"));

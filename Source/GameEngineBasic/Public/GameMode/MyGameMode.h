@@ -27,4 +27,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void RespawnPlayer(AController* Controller);
+
+	UFUNCTION(BlueprintCallable)
+	void RequestStageTransition(FName TargetStageName);
 };

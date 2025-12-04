@@ -70,3 +70,10 @@ void AMyGameMode::RespawnPlayer(AController* Controller)
 	FName CurrentLevelName(*GetWorld()->GetName());
 	UGameplayStatics::OpenLevel(this, CurrentLevelName, true, TEXT("?IsRespawn"));
 }
+
+void AMyGameMode::RequestStageTransition(FName TargetStageName)
+{
+    if (TargetStageName.IsNone())
+        return;
+	UGameplayStatics::OpenLevel(GetWorld(), TargetStageName);
+}

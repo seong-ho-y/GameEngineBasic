@@ -3,6 +3,7 @@
 
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "MyPlayerController.h"
+#include "GameEngineBasic/System/SaveSystemManager.h"
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -93,7 +94,7 @@ void ASpaceCharacter::InitFromPlayerState()
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] 호출됨"));
 
     AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
-
+	/*
     if (!PS)
     {
         if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] PlayerState 없음"));
@@ -102,10 +103,10 @@ void ASpaceCharacter::InitFromPlayerState()
     {
         if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] PlayerState 존재"));
     }
-
+	*/
     if (!PS || !PS->Inventory)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] Inventory 없음 -> 다음 틱 재시도"));
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] Inventory 없음 -> 다음 틱 재시도"));
 
         if (UWorld* World = GetWorld())
         {
@@ -128,7 +129,7 @@ void ASpaceCharacter::InitFromPlayerState()
         return;
     }
 
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] WeaponComp & Shooter OK"));
+    //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] WeaponComp & Shooter OK"));
 
     FName WeaponRow = PS->Inventory->GetCurrentWeapon();
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
@@ -152,6 +153,7 @@ void ASpaceCharacter::InitFromPlayerState()
 
 void ASpaceCharacter::BeginPlay()
 {
+	USaveSystemManager::LoadPawnState(this);
 	Super::BeginPlay();
 	
 	InitFromPlayerState();
@@ -391,6 +393,8 @@ void ASpaceCharacter::StopSprint()
 
 void ASpaceCharacter::StartDash()
 {
+	if (!Fuel->CanDash())
+		return;
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->CanUseAbility(EAbilityType::Dash))
 		return;
