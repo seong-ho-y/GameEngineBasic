@@ -10,6 +10,9 @@ Content/**
 !Content/Fab/Sci-Fi_Crate/**
 !Content/SciFiturretasset/**
 !Content/Free_Sounds_Pack/**
+!Content/Modular_Scifi_Mechanic_Base/**
+!Content/Megascans/**
+
 
 # Rider (JetBrains IDE)
 .idea/
