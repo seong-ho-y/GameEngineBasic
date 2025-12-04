@@ -6,6 +6,7 @@ Content/**
 # --------------------------------------------
 # Allowed Shared Asset Packs (폴더 + 내부 전체)
 # --------------------------------------------
+!Content/
 !Content/Share/
 !Content/Share/**
 
