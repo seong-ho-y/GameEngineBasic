@@ -806,6 +806,10 @@ void ASpaceCharacter::OnExecutionEnd(AActor* Target)
 	FollowCamera->SetFieldOfView(90.f);
 	bIsCameraTransitioning = true;
 
+	//체력 회복 & 탄약 회복
+	HealthComp->CurrentHealth = FMath::Max(HealthComp->CurrentHealth+=50, HealthComp->MaxHealth);
+	Shooter->CurrentAmmo = Shooter->FullAmmo;
+	
 	EnableInput(Cast<APlayerController>(Controller));
 }
 

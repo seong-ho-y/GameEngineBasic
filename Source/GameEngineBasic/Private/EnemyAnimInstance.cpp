@@ -198,3 +198,17 @@ void UEnemyAnimInstance::AnimNotify_LeftBladeEnd()
 		Enemy->OnLeftBladeEnd();
 	}
 }
+void UEnemyAnimInstance::AnimNotify_BladeAppear()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->PlayBladeAppearSFX();
+	}
+}
+void UEnemyAnimInstance::AnimNotify_BladeSwing()
+{
+	if (AEnemyHuman* Enemy = Cast<AEnemyHuman>(TryGetPawnOwner()))
+	{
+		Enemy->PlayBladeSwingSFX();
+	}
+}

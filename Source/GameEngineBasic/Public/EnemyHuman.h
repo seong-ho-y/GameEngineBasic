@@ -47,6 +47,13 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void OnLeftBladeBegin();
 	void OnLeftBladeEnd();
+	void PlayBladeAppearSFX();
+	void PlayBladeSwingSFX();
+	UPROPERTY(EditAnywhere, Category="SFX|Melee")
+	USoundBase* BladeAppearSFX;
+
+	UPROPERTY(EditAnywhere, Category="SFX|Melee")
+	USoundBase* BladeSwingSFX;
 
 	/* ===========================
 	 *  상태 / 실행 / 넉백 관련
@@ -115,7 +122,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Vfx")
 	UNiagaraSystem* BoostVfx;
-
+	
 	UPROPERTY(EditAnywhere, Category="Vfx")
 	USoundBase* BoostSound;
 
@@ -200,6 +207,51 @@ public:
 	/** Task에서 방향/속도/시간을 넘겨서 사용하는 짧은 대쉬 */
 	void StartShortDash(const FVector& Dir, float Speed, float Duration);
 
+	UFUNCTION(BlueprintCallable)
+	void PlayDashEffects(const FVector& DashDirection);
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UNiagaraSystem* DashVFX;
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UNiagaraSystem* GhostTrailVFX;
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UNiagaraSystem* DashDustVFX;
+	// Cascade Particle
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UParticleSystem* DashParticle;
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UParticleSystem* GhostTrailParticle;
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UParticleSystem* DashDustParticle;
+	
+	UPROPERTY(EditAnywhere, Category="SFX")
+	USoundBase* DashSFX;
+
+	UFUNCTION(BlueprintCallable)
+	void PlayTakeOffEffects();
+
+	// Niagara
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UNiagaraSystem* TakeOffDustVFX;
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UNiagaraSystem* TakeOffShockVFX;
+
+	// Cascade
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UParticleSystem* TakeOffDustParticle;
+
+	UPROPERTY(EditAnywhere, Category="VFX")
+	UParticleSystem* TakeOffShockParticle;
+
+	// SFX
+	UPROPERTY(EditAnywhere, Category="SFX")
+	USoundBase* TakeOffSFX;
+	
 protected:
 	bool bIsShortDashing = false;
 	FVector ShortDashDir = FVector::ZeroVector;

@@ -90,7 +90,17 @@ void AProjectile::OnHit_Implementation(UPrimitiveComponent* HitComp, AActor* Oth
 			this,
 			nullptr);
 
-
+	// ================================
+	// 1) Impact 사운드 추가 🔥
+	// ================================
+	if (ImpactSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			ImpactSFX,
+			GetActorLocation()
+		);
+	}
 	if (ImpactEffect)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(
