@@ -1,15 +1,15 @@
 # 언리얼 콘텐츠 파일 (공유하고 싶은 건 Share 폴더에다 넣기)
 # 에셋 공유할거면 앞에다 ! 붙이고 뒤에 경로, 이름 설정
-Content/*
-!Content/Share/
-!Content/Cyberp_RPG_UI_5_2
-!Content/SciFi_ToiletMech
-!Content/StylizedProjectileVFX_Pack
-!Content/Fab/Cruise_Missile_New_FBX_Sample
-!Content/ParagonMuriel
-!Content/Fab/Sci-Fi_Crate
-!Content/SciFiturretasset
-!Content/Free_Sounds_Pack
+Content/**
+!Content/Share/**
+!Content/Cyberp_RPG_UI_5_2/**
+!Content/SciFi_ToiletMech/**
+!Content/StylizedProjectileVFX_Pack/**
+!Content/Fab/Cruise_Missile_New_FBX_Sample/**
+!Content/ParagonMuriel/**
+!Content/Fab/Sci-Fi_Crate/**
+!Content/SciFiturretasset/**
+!Content/Free_Sounds_Pack/**
 
 # Rider (JetBrains IDE)
 .idea/
