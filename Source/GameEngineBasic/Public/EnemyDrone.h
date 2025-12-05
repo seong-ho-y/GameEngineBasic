@@ -19,18 +19,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UDroneMovementComponent* DroneMoveComp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UNiagaraSystem* DeathTrailVFX;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	USoundBase* CrashSFX;
 
+	
 protected:
-	virtual void OnKnock() override;
-	virtual void OnDie(AActor* DeadActor) override;
 
-	UFUNCTION()
-	void OnDroneHitGround(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	                      FVector NormalImpulse, const FHitResult& Hit);
 
 	/* ============ Hover System ============ */
 
@@ -73,14 +65,5 @@ protected:
 	/* ============ Target Info ============ */
 
 	AActor* GetPlayerPawn() const;
-
-	
-	UPROPERTY(EditAnywhere, Category="FX")
-	UNiagaraSystem* KnockSparkVFX;
-
-	UPROPERTY(EditAnywhere, Category="Knockback")
-	float KnockbackStrength = 800.f;
-
-	FTimerHandle TimerHandle_KnockStun;
 
 };
