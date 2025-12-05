@@ -36,6 +36,7 @@
 
 #include "InventoryComponent.h"
 #include "MyPlayerState.h"
+#include "NiagaraFunctionLibrary.h"
 #include "PlayerStatsComponent.h"
 #include "WeaponComponent.h"
 
@@ -791,6 +792,9 @@ void ASpaceCharacter::OnExecutionStart(AActor* Target)
 			GetActorRotation()
 		);
 	}
+	if (ExecutionSlashVFX)
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExecutionSlashVFX, GetActorLocation());
+	
 	// 3) 스프링암 살짝 당기기 (옵션)
 	CameraBoom->TargetArmLength = 150.f;
 
@@ -809,7 +813,7 @@ void ASpaceCharacter::OnExecutionEnd(AActor* Target)
 	//체력 회복 & 탄약 회복
 	HealthComp->CurrentHealth = FMath::Max(HealthComp->CurrentHealth+=50, HealthComp->MaxHealth);
 	Shooter->CurrentAmmo = Shooter->FullAmmo;
-	
+	SetActorRotation(FRotator::ZeroRotator);
 	EnableInput(Cast<APlayerController>(Controller));
 }
 

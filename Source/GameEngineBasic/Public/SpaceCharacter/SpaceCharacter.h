@@ -143,6 +143,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
 	UParticleSystem* ExecutionTeleportVFX;
 
+	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
+	UNiagaraSystem* ExecutionSlashVFX;
+	
+
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
 
