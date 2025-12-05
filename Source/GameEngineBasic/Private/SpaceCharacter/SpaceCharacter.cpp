@@ -477,9 +477,13 @@ FVector ASpaceCharacter::GetDashDirection() const
 
 void ASpaceCharacter::StartBoost()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Input Received"));
+
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->CanUseAbility(EAbilityType::Boost))
 		return;
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Ability Allowed"));
 
 	auto Move = GetCharacterMovement();
 	if (!Move) return;
