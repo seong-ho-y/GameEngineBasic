@@ -322,6 +322,8 @@ void ASpaceCharacter::StartJump()
 		if (FlyUpMontage) {
 			Anim->Montage_Play(FlyUpMontage);
 			WingComp->PlayFly();
+			FVector SpawnLoc = GetOwner()->GetActorLocation();
+			UGameplayStatics::PlaySoundAtLocation(this, JumpSound, SpawnLoc);
 			return;
 		}
 	}
@@ -423,6 +425,9 @@ void ASpaceCharacter::StartDash()
 		1.0f,
 		false
 	);
+
+	FVector SpawnLoc = GetOwner()->GetActorLocation();
+	UGameplayStatics::PlaySoundAtLocation(this,DashSound, SpawnLoc);
 }
 
 void ASpaceCharacter::StopDash()
@@ -575,6 +580,10 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 			FreezeDelay,
 			false
 		);
+
+		// 사망 사운드 재생
+		FVector SpawnLoc = GetOwner()->GetActorLocation();
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, SpawnLoc);
 	}
 }
 
@@ -587,7 +596,7 @@ void ASpaceCharacter::ExplodeAndDestroy()
 		UGameplayStatics::SpawnEmitterAttached(
 			DeathExplosionEffect,
 			GetMesh(),
-			FName("Shield")
+			FName("Die")
 		);
 	}
 

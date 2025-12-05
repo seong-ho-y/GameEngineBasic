@@ -86,6 +86,18 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
+
+	// Sound
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound|Utility")
+	USoundBase* DashSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound|Utility")
+	USoundBase* JumpSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound|Utility")
+	USoundBase* DeathSound;
+
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UTargetingSystemComponent* TargetingComp;
