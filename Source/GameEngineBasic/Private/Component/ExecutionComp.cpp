@@ -96,10 +96,12 @@ AActor* UExecutionComp::FindExecutionTarget() const
 
 	AActor* Enemy = Hit.GetActor();
 	if (!Enemy) return nullptr;
-	
+
+	/*
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow,
 		FString::Printf(TEXT("Execution Target Found: %s"), *Enemy->GetName())
 	);
+	*/
 	
 	// EnemyShieldComponent üũ �� bCanExecuted �ʿ�
 	if (auto* Shield = Enemy->FindComponentByClass<UEnemyShieldComponent>())
