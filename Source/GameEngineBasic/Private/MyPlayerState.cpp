@@ -72,7 +72,7 @@ void AMyPlayerState::UnlockAbility(EAbilityType Ability)
 	case EAbilityType::Dash:   AbilityStatus.bCanDash = true; break;
 	case EAbilityType::Flying: AbilityStatus.bCanFly = true; break;
 	case EAbilityType::Shield: AbilityStatus.bCanShield = true; break;
-	case EAbilityType::Boost: AbilityStatus.bCanDash = true; break;
+	case EAbilityType::Boost: AbilityStatus.bCanBoost = true; break;
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[PlayerState] Ability Unlocked: %d"), (int)Ability);

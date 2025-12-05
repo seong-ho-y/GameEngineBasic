@@ -213,6 +213,12 @@ void UShooterComp::ReloadSuccess()
 
 	CurrentAmmo = MaxCanFill;
 	MaxAmmo -= CurrentAmmo;
+
+	if (ReloadSound)
+	{
+		FVector SpawnLoc = bHasExternalMuzzleInfo ? ExternalMuzzleLoc : FindMuzzleLoc();
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ReloadSound, SpawnLoc);
+	}
 	
 	OnAmmoChanged.Broadcast(CurrentAmmo, FullAmmo, MaxAmmo);
 

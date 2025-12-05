@@ -52,6 +52,7 @@ public:
 
     bool CanBoost() const;
     bool CanFly() const;
+	bool CanDash() const;
 
     void Consume(float Amount);
     void ConsumeFlying(float DeltaTime);

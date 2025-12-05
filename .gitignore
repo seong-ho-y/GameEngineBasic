@@ -11,9 +11,6 @@ Content/**
 !Content/Share/
 !Content/Share/**
 
-!Content/SharedAsset/
-!Content/SharedAsset/**
-
 !Content/Cyberp_RPG_UI_5_2/
 !Content/Cyberp_RPG_UI_5_2/**
 
@@ -49,18 +46,6 @@ Content/**
 
 !Content/Modular_Scifi_Mechanic_Base/
 !Content/Modular_Scifi_Mechanic_Base/**
-
-!Content/Knife_light/
-!Content/Knife_light/**
-
-!Content/MsvFx_Niagara_Explosion_Pack_01/
-!Content/MsvFx_Niagara_Explosion_Pack_01/**
-
-!Content/VigilanteContent/
-!Content/VigilanteContent/**
-
-!Content/kb3d_missiontominerva/
-!Content/kb3d_missiontominerva/**
 
 # 아래에는 Binaries/Intermediate/Saved 등 원래 쓰던 Unreal 기본 ignore 다시 넣으면 됨
 

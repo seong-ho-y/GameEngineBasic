@@ -42,6 +42,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Debug")
 	bool bDebugHealthLog = false;
 
+	// ======== SOUND ========
+	UPROPERTY(EditAnywhere, Category = "Sound|Hit")
+	TArray<USoundBase*> HitSounds;
+
 	// ========== FUNCTIONS ==========
 	void InitStats();
 	void RestoreFullHealth();

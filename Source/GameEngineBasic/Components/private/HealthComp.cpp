@@ -4,6 +4,7 @@
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "Component/ShieldComp.h"
 #include "GameFramework/Actor.h"
+#include <Kismet/GameplayStatics.h>
 
 UHealthComp::UHealthComp()
 {
@@ -62,6 +63,20 @@ float UHealthComp::ApplyHealthDamage(float Damage)
 
 	float PreviousHealth = CurrentHealth;
 	CurrentHealth = FMath::Clamp(CurrentHealth - IncomingDamage, 0.f, MaxHealth);
+
+	FVector SpawnLoc = GetOwner()->GetActorLocation();
+	if (HitSounds.Num() > 0)
+	{
+		int32 Index = FMath::RandRange(0, HitSounds.Num() - 1);
+		if (HitSounds[Index])
+		{
+			UGameplayStatics::PlaySoundAtLocation(
+				this,
+				HitSounds[Index],
+				SpawnLoc
+			);
+		}
+	}
 
 	if (CurrentHealth <= 0.f)
 	{
