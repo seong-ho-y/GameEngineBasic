@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Item/PartUnlockItem.h"
+#include "Item/WeaponItemBox.h"
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -15,7 +15,7 @@
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
 
-APartUnlockItem::APartUnlockItem()
+AWeaponItemBox::AWeaponItemBox()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -45,12 +45,12 @@ APartUnlockItem::APartUnlockItem()
 	Effect->bAutoActivate = true;
 }
 
-void APartUnlockItem::BeginPlay()
+void AWeaponItemBox::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	CollisionSphere->OnComponentEndOverlap.AddDynamic(this, &APartUnlockItem::OnOverlapEnd);
-	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &APartUnlockItem::OnOverlapBegin);
+	CollisionSphere->OnComponentEndOverlap.AddDynamic(this, &AWeaponItemBox::OnOverlapEnd);
+	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AWeaponItemBox::OnOverlapBegin);
 
 	if (LidOpenCurve)
 	{
@@ -61,13 +61,13 @@ void APartUnlockItem::BeginPlay()
 	}
 }
 
-void APartUnlockItem::Tick(float DeltaTime)
+void AWeaponItemBox::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	LidOpenTimeline.TickTimeline(DeltaTime);
 }
 
-void APartUnlockItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AWeaponItemBox::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (ASpaceCharacter* Character = Cast<ASpaceCharacter>(OtherActor))
 	{
@@ -78,7 +78,7 @@ void APartUnlockItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 	}
 }
 
-void APartUnlockItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex)
+void AWeaponItemBox::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 BodyIndex)
 {
 	if (ASpaceCharacter* Character = Cast<ASpaceCharacter>(OtherActor))
 	{
@@ -90,62 +90,57 @@ void APartUnlockItem::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* 
 	}
 }
 
-void APartUnlockItem::HandleLidOpenProgress(float Value)
+void AWeaponItemBox::HandleLidOpenProgress(float Value)
 {
 	FRotator NewRotation = FRotator(Value, 0.f, 0.f);
 	BoxLid->SetRelativeRotation(NewRotation);
 }
 
-void APartUnlockItem::Interact(ASpaceCharacter* Character)
+void AWeaponItemBox::Interact(ASpaceCharacter* Character)
 {
-	if (!Character || PartRowName.IsNone())
+	if (!Character || WeaponName.IsNone())
 		return;
-
-	AMyPlayerState* PS = Character->GetPlayerState<AMyPlayerState>();
-	if (!PS)
-		return;
+	bActivated = true;
 
 	if (InteractWidget)
-	{
 		InteractWidget->SetVisibility(false);
-	}
-	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// 1) 파츠 해금
-	PS->UnlockPart(PartRowName);
 
-	// 2) 인벤토리 장착
-	if (PS->Inventory)
+	if (AMyPlayerState* PS = Cast<AMyPlayerState>(Character->GetPlayerState()))
 	{
-		PS->Inventory->EquipPart(Slot, PartRowName);
-	}
-
-	LidOpenTimeline.Play();
-
-	if (AbilityUI)
-	{
-		if (UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), AbilityUI))
+		PS->UnlockWeapon(WeaponName);
+		LidOpenTimeline.PlayFromStart();
+		
+		if (PS->Inventory)
 		{
-			Widget->AddToViewport(100); // ZOrder 높게
-
-			TWeakObjectPtr<UUserWidget> WeakWidget(Widget);
-
-			GetWorld()->GetTimerManager().SetTimer(
-				RemoveTimer,
-				FTimerDelegate::CreateLambda([WeakWidget]()
-					{
-						if (UUserWidget* StrongWidget = WeakWidget.Get())
-						{
-							StrongWidget->RemoveFromParent();
-						}
-					}),
-				3.0f,
-				false
-			);
+			PS->Inventory->EquipWeapon(WeaponName);
 		}
+
+		LidOpenTimeline.Play();
+
+		if (AbilityUI)
+		{
+			if (UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), AbilityUI))
+			{
+				Widget->AddToViewport(100); // ZOrder 높게
+
+				TWeakObjectPtr<UUserWidget> WeakWidget(Widget);
+
+				GetWorld()->GetTimerManager().SetTimer(
+					RemoveTimer,
+					FTimerDelegate::CreateLambda([WeakWidget]()
+						{
+							if (UUserWidget* StrongWidget = WeakWidget.Get())
+							{
+								StrongWidget->RemoveFromParent();
+							}
+						}),
+					3.0f,
+					false
+				);
+			}
+		}
+
+		if (Effect)
+			Effect->Deactivate();
 	}
-
-
-	if (Effect)
-		Effect->Deactivate();
-
 }

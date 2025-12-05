@@ -97,5 +97,12 @@ void AMyGameMode::RequestStageTransition(FName TargetStageName)
 {
     if (TargetStageName.IsNone())
         return;
+    ACharacter* MyChar = UGameplayStatics::GetPlayerCharacter(this, 0);
+
+    if (MyChar)
+    {
+        USaveSystemManager::SavePawnState(MyChar);
+    }
+
 	UGameplayStatics::OpenLevel(GetWorld(), TargetStageName);
 }

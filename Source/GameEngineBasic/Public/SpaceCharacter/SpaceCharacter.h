@@ -208,6 +208,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ExecuteMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* LevelStartMontage;
+
 	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
 	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
 

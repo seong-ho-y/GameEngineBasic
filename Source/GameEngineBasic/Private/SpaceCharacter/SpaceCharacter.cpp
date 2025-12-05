@@ -194,6 +194,8 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
 
+	UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+	Anim->Montage_Play(LevelStartMontage);
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
@@ -944,6 +946,8 @@ void ASpaceCharacter::SwapWeapon()
 {
 	if (!WeaponComp || !Shooter) return;
 
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS) return;
 	// 0) 현재 무기 Mesh 제거 (시각적 잔상 방지)
 	WeaponComp->ClearWeaponMesh();
 
@@ -954,15 +958,15 @@ void ASpaceCharacter::SwapWeapon()
 	const FName OldRow = WeaponComp->WeaponRowName;
 	FName NewRow;
 
-	if (OldRow == FName("HandgunBasic"))
+	if (OldRow == FName("HandgunBasic") && PS->IsWeaponUnlocked("RifleBasic"))
 	{
 		NewRow = FName("RifleBasic");
 	}
-	else if (OldRow == FName("RifleBasic"))
+	else if (OldRow == FName("RifleBasic") && PS->IsWeaponUnlocked("BlastBasic"))
 	{
 		NewRow = FName("BlastBasic");
 	}
-	else if (OldRow == FName("BlastBasic"))
+	else if (OldRow == FName("BlastBasic") && PS->IsWeaponUnlocked("ShotgunBasic"))
 	{
 		NewRow = FName("ShotgunBasic");
 	}

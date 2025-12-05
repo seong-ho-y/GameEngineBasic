@@ -40,5 +40,6 @@ public:
 	void PlayLevelSoundCue(EGameLevel Level);
 
 private:
-	void PlayNextSoundCue(EGameLevel Level);
+	UFUNCTION()
+	void PlayNextSoundCue();
 };

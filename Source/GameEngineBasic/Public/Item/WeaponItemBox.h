@@ -5,14 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
-
 #include "Components/TimelineComponent.h"
 #include "InventoryComponent.h"
 
 #include "NiagaraSystem.h"
 #include "Item/U_Interactable.h"
 
-#include "PartUnlockItem.generated.h"
+#include "WeaponItemBox.generated.h"
 
 class USphereComponent;
 class UStaticMeshComponent;
@@ -21,12 +20,12 @@ class USceneComponent;
 class UNiagaraComponent;
 
 UCLASS()
-class GAMEENGINEBASIC_API APartUnlockItem : public AActor, public IU_Interactable
+class GAMEENGINEBASIC_API AWeaponItemBox : public AActor, public IU_Interactable
 {
 	GENERATED_BODY()
 	
 public:
-	APartUnlockItem();
+	AWeaponItemBox();
 
 protected:
 	UPROPERTY(VisibleAnywhere)
@@ -56,20 +55,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "FX")
 	UNiagaraComponent* Effect;
 
-public:
-	/** Core / Upper / Lower */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Part")
-	EPartSlot Slot;
-
-	/** Part RowName */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Part")
-	FName PartRowName;
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FName WeaponName;
+public:	
 	UFUNCTION()
 	void OnOverlapBegin(
 		UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
