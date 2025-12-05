@@ -18,9 +18,22 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
 {
     if (!Pawn) return;
 
-    USaveSystem* SaveObj = Cast<USaveSystem>(
-        UGameplayStatics::CreateSaveGameObject(USaveSystem::StaticClass())
-    );
+    USaveSystem* SaveObj = nullptr;
+    FString SaveSlotName = TEXT("PlayerSave");
+    int32 SaveIndex = 0;
+
+    if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveIndex))
+    {
+        // 기존 파일 로드
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, SaveIndex));
+    }
+    else
+    {
+        // 파일이 없으면 새로 생성
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::CreateSaveGameObject(USaveSystem::StaticClass()));
+    }
+
+    if (!SaveObj) return; // 방어 코드
 
     // 공통: 위치 정보
     SaveObj->SavedLocation = Pawn->GetActorLocation();
