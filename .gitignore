@@ -14,20 +14,8 @@ Content/**
 !Content/SharedAsset/
 !Content/SharedAsset/**
 
-!Content/Cyberp_RPG_UI_5_2/
-!Content/Cyberp_RPG_UI_5_2/**
-
-!Content/SciFi_ToiletMech/
-!Content/SciFi_ToiletMech/**
-
-!Content/StylizedProjectileVFX_Pack/
-!Content/StylizedProjectileVFX_Pack/**
-
 !Content/Fab/
 !Content/Fab/**
-
-!Content/Fab/Cruise_Missile_New_FBX_Sample/
-!Content/Fab/Cruise_Missile_New_FBX_Sample/**
 
 !Content/Fab/Sci-Fi_Crate/
 !Content/Fab/Sci-Fi_Crate/**
@@ -35,14 +23,6 @@ Content/**
 !Content/ParagonMuriel/
 !Content/ParagonMuriel/**
 
-!Content/Drone_Scavenger/
-!Content/Drone_Scavenger/**
-
-!Content/SciFiturretasset/
-!Content/SciFiturretasset/**
-
-!Content/Free_Sounds_Pack/
-!Content/Free_Sounds_Pack/**
 
 !Content/Megascans/
 !Content/Megascans/**
@@ -50,14 +30,6 @@ Content/**
 !Content/Modular_Scifi_Mechanic_Base/
 !Content/Modular_Scifi_Mechanic_Base/**
 
-!Content/Knife_light/
-!Content/Knife_light/**
-
-!Content/MsvFx_Niagara_Explosion_Pack_01/
-!Content/MsvFx_Niagara_Explosion_Pack_01/**
-
-!Content/VigilanteContent/
-!Content/VigilanteContent/**
 
 # 아래에는 Binaries/Intermediate/Saved 등 원래 쓰던 Unreal 기본 ignore 다시 넣으면 됨
 
