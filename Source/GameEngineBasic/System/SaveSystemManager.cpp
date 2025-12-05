@@ -46,6 +46,7 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
     SaveObj->bCanFly = PS->AbilityStatus.bCanFly;
     SaveObj->bCanShield = PS->AbilityStatus.bCanShield;
 
+    SaveObj->WeaponRowName = PS->UnlockStatus.UnlockedWeapons.Array();
 
     // *** SpaceCharacter ***
     if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(Pawn))
@@ -55,10 +56,6 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
             SaveObj->CurrentAmmo = Char->GetShooterComponent()->MaxAmmo;
             SaveObj->FullAmmo = Char->GetShooterComponent()->FullAmmo;
             SaveObj->MaxAmmo = Char->GetShooterComponent()->MaxAmmo;
-        }
-        if (Char->GetWeaponComponent())
-        {
-            SaveObj->WeaponRowName = Char->GetWeaponComponent()->WeaponRowName;
         }
     }
 
@@ -101,6 +98,11 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
         PS->AbilityStatus.bCanDash = SaveObj->bCanDash;
         PS->AbilityStatus.bCanFly = SaveObj->bCanFly;
         PS->AbilityStatus.bCanShield = SaveObj->bCanShield;
+
+        for (const FName& WeaponName : SaveObj->WeaponRowName)
+        {
+            PS->UnlockStatus.UnlockedWeapons.Add(WeaponName);
+        }
     }
     
     //Pawn->SetActorLocation(SaveObj->SavedLocation);
@@ -118,7 +120,6 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
 
         if (Char->GetWeaponComponent())
         {
-            Char->GetWeaponComponent()->WeaponRowName = SaveObj->WeaponRowName;
             Char->GetWeaponComponent()->InitializeWeapon(Char, Char->GetShooterComponent());
         }
     }

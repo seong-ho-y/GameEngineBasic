@@ -11,6 +11,7 @@
 #include <Kismet/GameplayStatics.h>
 #include "GameEngineBasic/Components/public/HealthComp.h"
 #include "Component/ShieldComp.h"
+#include "MyPlayerState.h"
 
 AMyGameMode::AMyGameMode()
 {
@@ -34,16 +35,36 @@ void AMyGameMode::BeginPlay()
     bool bIsRespawn = UGameplayStatics::HasOption(OptionsString, TEXT("IsRespawn"));
 
     // 1) 세이브된 Bonfire가 있으면 그 위치로
-    if (bIsRespawn && USaveSystemManager::GetSavedSpawnPoint(SpawnLoc, SpawnRot))
+    if (bIsRespawn)
     {
-        Char->SetActorLocation(SpawnLoc);
-        Char->SetActorRotation(SpawnRot);
+        // 1. 리스폰 로직: 저장된 위치와 상태를 불러옴
+        if (USaveSystemManager::GetSavedSpawnPoint(SpawnLoc, SpawnRot))
+        {
+            Char->SetActorLocation(SpawnLoc);
+            Char->SetActorRotation(SpawnRot);
+        }
+
+        USaveSystemManager::LoadPawnState(Char);
     }
     // 2) 없으면 DefaultSpawnPoint로
     else if (DefaultSpawnPoint)
     {
-        Char->SetActorLocation(DefaultSpawnPoint->GetActorLocation());
-        Char->SetActorRotation(DefaultSpawnPoint->GetActorRotation());
+        // 2. 일반 시작 로직: Default 위치로 이동 및 능력 초기화
+        if (DefaultSpawnPoint)
+        {
+            Char->SetActorLocation(DefaultSpawnPoint->GetActorLocation());
+            Char->SetActorRotation(DefaultSpawnPoint->GetActorRotation());
+        }
+        // 2-2. 능력 초기화 (강제로 모두 false)
+        AMyPlayerState* PS = Cast<AMyPlayerState>(PC->PlayerState);
+        if (PS)
+        {
+            PS->AbilityStatus.bCanSprint = false;
+            PS->AbilityStatus.bCanDash = false;
+            PS->AbilityStatus.bCanFly = false;
+            PS->AbilityStatus.bCanShield = false;
+            PS->AbilityStatus.bCanBoost = false;
+        }
     }
 
     // 3) 항상 풀피로 시작
@@ -57,10 +78,11 @@ void AMyGameMode::BeginPlay()
     {
         Shield->CurrentShield = Shield->MaxShield;
     }
+
     /*
-    if (APawn* Pawn = PC->GetPawn())
-        USaveSystemManager::LoadPawnState(Pawn);
-        */
+   if (APawn* Pawn = PC->GetPawn())
+       USaveSystemManager::LoadPawnState(Pawn);
+       */
 }
 
 void AMyGameMode::RespawnPlayer(AController* Controller)
@@ -75,5 +97,12 @@ void AMyGameMode::RequestStageTransition(FName TargetStageName)
 {
     if (TargetStageName.IsNone())
         return;
+    ACharacter* MyChar = UGameplayStatics::GetPlayerCharacter(this, 0);
+
+    if (MyChar)
+    {
+        USaveSystemManager::SavePawnState(MyChar);
+    }
+
 	UGameplayStatics::OpenLevel(GetWorld(), TargetStageName);
 }

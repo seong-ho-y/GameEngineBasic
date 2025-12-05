@@ -37,7 +37,6 @@
 
 #include "InventoryComponent.h"
 #include "MyPlayerState.h"
-#include "NiagaraFunctionLibrary.h"
 #include "PlayerStatsComponent.h"
 #include "WeaponComponent.h"
 
@@ -195,6 +194,8 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
 
+	UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+	Anim->Montage_Play(LevelStartMontage);
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
@@ -478,9 +479,13 @@ FVector ASpaceCharacter::GetDashDirection() const
 
 void ASpaceCharacter::StartBoost()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Input Received"));
+
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->CanUseAbility(EAbilityType::Boost))
 		return;
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Ability Allowed"));
 
 	auto Move = GetCharacterMovement();
 	if (!Move) return;
@@ -805,8 +810,6 @@ void ASpaceCharacter::OnExecutionStart(AActor* Target)
 			GetActorRotation()
 		);
 	}
-	if (SlashVfx) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SlashVfx, GetActorLocation());
-	if (SlashSfx) UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SlashSfx, GetActorLocation());
 	// 3) 스프링암 살짝 당기기 (옵션)
 	CameraBoom->TargetArmLength = 150.f;
 
@@ -821,8 +824,6 @@ void ASpaceCharacter::OnExecutionEnd(AActor* Target)
 {
 	FollowCamera->SetFieldOfView(90.f);
 	bIsCameraTransitioning = true;
-	SetActorRotation(FRotator::ZeroRotator);
-
 
 	//체력 회복 & 탄약 회복
 	HealthComp->CurrentHealth = FMath::Max(HealthComp->CurrentHealth+=50, HealthComp->MaxHealth);
@@ -945,6 +946,8 @@ void ASpaceCharacter::SwapWeapon()
 {
 	if (!WeaponComp || !Shooter) return;
 
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS) return;
 	// 0) 현재 무기 Mesh 제거 (시각적 잔상 방지)
 	WeaponComp->ClearWeaponMesh();
 
@@ -955,15 +958,15 @@ void ASpaceCharacter::SwapWeapon()
 	const FName OldRow = WeaponComp->WeaponRowName;
 	FName NewRow;
 
-	if (OldRow == FName("HandgunBasic"))
+	if (OldRow == FName("HandgunBasic") && PS->IsWeaponUnlocked("RifleBasic"))
 	{
 		NewRow = FName("RifleBasic");
 	}
-	else if (OldRow == FName("RifleBasic"))
+	else if (OldRow == FName("RifleBasic") && PS->IsWeaponUnlocked("BlastBasic"))
 	{
 		NewRow = FName("BlastBasic");
 	}
-	else if (OldRow == FName("BlastBasic"))
+	else if (OldRow == FName("BlastBasic") && PS->IsWeaponUnlocked("ShotgunBasic"))
 	{
 		NewRow = FName("ShotgunBasic");
 	}

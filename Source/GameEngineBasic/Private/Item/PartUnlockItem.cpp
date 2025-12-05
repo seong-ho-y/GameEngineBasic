@@ -73,7 +73,7 @@ void APartUnlockItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 	{
 		Character->CurrentInteractTarget = this;
 
-		if (InteractWidget)
+		if (InteractWidget && !bActivated)
 			InteractWidget->SetVisibility(true);
 	}
 }
@@ -109,7 +109,7 @@ void APartUnlockItem::Interact(ASpaceCharacter* Character)
 	{
 		InteractWidget->SetVisibility(false);
 	}
-
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	// 1) 파츠 해금
 	PS->UnlockPart(PartRowName);
 
@@ -120,6 +120,30 @@ void APartUnlockItem::Interact(ASpaceCharacter* Character)
 	}
 
 	LidOpenTimeline.Play();
+
+	if (AbilityUI)
+	{
+		if (UUserWidget* Widget = CreateWidget<UUserWidget>(GetWorld(), AbilityUI))
+		{
+			Widget->AddToViewport(100); // ZOrder 높게
+
+			TWeakObjectPtr<UUserWidget> WeakWidget(Widget);
+
+			GetWorld()->GetTimerManager().SetTimer(
+				RemoveTimer,
+				FTimerDelegate::CreateLambda([WeakWidget]()
+					{
+						if (UUserWidget* StrongWidget = WeakWidget.Get())
+						{
+							StrongWidget->RemoveFromParent();
+						}
+					}),
+				3.0f,
+				false
+			);
+		}
+	}
+
 
 	if (Effect)
 		Effect->Deactivate();

@@ -58,11 +58,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Execute|Vfx")
-	UNiagaraSystem* SlashVfx;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Execute|Sfx")
-	USoundBase* SlashSfx;
-
 public:
 	// Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -212,6 +207,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ExecuteMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* LevelStartMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
 	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;

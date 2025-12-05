@@ -46,7 +46,6 @@ void UInventoryComponent::EquipPart(EPartSlot Slot, FName PartRowName)
 	}
 }
 
-
 FName UInventoryComponent::GetPart(EPartSlot Slot) const
 {
 	if (const FName* Found = EquippedParts.Find(Slot))
