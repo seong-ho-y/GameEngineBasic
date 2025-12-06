@@ -1,4 +1,6 @@
 #include "ChargeWeaponBehavior.h"
+
+#include "NiagaraFunctionLibrary.h"
 #include "WeaponComponent.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,7 +26,7 @@ void UChargeWeaponBehavior::StartCharge()
 	bIsCharging = true;
 	ChargeStartTime = OwnerWeapon->GetWorld()->GetTimeSeconds();
 
-	// === 최소 차지 시간 / 차지 누적 타이머 ===
+	// === 차지 시간 누적 타이머 ===
 	OwnerWeapon->GetWorld()->GetTimerManager().SetTimer(
 		ChargeTimerHandle,
 		this,
@@ -32,6 +34,27 @@ void UChargeWeaponBehavior::StartCharge()
 		0.01f,
 		true
 	);
+
+	// === 차지 VFX (Attach) ===
+	if (OwnerWeapon->WeaponData.ChargeVFX)
+	{
+		// 이미 살아있는 이펙트가 있다면 제거
+		if (ChargeVFXComp)
+		{
+			ChargeVFXComp->DeactivateSystem();
+			ChargeVFXComp = nullptr;
+		}
+		
+		ChargeVFXComp = UGameplayStatics::SpawnEmitterAttached(
+				OwnerWeapon->WeaponData.ChargeVFX,
+				OwnerWeapon->OwnerCharacter->GetMesh(), // ★ 플레이어 스켈레탈 메쉬
+				TEXT("Muzzle"),                         // ★ 소켓 이름
+				FVector::ZeroVector,
+				FRotator::ZeroRotator,
+				EAttachLocation::SnapToTarget,
+				true  // AutoDestroy
+		);
+	}
 
 	// === 오버차지 타이머 ===
 	if (OwnerWeapon->WeaponData.bIsChargeWeapon &&
@@ -50,9 +73,23 @@ void UChargeWeaponBehavior::StartCharge()
 void UChargeWeaponBehavior::UpdateCharge()
 {
 	if (!OwnerWeapon) return;
-
+	ASpaceCharacter* OwnerChar = OwnerWeapon->OwnerCharacter;
 	const float Now = OwnerWeapon->GetWorld()->GetTimeSeconds();
 	ChargeHoldTime = Now - ChargeStartTime;
+	// === Muzzle 위치/방향 ===
+	const FVector MuzzleLoc = OwnerWeapon->GetMuzzleLoc();
+
+
+
+	// === 차지 SFX === (있으면)
+	if (OwnerWeapon->WeaponData.ChargeSFX)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(
+			OwnerWeapon->GetWorld(),
+			OwnerWeapon->WeaponData.ChargeSFX,
+			MuzzleLoc
+		);
+	}
 }
 
 void UChargeWeaponBehavior::ReleaseCharge()
@@ -64,8 +101,16 @@ void UChargeWeaponBehavior::ReleaseCharge()
 	OwnerWeapon->GetWorld()->GetTimerManager().ClearTimer(ChargeTimerHandle);
 	OwnerWeapon->GetWorld()->GetTimerManager().ClearTimer(OverChargeTimerHandle);
 
+	// === 차지 VFX 정리 ===
+	if (ChargeVFXComp)
+	{
+		ChargeVFXComp->DeactivateSystem();
+		ChargeVFXComp = nullptr;
+	}
+
 	PerformChargedFire();
 }
+
 
 void UChargeWeaponBehavior::PerformChargedFire()
 {
@@ -100,7 +145,7 @@ void UChargeWeaponBehavior::HandleOverCharge()
 
 	OwnerWeapon->GetWorld()->GetTimerManager().ClearTimer(ChargeTimerHandle);
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OverCharged!!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("OverCharged!!"));
 
 	OverchargeExplode();
 }
@@ -110,6 +155,12 @@ void UChargeWeaponBehavior::OverchargeExplode()
 	if (!OwnerWeapon) return;
 	ASpaceCharacter* OwnerChar = OwnerWeapon->OwnerCharacter;
 
+	if (ChargeVFXComp)
+	{
+		ChargeVFXComp->DeactivateSystem();
+		ChargeVFXComp = nullptr;
+	}
+	
 	// 데미지 적용
 	if (OwnerChar)
 	{
@@ -118,13 +169,23 @@ void UChargeWeaponBehavior::OverchargeExplode()
 		);
 	}
 
-	// 폭발 이펙트
+	// VFX
 	if (OwnerWeapon->WeaponData.OverChargeVFX)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(
 			OwnerWeapon->GetWorld(),
 			OwnerWeapon->WeaponData.OverChargeVFX,
-			OwnerChar->GetActorLocation()
+			OwnerWeapon->GetMuzzleLoc()
+		);
+	}
+
+	// SFX
+	if (OwnerWeapon->WeaponData.OverChargeSFX)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(
+			OwnerWeapon->GetWorld(),
+			OwnerWeapon->WeaponData.OverChargeSFX,
+			OwnerWeapon->GetMuzzleLoc()
 		);
 	}
 }
