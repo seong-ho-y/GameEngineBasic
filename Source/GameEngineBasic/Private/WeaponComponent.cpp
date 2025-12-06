@@ -6,11 +6,9 @@
 #include "WeaponBehavior.h"
 #include "PrimaryWeaponBehavior.h"
 #include "ChargeWeaponBehavior.h"
-//#include "IPropertyTable.h"
 #include "MultiWeaponBehavior.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "SpaceCharacter/SpaceCharacter.h"
-#include "Camera/CameraComponent.h"
 
 
 // Sets default values for this component's properties
