@@ -17,6 +17,14 @@ public:
     UFUNCTION(BlueprintCallable)
     static void SavePawnState(APawn* Pawn);
 
+	// Ability
+    UFUNCTION(BlueprintCallable)
+    static void SaveAbilities(APawn* Pawn);
+
+    // Weapon
+    UFUNCTION(BlueprintCallable)
+    static void SaveWeapons(APawn* Pawn);
+
     // 로딩 후 Pawn 데이터를 복원
     UFUNCTION(BlueprintCallable)
     static void LoadPawnState(APawn* Pawn);

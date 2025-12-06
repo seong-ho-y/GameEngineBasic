@@ -21,7 +21,6 @@ AMyGameMode::AMyGameMode()
 
 void AMyGameMode::BeginPlay()
 {
-    LoadPawnState()
 	Super::BeginPlay();
 
     APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
@@ -30,33 +29,42 @@ void AMyGameMode::BeginPlay()
     ASpaceCharacter* Char = Cast<ASpaceCharacter>(PC->GetPawn());
     if (!Char) return;
 
-    FVector SpawnLoc;
-    FRotator SpawnRot;
-
     bool bIsRespawn = UGameplayStatics::HasOption(OptionsString, TEXT("IsRespawn"));
+    bool bIsStageTransition = UGameplayStatics::HasOption(OptionsString, TEXT("IsStageTransition"));
 
     // 1) 세이브된 Bonfire가 있으면 그 위치로
     if (bIsRespawn)
     {
         // 1. 리스폰 로직: 저장된 위치와 상태를 불러옴
+        FVector SpawnLoc;
+        FRotator SpawnRot;
         if (USaveSystemManager::GetSavedSpawnPoint(SpawnLoc, SpawnRot))
         {
             Char->SetActorLocation(SpawnLoc);
             Char->SetActorRotation(SpawnRot);
         }
-
         USaveSystemManager::LoadPawnState(Char);
     }
-    // 2) 없으면 DefaultSpawnPoint로
-    else if (DefaultSpawnPoint)
+	// 2) Level Transition 
+    else if (bIsStageTransition)
     {
-        // 2. 일반 시작 로직: Default 위치로 이동 및 능력 초기화
         if (DefaultSpawnPoint)
         {
             Char->SetActorLocation(DefaultSpawnPoint->GetActorLocation());
             Char->SetActorRotation(DefaultSpawnPoint->GetActorRotation());
         }
-        // 2-2. 능력 초기화 (강제로 모두 false)
+
+        USaveSystemManager::LoadPawnState(Char);
+    }
+	// 3) New Game
+    else
+    {
+        if (DefaultSpawnPoint)
+        {
+            Char->SetActorLocation(DefaultSpawnPoint->GetActorLocation());
+            Char->SetActorRotation(DefaultSpawnPoint->GetActorRotation());
+        }
+
         AMyPlayerState* PS = Cast<AMyPlayerState>(PC->PlayerState);
         if (PS)
         {
@@ -66,7 +74,7 @@ void AMyGameMode::BeginPlay()
             PS->AbilityStatus.bCanShield = false;
             PS->AbilityStatus.bCanBoost = false;
 
-            PS->UnlockStatus.UnlockedWeapons.Empty(); // 모든 무기 해금 목록 제거
+            PS->UnlockStatus.UnlockedWeapons.Empty();
             PS->UnlockWeapon("HandGunBasic");
         }
     }
@@ -101,12 +109,14 @@ void AMyGameMode::RequestStageTransition(FName TargetStageName)
 {
     if (TargetStageName.IsNone())
         return;
-    ACharacter* MyChar = UGameplayStatics::GetPlayerCharacter(this, 0);
-
-    if (MyChar)
+    APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+    if (PC)
     {
-        USaveSystemManager::SavePawnState(MyChar);
+        if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(PC->GetPawn()))
+        {
+            USaveSystemManager::SaveAbilities(Char);   // 능력 저장
+            USaveSystemManager::SaveWeapons(Char);     // 무기 저장
+        }
     }
-
-	UGameplayStatics::OpenLevel(GetWorld(), TargetStageName);
+    UGameplayStatics::OpenLevel(GetWorld(), TargetStageName, true, TEXT("?IsStageTransition"));
 }

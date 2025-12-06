@@ -39,6 +39,9 @@ class GAMEENGINEBASIC_API AMyPlayerState : public APlayerState
 public:
 	AMyPlayerState();
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability")
+	bool bHasInitializedAbilities = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Unlock")
 	FUnlockStatus UnlockStatus;
 
