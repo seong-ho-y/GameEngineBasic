@@ -10,6 +10,7 @@
 
 #include "Blueprint/UserWidget.h"
 #include "SpaceCharacter/SpaceCharacter.h"
+#include "GameEngineBasic/System/SaveSystemManager.h"
 
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
@@ -99,6 +100,12 @@ void AAbilityUnlockItem::Interact(ASpaceCharacter* Character)
 	if (InteractWidget)
 	{
 		InteractWidget->SetVisibility(false);
+	}
+
+	if (APawn* Pawn = Cast<APawn>(Character)) // APawn으로 캐스팅
+	{
+		USaveSystemManager::SavePawnState(Pawn);  // APawn을 인수로 전달
+		UE_LOG(LogTemp, Log, TEXT("Weapon unlocked and state saved."));
 	}
 
 	if (AbilityUI)

@@ -28,4 +28,5 @@ public:
     // 저장된 위치 불러오기
     UFUNCTION(BlueprintCallable)
     static bool GetSavedSpawnPoint(FVector& OutLoc, FRotator& OutRot);
+
 };

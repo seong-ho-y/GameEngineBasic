@@ -21,6 +21,7 @@ AMyGameMode::AMyGameMode()
 
 void AMyGameMode::BeginPlay()
 {
+    LoadPawnState()
 	Super::BeginPlay();
 
     APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
