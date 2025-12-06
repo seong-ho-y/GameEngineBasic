@@ -15,7 +15,8 @@ enum class EGameLevel : uint8
 {
 	LV_TestJMars  UMETA(DisplayName = "Test JMars"),
 	LV_TestJJupiter UMETA(DisplayName = "Test JJupiter"),
-	LV_TestJBoss UMETA(DisplayName = "Test JBoss")
+	LV_TestJBoss UMETA(DisplayName = "Test JBoss"),
+	LV_TestMainmenu UMETA(DisplayName = "TestMainmenu")
 };
 
 UCLASS()
