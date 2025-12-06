@@ -278,6 +278,9 @@ public:
 	void UnlockAbility(EAbilityType Ability);
 
 public:
+	void DisableInputForDuration(float Duration);
+	void EnableInputAfterDelay();
+
 	// Shield
 	UFUNCTION()
 	void OnShieldActivated();
@@ -388,7 +391,7 @@ public:
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
 	FTimerHandle DashEffectTimerHandle;
-
+	FTimerHandle InputDisableTimerHandle;
 	// Aim Length
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;
