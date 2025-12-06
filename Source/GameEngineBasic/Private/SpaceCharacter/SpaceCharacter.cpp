@@ -37,6 +37,7 @@
 
 #include "InventoryComponent.h"
 #include "MyPlayerState.h"
+#include "NiagaraFunctionLibrary.h"
 #include "PlayerStatsComponent.h"
 #include "WeaponComponent.h"
 
@@ -835,6 +836,8 @@ void ASpaceCharacter::OnExecutionStart(AActor* Target)
 			GetActorRotation()
 		);
 	}
+	if (SlashVfx) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),SlashVfx, GetActorLocation());
+	if (SlashSfx) UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SlashSfx, GetActorLocation());
 	// 3) 스프링암 살짝 당기기 (옵션)
 	CameraBoom->TargetArmLength = 150.f;
 

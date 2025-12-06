@@ -57,6 +57,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Execute|Sfx")
+	USoundBase* SlashSfx;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Execute|Vfx")
+	UNiagaraSystem* SlashVfx;
 
 public:
 	// Component
