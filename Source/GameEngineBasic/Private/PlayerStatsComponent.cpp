@@ -24,37 +24,41 @@ void UPlayerStatsComponent::ApplyParts()
 	ASpaceCharacter* OwnerChar = Cast<ASpaceCharacter>(GetOwner());
 	if (!OwnerChar)
 	{
-		if (GEngine)
+		/*if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
 				TEXT("[StatsComp] ERROR: Owner is not ASpaceCharacter"));
+		*/
 		return;
 	}
 
 	AMyPlayerState* PS = OwnerChar->GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->Inventory)
 	{
-		if (GEngine)
+		/*if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red,
 				TEXT("[StatsComp] WARNING: Inventory not found"));
+		*/
 		return;
 	}
 
 	UInventoryComponent* Inv = PS->Inventory;
 	if (!Inv->PartTable)
-	{
+	{	/*
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,
 				TEXT("[StatsComp] WARNING: PartTable is NULL"));
+		*/
 	}
 
 	//-------------------------------------------------------
 	// FinalStats 기본 초기화
 	//-------------------------------------------------------
 	FinalStats = BaseStats;
-	
+	/*
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::White,
 			TEXT("[ApplyParts] Reset FinalStats to BaseStats"));
+			*/
 	//-------------------------------------------------------
 	// 파츠 3종 적용
 	//-------------------------------------------------------
@@ -76,9 +80,9 @@ void UPlayerStatsComponent::ApplyParts()
 					(Slot == EPartSlot::Core)  ? TEXT("Core") :
 					(Slot == EPartSlot::Upper) ? TEXT("Upper") :
 												 TEXT("Lower");
-
+				/*
 				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Silver,
-					FString::Printf(TEXT("[ApplyParts] Slot %s: NO PART"), *SlotStr));
+					FString::Printf(TEXT("[ApplyParts] Slot %s: NO PART"), *SlotStr));*/
 			}
 			continue;
 		}
@@ -102,7 +106,7 @@ void UPlayerStatsComponent::ApplyParts()
 				Part->BoostRegenBonus,
 				Part->WeightBonus
 			);
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, BonusMsg);
+			/*GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, BonusMsg);*/
 		}
 
 		// 스탯 적용
@@ -129,7 +133,7 @@ void UPlayerStatsComponent::ApplyParts()
 			FinalStats.MaxFuel
 		);
 
-		GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, FinalMsg);
+		/*GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, FinalMsg);*/
 	}
 
 	//-------------------------------------------------------
@@ -171,13 +175,14 @@ void UPlayerStatsComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 			FinalStats.BoostRegen,
 			FinalStats.MaxFuel
 		);
-
+/*
 		GEngine->AddOnScreenDebugMessage(
 			9991,
 			0.f,
 			FColor::Cyan,
 			DebugMsg
 		);
+		*/
 	}
 #endif
 }

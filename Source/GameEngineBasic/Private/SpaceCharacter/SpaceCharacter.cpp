@@ -92,7 +92,7 @@ ASpaceCharacter::ASpaceCharacter()
 
 void ASpaceCharacter::InitFromPlayerState()
 {
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] 호출됨"));
+    //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] 호출됨"));
 
     AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	/*
@@ -126,28 +126,26 @@ void ASpaceCharacter::InitFromPlayerState()
     // Weapon
     if (!WeaponComp || !Shooter)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] WeaponComp 또는 Shooter == NULL !!"));
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] WeaponComp 또는 Shooter == NULL !!"));
         return;
     }
 
     //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] WeaponComp & Shooter OK"));
 
     FName WeaponRow = PS->Inventory->GetCurrentWeapon();
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
-        FString::Printf(TEXT("[InitFromPlayerState] GetCurrentWeapon = %s"), *WeaponRow.ToString()));
+    //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,FString::Printf(TEXT("[InitFromPlayerState] GetCurrentWeapon = %s"), *WeaponRow.ToString()));
 
     if (WeaponRow == NAME_None)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] WeaponRow == None !!!!!"));
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] WeaponRow == None !!!!!"));
         return;
     }
 
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("[InitFromPlayerState] InitializeWeapon 호출 준비"));
+    //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("[InitFromPlayerState] InitializeWeapon 호출 준비"));
 
     WeaponComp->WeaponRowName = WeaponRow;
 
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow,
-        FString::Printf(TEXT("[InitFromPlayerState] InitializeWeapon 실행!!! Row=%s"), *WeaponRow.ToString()));
+    //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow,FString::Printf(TEXT("[InitFromPlayerState] InitializeWeapon 실행!!! Row=%s"), *WeaponRow.ToString()));
 
     WeaponComp->InitializeWeapon(this, Shooter);
 }
@@ -505,13 +503,13 @@ FVector ASpaceCharacter::GetDashDirection() const
 
 void ASpaceCharacter::StartBoost()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Input Received"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Input Received"));
 
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->CanUseAbility(EAbilityType::Boost))
 		return;
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Ability Allowed"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Ability Allowed"));
 
 	auto Move = GetCharacterMovement();
 	if (!Move) return;
@@ -794,7 +792,7 @@ void ASpaceCharacter::TryExecutionInput()
 	if (ExecutionComp)
 		if (ExecutionComp->StartExecution())
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Started"));
+			//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("ASpaceCharacter::TryExecutionInput: Execution Started"));
 			if (ExecuteMontage)
 				PlayAnimMontage(ExecuteMontage);
 		}
@@ -1006,8 +1004,8 @@ void ASpaceCharacter::SwapWeapon()
 	// 4) 다시 Initialize → DT 로딩 + RuntimeState 로딩 + Behavior 선택 + Mesh 스폰 + HUD 갱신
 	WeaponComp->InitializeWeapon(this, Shooter);
 
-	GEngine->AddOnScreenDebugMessage(
+	/*GEngine->AddOnScreenDebugMessage(
 		-1, 2.f, FColor::Green,
 		FString::Printf(TEXT("Swapped to %s"), *WeaponComp->WeaponRowName.ToString())
-	);
+	);*/
 }

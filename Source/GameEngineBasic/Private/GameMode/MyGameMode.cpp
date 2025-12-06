@@ -99,7 +99,7 @@ void AMyGameMode::BeginPlay()
 
 void AMyGameMode::RespawnPlayer(AController* Controller)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("RespawnPlayer Called"));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("RespawnPlayer Called"));
 
 	FName CurrentLevelName(*GetWorld()->GetName());
 	UGameplayStatics::OpenLevel(this, CurrentLevelName, true, TEXT("?IsRespawn"));

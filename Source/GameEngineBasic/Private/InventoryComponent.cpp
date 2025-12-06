@@ -24,13 +24,14 @@ void UInventoryComponent::EquipPart(EPartSlot Slot, FName PartRowName)
 			(Slot == EPartSlot::Core)  ? TEXT("Core") :
 			(Slot == EPartSlot::Upper) ? TEXT("Upper") :
 										 TEXT("Lower");
-
+		/*
 		GEngine->AddOnScreenDebugMessage(
 			-1, 3.f, FColor::Green,
 			FString::Printf(TEXT("[EquipPart] Slot = %s | Row = %s"),
 				*SlotName,
 				*PartRowName.ToString())
 		);
+		*/
 	}
 
 	if (CachedStats)
@@ -38,11 +39,11 @@ void UInventoryComponent::EquipPart(EPartSlot Slot, FName PartRowName)
 		CachedStats->ApplyParts();
 	}
 	else
-	{
+	{/*
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(
 				-1, 3.f, FColor::Red,
-				TEXT("[EquipPart] CachedStats == NULL (ApplyParts 호출 못함)"));
+				TEXT("[EquipPart] CachedStats == NULL (ApplyParts 호출 못함)"));*/
 	}
 }
 
@@ -71,15 +72,18 @@ void UInventoryComponent::EquipWeapon(FName RowName)
 }
 
 void UInventoryComponent::OnWeaponUnlocked(FName WeaponRowName)
-{
+{/*
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,FString::Printf(TEXT("[Inventory] Weapon Unlocked: %s"),*WeaponRowName.ToString()));
+	*/	
 }
 
 void UInventoryComponent::OnPartUnlocked(FName PartRowName)
 {
+	/*
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Yellow,FString::Printf(TEXT("[Inventory] Part Unlocked: %s"),*PartRowName.ToString()));
+	*/
 }
 
 bool UInventoryComponent::IsWeaponEquippable(FName WeaponRowName) const
