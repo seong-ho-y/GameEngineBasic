@@ -71,14 +71,15 @@ AActor* UExecutionComp::FindExecutionTarget() const
 
 	FVector Start = Camera->GetComponentLocation();
 	FVector End = Start + Camera->GetForwardVector() * ExecutionRange;
-
+	
+	/*
 	if (bDebugDraw)
 	{
 		UKismetSystemLibrary::DrawDebugLine(
 			this, Start, End,
 			FLinearColor::Red, 2.f, 1.f
 		);
-	}
+	}*/
 
 	FHitResult Hit;
 
