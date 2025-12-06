@@ -47,11 +47,35 @@ void ALevelSoundManager::PlayLevelSoundCue(EGameLevel Level)
 	{
 		USoundCue* SelectedSoundCue = LevelSoundCues[Level];
 
+		// If a sound cue is found, set it and play it
 		if (SelectedSoundCue)
 		{
-			// Select SoundCue
 			AudioComponent->SetSound(SelectedSoundCue);
 			AudioComponent->Play();
+
+			// Bind the audio finished event without parameters
+			AudioComponent->OnAudioFinished.AddDynamic(this, &ALevelSoundManager::PlayNextSoundCue);
 		}
 	}
+}
+
+void ALevelSoundManager::PlayNextSoundCue()
+{
+	FString CurrentLevelName = GetWorld()->GetMapName();
+	EGameLevel Level = EGameLevel::LV_TestJMars;  
+
+	if (CurrentLevelName.Contains("TestJBoss"))
+	{
+		Level = EGameLevel::LV_TestJBoss;
+	}
+	else if (CurrentLevelName.Contains("TestJMars"))
+	{
+		Level = EGameLevel::LV_TestJMars;
+	}
+	else if (CurrentLevelName.Contains("TestJJupiter"))
+	{
+		Level = EGameLevel::LV_TestJJupiter;
+	}
+
+	PlayLevelSoundCue(Level);
 }

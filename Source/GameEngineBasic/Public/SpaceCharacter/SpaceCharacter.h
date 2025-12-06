@@ -58,11 +58,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	ECharacterState CurrentState = ECharacterState::Locomotion;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Execute|Vfx")
-	UNiagaraSystem* SlashVfx;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Execute|Sfx")
-	USoundBase* SlashSfx;
-
 public:
 	// Component
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -213,6 +208,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ExecuteMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* LevelStartMontage;
+
 	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
 	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
 
@@ -280,6 +278,9 @@ public:
 	void UnlockAbility(EAbilityType Ability);
 
 public:
+	void DisableInputForDuration(float Duration);
+	void EnableInputAfterDelay();
+
 	// Shield
 	UFUNCTION()
 	void OnShieldActivated();
@@ -390,7 +391,7 @@ public:
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
 	FTimerHandle DashEffectTimerHandle;
-
+	FTimerHandle InputDisableTimerHandle;
 	// Aim Length
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;

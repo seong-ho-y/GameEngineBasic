@@ -91,5 +91,7 @@ public:
 	virtual void Interact(ASpaceCharacter* Character) override;
 
 	FTimeline LidOpenTimeline;
-
+	FTimerHandle RemoveTimer;
+private:
+	bool bActivated = false;
 };
