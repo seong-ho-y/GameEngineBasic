@@ -64,6 +64,9 @@ void AMyGameMode::BeginPlay()
             PS->AbilityStatus.bCanFly = false;
             PS->AbilityStatus.bCanShield = false;
             PS->AbilityStatus.bCanBoost = false;
+
+            PS->UnlockStatus.UnlockedWeapons.Empty(); // 모든 무기 해금 목록 제거
+            PS->UnlockWeapon("HandGunBasic");
         }
     }
 

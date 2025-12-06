@@ -6,7 +6,7 @@
 #include "WeaponBehavior.h"
 #include "PrimaryWeaponBehavior.h"
 #include "ChargeWeaponBehavior.h"
-#include "IPropertyTable.h"
+//#include "IPropertyTable.h"
 #include "MultiWeaponBehavior.h"
 #include "GameEngineBasic/Components/public/ShooterComp.h"
 #include "SpaceCharacter/SpaceCharacter.h"
