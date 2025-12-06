@@ -36,6 +36,10 @@ void ALevelSoundManager::BeginPlay()
 	{
 		Level = EGameLevel::LV_TestJJupiter;
 	}
+	else if (CurrentLevelName.Contains("TestMainmenu"))
+	{
+		Level = EGameLevel::LV_TestMainmenu;
+	}
 
 	// Play SoundCue
 	PlayLevelSoundCue(Level);
@@ -75,6 +79,10 @@ void ALevelSoundManager::PlayNextSoundCue()
 	else if (CurrentLevelName.Contains("TestJJupiter"))
 	{
 		Level = EGameLevel::LV_TestJJupiter;
+	}
+	else if (CurrentLevelName.Contains("TestMainmenu"))
+	{
+		Level = EGameLevel::LV_TestMainmenu;
 	}
 
 	PlayLevelSoundCue(Level);

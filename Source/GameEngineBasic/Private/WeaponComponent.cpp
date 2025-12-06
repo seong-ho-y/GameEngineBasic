@@ -22,9 +22,9 @@ UWeaponComponent::UWeaponComponent()
 void UWeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
+	/*GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green,
 	FString::Printf(TEXT("WeaponComp Owner = %s"),
-	*GetOwner()->GetName()));
+	*GetOwner()->GetName()));*/
 }
 
 
@@ -43,13 +43,13 @@ void UWeaponComponent::InitializeWeapon(ASpaceCharacter* Player, UShooterComp* I
 		}
 	else
 	{
-		const FString TableName = WeaponTable ? WeaponTable->GetName() : TEXT("NULL");
+		/*const FString TableName = WeaponTable ? WeaponTable->GetName() : TEXT("NULL");
 		GEngine->AddOnScreenDebugMessage(
 				-1, 6.f, FColor::Red,
 				FString::Printf(
 					TEXT("NoWeapon → Table=%s | RowName=%s"),
 					*TableName,
-					*WeaponRowName.ToString()));
+					*WeaponRowName.ToString()));*/
 		return;
 	}
 

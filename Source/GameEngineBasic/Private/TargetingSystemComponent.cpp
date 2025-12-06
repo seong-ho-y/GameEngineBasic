@@ -36,18 +36,19 @@ void UTargetingSystemComponent::BeginPlay()
 void UTargetingSystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    /*
     GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Magenta,
     FString::Printf(TEXT("Viewport: %d × %d"),
         GEngine->GameViewport->Viewport->GetSizeXY().X,
         GEngine->GameViewport->Viewport->GetSizeXY().Y
-    ));
+    ));*/
     
 	//GEngine->AddOnScreenDebugMessage(-9, 0.f, FColor::Black, TEXT("Ticking..."));
 	AEnemyHuman* NewTarget = FindClosestEnemyInView();
 
 	if (NewTarget != CurrentTarget)
 	{
-		GEngine->AddOnScreenDebugMessage(-17, 5.f, FColor::Emerald, TEXT("CurrentTarget Updated"));
+		/*GEngine->AddOnScreenDebugMessage(-17, 5.f, FColor::Emerald, TEXT("CurrentTarget Updated"));*/
 		CurrentTarget = NewTarget;
 		OnTargetChanged.Broadcast(CurrentTarget); // Notify to HUD
 	}
@@ -78,9 +79,9 @@ AEnemyHuman* UTargetingSystemComponent::FindClosestEnemyInView()
     float Radius = ViewportY * 0.15f;
 
     // 디버그용
-    GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Cyan,
+    /*GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Cyan,
         FString::Printf(TEXT("[Circle] Center=(%.1f, %.1f) R=%.1f"),
-            CircleCenter.X, CircleCenter.Y, Radius));
+            CircleCenter.X, CircleCenter.Y, Radius));*/
 
     AEnemyHuman* Closest = nullptr;
     float ClosestDist = FLT_MAX;
@@ -120,14 +121,14 @@ AEnemyHuman* UTargetingSystemComponent::FindClosestEnemyInView()
 
     if (!Closest)
     {
-        GEngine->AddOnScreenDebugMessage(-5, 0.f, FColor::Red,
-            TEXT("[Targeting] No enemy inside circle"));
+        /*GEngine->AddOnScreenDebugMessage(-5, 0.f, FColor::Red,
+            TEXT("[Targeting] No enemy inside circle"));*/
     }
     else
     {
-        GEngine->AddOnScreenDebugMessage(-5, 0.f, FColor::Green,
+        /*GEngine->AddOnScreenDebugMessage(-5, 0.f, FColor::Green,
             FString::Printf(TEXT("[Targeting] Final Target = %s"),
-                *Closest->GetName()));
+                *Closest->GetName())); */
     }
 
     return Closest;

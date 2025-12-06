@@ -96,13 +96,13 @@ struct FWeaponData : public FTableRowBase
 	UParticleSystem* ChargeVFX;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UParticleSystem* ChargeSFX;
+	USoundBase* ChargeSFX;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UParticleSystem* OverChargeVFX;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UParticleSystem* OverChargeSFX;
+	USoundBase* OverChargeSFX;
 
 	/* ------------------------ 스프레드 옵션 -------------------------*/
 

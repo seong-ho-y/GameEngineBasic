@@ -85,7 +85,7 @@ void UShooterComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 
 void UShooterComp::Fire_Implementation()
 {
-	GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp Fire Start"));
+	//GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp Fire Start"));
 	
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner)
@@ -227,7 +227,7 @@ void UShooterComp::ReloadSuccess()
 
 bool UShooterComp::TryFire()
 {
-	GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp TryFire Start"));
+	//GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("ShooterComp TryFire Start"));
 	if (bIsReloading) return false;
 	
 	if (bUseAmmo && CurrentAmmo <= 0)
@@ -253,20 +253,20 @@ bool UShooterComp::CanFire() const
 	// 1. Check Ammo
 	if (bUseAmmo && CurrentAmmo <= 0)
 	{
-		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoAmmo"));
+		//GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoAmmo"));
 		return false;
 	}
 	// 2. Check Cooldown
 	if (!bIsReadyToFire)
 	{
-		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NotReadyToFire"));
+		//GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NotReadyToFire"));
 		return false;
 	}
 
 	if (!ProjectileClass && ProjectileMap.Num() == 0)
 	{
 		//UE_LOG(LogTemp, Error, TEXT("CanFire: No ProjectileClass and ProjectileMap is empty"));
-		GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoProjectileClass"));
+		//GEngine->AddOnScreenDebugMessage(5843, 3.f, FColor::Red, TEXT("NoProjectileClass"));
 		return false;
 	}
 	//UE_LOG(LogTemp, Warning, TEXT("CanFire: PASSED"));
@@ -285,7 +285,7 @@ void UShooterComp::SetProjectile()
 	// 플레이어 무기라면 무조건 WeaponComponent 우선
 	if (GetOwner()->FindComponentByClass<UWeaponComponent>())
 	{
-		GEngine->AddOnScreenDebugMessage(5844, 3.f, FColor::Magenta, TEXT("SetProjectile Finished by WeaponComp"));
+		//GEngine->AddOnScreenDebugMessage(5844, 3.f, FColor::Magenta, TEXT("SetProjectile Finished by WeaponComp"));
 		return;
 	}
 	
