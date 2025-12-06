@@ -11,6 +11,7 @@
 #include "Blueprint/UserWidget.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "MyPlayerState.h"
+#include "GameEngineBasic/System/SaveSystemManager.h"
 
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
@@ -108,12 +109,12 @@ void AWeaponItemBox::Interact(ASpaceCharacter* Character)
 	if (AMyPlayerState* PS = Cast<AMyPlayerState>(Character->GetPlayerState()))
 	{
 		PS->UnlockWeapon(WeaponName);
-		LidOpenTimeline.PlayFromStart();
-		
-		if (PS->Inventory)
+
+		if (APawn* Pawn = Cast<APawn>(Character)) 
 		{
-			PS->Inventory->EquipWeapon(WeaponName);
+			USaveSystemManager::SavePawnState(Pawn);
 		}
+		LidOpenTimeline.PlayFromStart();
 
 		LidOpenTimeline.Play();
 

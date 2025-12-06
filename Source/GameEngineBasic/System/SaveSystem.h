@@ -52,6 +52,9 @@ public:
     UPROPERTY(BlueprintReadWrite)
     bool bCanShield;
 
+    UPROPERTY(BlueprintReadWrite)
+    bool bCanBoost;
+
     // ----------- Weapon -----------
     UPROPERTY(BlueprintReadWrite)
     TArray<FName> WeaponRowName;
@@ -64,4 +67,8 @@ public:
 
     UPROPERTY(BlueprintReadWrite)
     int32 MaxAmmo;
+
+	// ----------- Parts -----------
+    UPROPERTY(BlueprintReadWrite)
+    TArray<FName> UnlockedParts;
 };
