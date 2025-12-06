@@ -14,7 +14,7 @@ void US_Fly::Enter_Implementation(ASpaceCharacter* Character)
 {
 	if(GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Enter Fly State"));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Enter Fly State"));
 	}
 	if (!Character) return;
 	auto* Move = Character->GetCharacterMovement();
@@ -59,7 +59,7 @@ void US_Fly::Exit_Implementation(ASpaceCharacter* Character)
 {
 	if(GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Exit Fly State"));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Exit Fly State"));
 	}
 	if (!Character) return;
 	auto* Move = Character->GetCharacterMovement();
