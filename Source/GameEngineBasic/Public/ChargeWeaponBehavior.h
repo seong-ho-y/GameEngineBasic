@@ -18,6 +18,10 @@ public:
 	UPROPERTY()
 	float ChargeStartTime = 0.f;
 
+
+	UPROPERTY()
+	UParticleSystemComponent* ChargeVFXComp = nullptr;
+
 	UPROPERTY()
 	float ChargeHoldTime = 0.f;
 
