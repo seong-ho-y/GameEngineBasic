@@ -18,9 +18,22 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
 {
     if (!Pawn) return;
 
-    USaveSystem* SaveObj = Cast<USaveSystem>(
-        UGameplayStatics::CreateSaveGameObject(USaveSystem::StaticClass())
-    );
+    USaveSystem* SaveObj = nullptr;
+    FString SaveSlotName = TEXT("PlayerSave");
+    int32 SaveIndex = 0;
+
+    if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveIndex))
+    {
+        // 기존 파일 로드
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, SaveIndex));
+    }
+    else
+    {
+        // 파일이 없으면 새로 생성
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::CreateSaveGameObject(USaveSystem::StaticClass()));
+    }
+
+    if (!SaveObj) return; // 방어 코드
 
     // 공통: 위치 정보
     SaveObj->SavedLocation = Pawn->GetActorLocation();
@@ -33,6 +46,7 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
     SaveObj->bCanFly = PS->AbilityStatus.bCanFly;
     SaveObj->bCanShield = PS->AbilityStatus.bCanShield;
 
+    SaveObj->WeaponRowName = PS->UnlockStatus.UnlockedWeapons.Array();
 
     // *** SpaceCharacter ***
     if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(Pawn))
@@ -42,10 +56,6 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
             SaveObj->CurrentAmmo = Char->GetShooterComponent()->MaxAmmo;
             SaveObj->FullAmmo = Char->GetShooterComponent()->FullAmmo;
             SaveObj->MaxAmmo = Char->GetShooterComponent()->MaxAmmo;
-        }
-        if (Char->GetWeaponComponent())
-        {
-            SaveObj->WeaponRowName = Char->GetWeaponComponent()->WeaponRowName;
         }
     }
 
@@ -88,6 +98,11 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
         PS->AbilityStatus.bCanDash = SaveObj->bCanDash;
         PS->AbilityStatus.bCanFly = SaveObj->bCanFly;
         PS->AbilityStatus.bCanShield = SaveObj->bCanShield;
+
+        for (const FName& WeaponName : SaveObj->WeaponRowName)
+        {
+            PS->UnlockStatus.UnlockedWeapons.Add(WeaponName);
+        }
     }
     
     //Pawn->SetActorLocation(SaveObj->SavedLocation);
@@ -105,7 +120,6 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
 
         if (Char->GetWeaponComponent())
         {
-            Char->GetWeaponComponent()->WeaponRowName = SaveObj->WeaponRowName;
             Char->GetWeaponComponent()->InitializeWeapon(Char, Char->GetShooterComponent());
         }
     }

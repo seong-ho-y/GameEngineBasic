@@ -3,6 +3,7 @@
 
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "MyPlayerController.h"
+#include "GameEngineBasic/System/SaveSystemManager.h"
 
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -36,7 +37,6 @@
 
 #include "InventoryComponent.h"
 #include "MyPlayerState.h"
-#include "NiagaraFunctionLibrary.h"
 #include "PlayerStatsComponent.h"
 #include "WeaponComponent.h"
 
@@ -94,7 +94,7 @@ void ASpaceCharacter::InitFromPlayerState()
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] 호출됨"));
 
     AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
-
+	/*
     if (!PS)
     {
         if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] PlayerState 없음"));
@@ -103,10 +103,10 @@ void ASpaceCharacter::InitFromPlayerState()
     {
         if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] PlayerState 존재"));
     }
-
+	*/
     if (!PS || !PS->Inventory)
     {
-        if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] Inventory 없음 -> 다음 틱 재시도"));
+        //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("[InitFromPlayerState] Inventory 없음 -> 다음 틱 재시도"));
 
         if (UWorld* World = GetWorld())
         {
@@ -129,7 +129,7 @@ void ASpaceCharacter::InitFromPlayerState()
         return;
     }
 
-    if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] WeaponComp & Shooter OK"));
+    //if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("[InitFromPlayerState] WeaponComp & Shooter OK"));
 
     FName WeaponRow = PS->Inventory->GetCurrentWeapon();
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan,
@@ -153,6 +153,7 @@ void ASpaceCharacter::InitFromPlayerState()
 
 void ASpaceCharacter::BeginPlay()
 {
+	//USaveSystemManager::LoadPawnState(this);
 	Super::BeginPlay();
 	
 	InitFromPlayerState();
@@ -193,6 +194,33 @@ void ASpaceCharacter::BeginPlay()
 		ExecutionComp->OnExecutionEnd.AddDynamic(this, &ASpaceCharacter::OnExecutionEnd);
 	}
 
+	UAnimInstance* Anim = GetMesh()->GetAnimInstance();
+	Anim->Montage_Play(LevelStartMontage);
+	DisableInputForDuration(5.0f);
+}
+
+void ASpaceCharacter::DisableInputForDuration(float Duration)
+{
+	// 2초간 입력을 비활성화
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetIgnoreMoveInput(true); // 이동 입력 무시
+		PlayerController->SetIgnoreLookInput(true); // 회전 입력 무시
+	}
+
+	// 일정 시간이 지나면 입력을 다시 활성화
+	GetWorld()->GetTimerManager().SetTimer(InputDisableTimerHandle, this, &ASpaceCharacter::EnableInputAfterDelay, Duration, false);
+}
+
+void ASpaceCharacter::EnableInputAfterDelay()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetIgnoreMoveInput(false); // 이동 입력 활성화
+		PlayerController->SetIgnoreLookInput(false); // 회전 입력 활성화
+	}
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
@@ -321,6 +349,8 @@ void ASpaceCharacter::StartJump()
 		if (FlyUpMontage) {
 			Anim->Montage_Play(FlyUpMontage);
 			WingComp->PlayFly();
+			FVector SpawnLoc = GetOwner()->GetActorLocation();
+			UGameplayStatics::PlaySoundAtLocation(this, JumpSound, SpawnLoc);
 			return;
 		}
 	}
@@ -392,6 +422,8 @@ void ASpaceCharacter::StopSprint()
 
 void ASpaceCharacter::StartDash()
 {
+	if (!Fuel->CanDash())
+		return;
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->CanUseAbility(EAbilityType::Dash))
 		return;
@@ -420,6 +452,9 @@ void ASpaceCharacter::StartDash()
 		1.0f,
 		false
 	);
+
+	FVector SpawnLoc = GetOwner()->GetActorLocation();
+	UGameplayStatics::PlaySoundAtLocation(this,DashSound, SpawnLoc);
 }
 
 void ASpaceCharacter::StopDash()
@@ -469,9 +504,13 @@ FVector ASpaceCharacter::GetDashDirection() const
 
 void ASpaceCharacter::StartBoost()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Input Received"));
+
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (!PS || !PS->CanUseAbility(EAbilityType::Boost))
 		return;
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Boost Ability Allowed"));
 
 	auto Move = GetCharacterMovement();
 	if (!Move) return;
@@ -572,6 +611,10 @@ void ASpaceCharacter::OnCharacterDeath(AActor* DeadActor)
 			FreezeDelay,
 			false
 		);
+
+		// 사망 사운드 재생
+		FVector SpawnLoc = GetOwner()->GetActorLocation();
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, SpawnLoc);
 	}
 }
 
@@ -584,7 +627,7 @@ void ASpaceCharacter::ExplodeAndDestroy()
 		UGameplayStatics::SpawnEmitterAttached(
 			DeathExplosionEffect,
 			GetMesh(),
-			FName("Shield")
+			FName("Die")
 		);
 	}
 
@@ -792,9 +835,6 @@ void ASpaceCharacter::OnExecutionStart(AActor* Target)
 			GetActorRotation()
 		);
 	}
-	if (ExecutionSlashVFX)
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExecutionSlashVFX, GetActorLocation());
-	
 	// 3) 스프링암 살짝 당기기 (옵션)
 	CameraBoom->TargetArmLength = 150.f;
 
@@ -813,7 +853,7 @@ void ASpaceCharacter::OnExecutionEnd(AActor* Target)
 	//체력 회복 & 탄약 회복
 	HealthComp->CurrentHealth = FMath::Max(HealthComp->CurrentHealth+=50, HealthComp->MaxHealth);
 	Shooter->CurrentAmmo = Shooter->FullAmmo;
-	SetActorRotation(FRotator::ZeroRotator);
+	
 	EnableInput(Cast<APlayerController>(Controller));
 }
 
@@ -931,6 +971,8 @@ void ASpaceCharacter::SwapWeapon()
 {
 	if (!WeaponComp || !Shooter) return;
 
+	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
+	if (!PS) return;
 	// 0) 현재 무기 Mesh 제거 (시각적 잔상 방지)
 	WeaponComp->ClearWeaponMesh();
 
@@ -941,15 +983,15 @@ void ASpaceCharacter::SwapWeapon()
 	const FName OldRow = WeaponComp->WeaponRowName;
 	FName NewRow;
 
-	if (OldRow == FName("HandgunBasic"))
+	if (OldRow == FName("HandgunBasic") && PS->IsWeaponUnlocked("RifleBasic"))
 	{
 		NewRow = FName("RifleBasic");
 	}
-	else if (OldRow == FName("RifleBasic"))
+	else if (OldRow == FName("RifleBasic") && PS->IsWeaponUnlocked("BlastBasic"))
 	{
 		NewRow = FName("BlastBasic");
 	}
-	else if (OldRow == FName("BlastBasic"))
+	else if (OldRow == FName("BlastBasic") && PS->IsWeaponUnlocked("ShotgunBasic"))
 	{
 		NewRow = FName("ShotgunBasic");
 	}

@@ -54,7 +54,7 @@ public:
 
     // ----------- Weapon -----------
     UPROPERTY(BlueprintReadWrite)
-    FName WeaponRowName;
+    TArray<FName> WeaponRowName;
 
     UPROPERTY(BlueprintReadWrite)
     int32 CurrentAmmo;

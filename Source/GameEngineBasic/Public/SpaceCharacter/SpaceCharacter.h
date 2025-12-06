@@ -86,6 +86,18 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UShieldComp* ShieldComp;
+
+	// Sound
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound|Utility")
+	USoundBase* DashSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound|Utility")
+	USoundBase* JumpSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound|Utility")
+	USoundBase* DeathSound;
+
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UTargetingSystemComponent* TargetingComp;
@@ -143,10 +155,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
 	UParticleSystem* ExecutionTeleportVFX;
 
-	UPROPERTY(EditAnywhere, Category = "Execution|VFX")
-	UNiagaraSystem* ExecutionSlashVFX;
-	
-
 public:
 	FORCEINLINE class UShooterComp* GetShooterComponent() const { return Shooter; }
 
@@ -199,6 +207,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Anim")
 	UAnimMontage* ExecuteMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Anim")
+	UAnimMontage* LevelStartMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Anim|Ability")
 	TMap<EAbilityType, UAnimMontage*> AbilityUnlockMontages;
@@ -267,6 +278,9 @@ public:
 	void UnlockAbility(EAbilityType Ability);
 
 public:
+	void DisableInputForDuration(float Duration);
+	void EnableInputAfterDelay();
+
 	// Shield
 	UFUNCTION()
 	void OnShieldActivated();
@@ -377,7 +391,7 @@ public:
 	FTimerHandle ChargeDelayHandle; 
 	FTimerHandle DeathTimerHandle;
 	FTimerHandle DashEffectTimerHandle;
-
+	FTimerHandle InputDisableTimerHandle;
 	// Aim Length
 	float DefaultArmLength = 300.f;
 	float AimedArmLength = 180.f;

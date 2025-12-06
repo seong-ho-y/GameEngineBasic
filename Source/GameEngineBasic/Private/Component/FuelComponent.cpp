@@ -18,7 +18,7 @@ void UFuelComponent::BeginPlay()
 void UFuelComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    GEngine->AddOnScreenDebugMessage(35, 5.f, FColor::Silver, FString::Printf(TEXT("Remain Energy : %f"),CurrentFuel));
+    //GEngine->AddOnScreenDebugMessage(35, 5.f, FColor::Silver, FString::Printf(TEXT("Remain Energy : %f"),CurrentFuel));
     Recharge(DeltaTime);
 }
 
@@ -37,9 +37,14 @@ bool UFuelComponent::CanFly() const
     return CurrentFuel > 5.f;
 }
 
+bool UFuelComponent::CanDash() const
+{
+    return CurrentFuel > 10.f;
+}
+
 void UFuelComponent::Consume(float Amount)
 {
-    GEngine->AddOnScreenDebugMessage(33, 1, FColor::Orange, TEXT("Consume Called"));
+    //GEngine->AddOnScreenDebugMessage(33, 1, FColor::Orange, TEXT("Consume Called"));
     float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel - Amount, 0.f, MaxFuel);
     /*

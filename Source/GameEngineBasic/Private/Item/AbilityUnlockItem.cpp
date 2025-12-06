@@ -107,13 +107,16 @@ void AAbilityUnlockItem::Interact(ASpaceCharacter* Character)
 		{
 			Widget->AddToViewport(100); // ZOrder 높게
 
-			// 3초 뒤 자동 제거
-			FTimerHandle RemoveTimer;
+			TWeakObjectPtr<UUserWidget> WeakWidget(Widget);
+
 			GetWorld()->GetTimerManager().SetTimer(
 				RemoveTimer,
-				FTimerDelegate::CreateLambda([Widget]()
+				FTimerDelegate::CreateLambda([WeakWidget]()
 					{
-						Widget->RemoveFromParent();
+						if (UUserWidget* StrongWidget = WeakWidget.Get())
+						{
+							StrongWidget->RemoveFromParent();
+						}
 					}),
 				3.0f,
 				false

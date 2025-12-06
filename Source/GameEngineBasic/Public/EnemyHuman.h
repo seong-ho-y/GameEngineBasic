@@ -63,10 +63,10 @@ protected:
 	void EntryGroggyState(FName Bone);
 
 	UFUNCTION()
-	void OnDie(AActor* DeadActor);
+	virtual void OnDie(AActor* DeadActor);
 
 	UFUNCTION()
-	void OnKnock();
+	virtual void OnKnock();
 
 	UFUNCTION()
 	void OnExecutionStart(AActor* TargetEnemy);
