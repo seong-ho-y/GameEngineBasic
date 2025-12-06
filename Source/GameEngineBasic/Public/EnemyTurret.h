@@ -19,9 +19,18 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Component")
 	UTurretLaserComponent* TurretLaserComp;
+
+	bool bTurretStunned = false;
+	bool bTurretDead = false;
+	FTimerHandle TimerHandle_Stun;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	virtual void OnKnock() override;
+	void EndStun();
+	virtual void OnDie(AActor* DeadActor) override;
 
 private:
 	UPROPERTY()
