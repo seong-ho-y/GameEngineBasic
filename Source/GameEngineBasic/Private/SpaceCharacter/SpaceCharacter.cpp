@@ -37,6 +37,7 @@
 
 #include "InventoryComponent.h"
 #include "MyPlayerState.h"
+#include "NiagaraFunctionLibrary.h"
 #include "PlayerStatsComponent.h"
 #include "WeaponComponent.h"
 
@@ -153,7 +154,7 @@ void ASpaceCharacter::InitFromPlayerState()
 
 void ASpaceCharacter::BeginPlay()
 {
-	USaveSystemManager::LoadPawnState(this);
+	//USaveSystemManager::LoadPawnState(this);
 	Super::BeginPlay();
 	
 	InitFromPlayerState();
@@ -196,6 +197,31 @@ void ASpaceCharacter::BeginPlay()
 
 	UAnimInstance* Anim = GetMesh()->GetAnimInstance();
 	Anim->Montage_Play(LevelStartMontage);
+	DisableInputForDuration(5.0f);
+}
+
+void ASpaceCharacter::DisableInputForDuration(float Duration)
+{
+	// 2초간 입력을 비활성화
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetIgnoreMoveInput(true); // 이동 입력 무시
+		PlayerController->SetIgnoreLookInput(true); // 회전 입력 무시
+	}
+
+	// 일정 시간이 지나면 입력을 다시 활성화
+	GetWorld()->GetTimerManager().SetTimer(InputDisableTimerHandle, this, &ASpaceCharacter::EnableInputAfterDelay, Duration, false);
+}
+
+void ASpaceCharacter::EnableInputAfterDelay()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		PlayerController->SetIgnoreMoveInput(false); // 이동 입력 활성화
+		PlayerController->SetIgnoreLookInput(false); // 회전 입력 활성화
+	}
 }
 
 void ASpaceCharacter::Tick(float DeltaTime)
@@ -810,6 +836,8 @@ void ASpaceCharacter::OnExecutionStart(AActor* Target)
 			GetActorRotation()
 		);
 	}
+	if (SlashVfx) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(),SlashVfx, GetActorLocation());
+	if (SlashSfx) UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SlashSfx, GetActorLocation());
 	// 3) 스프링암 살짝 당기기 (옵션)
 	CameraBoom->TargetArmLength = 150.f;
 

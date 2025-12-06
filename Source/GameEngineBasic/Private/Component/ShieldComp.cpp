@@ -28,19 +28,19 @@ void UShieldComp::BeginPlay()
 
 	if (ShieldCollision)
 	{
-		// 2. ÄÄÆ÷³ÍÆ® µî·Ï ¹× ¼³Á¤
+		// 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		ShieldCollision->RegisterComponent();
 		ShieldCollision->AttachToComponent(Owner->GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
-		// 3. ÄÝ¸®Àü ¼³Á¤
+		// 3. ï¿½Ý¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		ShieldCollision->InitSphereRadius(120.f); 
 		ShieldCollision->SetCollisionProfileName(TEXT("ShieldActor")); 
 		ShieldCollision->SetNotifyRigidBodyCollision(true);
 
-		// 4. ÀÌº¥Æ® ¹ÙÀÎµù
+		// 4. ï¿½Ìºï¿½Æ® ï¿½ï¿½ï¿½Îµï¿½
 		ShieldCollision->OnComponentHit.AddDynamic(this, &UShieldComp::OnShieldHit);
 
-		// 5. ÃÊ±â »óÅÂ: ²¨Áü (Ãæµ¹ ¾øÀ½, ¼û±è)
+		// 5. ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ (ï¿½æµ¹ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½)
 		ShieldCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ShieldCollision->SetHiddenInGame(true);
 	}
@@ -82,20 +82,20 @@ void UShieldComp::DeactivateShield()
 
 void UShieldComp::OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// 1. ¹ß»çÃ¼ È®ÀÎ
+	// 1. ï¿½ß»ï¿½Ã¼ È®ï¿½ï¿½
 	AProjectile* Projectile = Cast<AProjectile>(OtherActor);
 	if (!Projectile) return;
 
-	// 2. µ¥¹ÌÁö Àü´Þ
-	// OwnerÀÇ TakeDamage -> HealthComp -> ShieldComp::ApplyShieldDamage 
-	// ¼ø¼­·Î È£ÃâµÇ¾î ·ÎÁ÷ Èå¸§ÀÌ À¯ÁöµË´Ï´Ù.
+	// 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// Ownerï¿½ï¿½ TakeDamage -> HealthComp -> ShieldComp::ApplyShieldDamage 
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½Ç¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½å¸§ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ë´Ï´ï¿½.
 	if (AActor* Owner = GetOwner())
 	{
 		float Damage = Projectile->DamageAmount;
 		UGameplayStatics::ApplyDamage(Owner, Damage, nullptr, Owner, UDamageType::StaticClass());
 	}
 
-	// 3. ÇÇ°Ý ÀÌÆåÆ® Àç»ý
+	// 3. ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½
 	if (bShieldActive)
 	{
 		if (HitEffect)
@@ -126,14 +126,14 @@ void UShieldComp::OnShieldHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 
 float UShieldComp::ApplyShieldDamage(float Damage)
 {
-	// ½¯µå°¡ ²¨Á®ÀÖÀ¸¸é µ¥¹ÌÁö¸¦ ¸ðµÎ Åë°ú
+	// ï¿½ï¿½ï¿½å°¡ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
 	if (!bShieldActive || CurrentShield <= 0.f)
 		return Damage;
 
 	CurrentShield -= Damage;
 	float RemainingDamage = 0.f;
 
-	// ½¯µå ÆÄ±« °è»ê
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ä±ï¿½ ï¿½ï¿½ï¿½
 	if (CurrentShield <= 0.f)
 	{
 		RemainingDamage = -CurrentShield;
@@ -155,10 +155,11 @@ void UShieldComp::StartShieldCoolDown()
 	bCanShield = false;
 	GetWorld()->GetTimerManager().ClearTimer(ShieldCoolDownTimer);
 
-	if(GEngine)
+	/*if(GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Shield Cooldown Started"));
 	}
+	*/
 	GetWorld()->GetTimerManager().SetTimer(
 		ShieldCoolDownTimer,
 		this,
