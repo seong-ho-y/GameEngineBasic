@@ -11,6 +11,7 @@
 #include "Blueprint/UserWidget.h"
 #include "SpaceCharacter/SpaceCharacter.h"
 #include "MyPlayerState.h"
+#include "GameEngineBasic/System/SaveSystemManager.h"
 
 #include "Curves/CurveFloat.h"
 #include "Kismet/GameplayStatics.h"
@@ -118,7 +119,10 @@ void APartUnlockItem::Interact(ASpaceCharacter* Character)
 	{
 		PS->Inventory->EquipPart(Slot, PartRowName);
 	}
-
+	if (APawn* Pawn = Cast<APawn>(Character))
+	{
+		USaveSystemManager::SavePawnState(Pawn);
+	}
 	LidOpenTimeline.Play();
 
 	if (AbilityUI)

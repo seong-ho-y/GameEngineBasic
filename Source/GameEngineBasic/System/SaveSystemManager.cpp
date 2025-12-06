@@ -47,7 +47,7 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
     SaveObj->bCanShield = PS->AbilityStatus.bCanShield;
 
     SaveObj->WeaponRowName = PS->UnlockStatus.UnlockedWeapons.Array();
-
+    SaveObj->UnlockedParts = PS->UnlockStatus.UnlockedParts.Array();
     // *** SpaceCharacter ***
     if (ASpaceCharacter* Char = Cast<ASpaceCharacter>(Pawn))
     {
@@ -80,6 +80,63 @@ void USaveSystemManager::SavePawnState(APawn* Pawn)
     UGameplayStatics::SaveGameToSlot(SaveObj, TEXT("PlayerSave"), 0);
 }
 
+void USaveSystemManager::SaveAbilities(APawn* Pawn)
+{
+    if (!Pawn) return;
+
+    AMyPlayerState* PS = Cast<AMyPlayerState>(Pawn->GetPlayerState());
+    if (!PS) return;
+
+    USaveSystem* SaveObj = nullptr;
+    FString SaveSlotName = TEXT("PlayerSave");
+    int32 SaveIndex = 0;
+
+    if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveIndex))
+    {
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, SaveIndex));
+    }
+    else
+    {
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::CreateSaveGameObject(USaveSystem::StaticClass()));
+    }
+
+    if (!SaveObj) return;
+
+    SaveObj->bCanSprint = PS->AbilityStatus.bCanSprint;
+    SaveObj->bCanDash = PS->AbilityStatus.bCanDash;
+    SaveObj->bCanFly = PS->AbilityStatus.bCanFly;
+    SaveObj->bCanShield = PS->AbilityStatus.bCanShield;
+    SaveObj->bCanBoost = PS->AbilityStatus.bCanBoost;
+
+    UGameplayStatics::SaveGameToSlot(SaveObj, SaveSlotName, SaveIndex);
+}
+
+void USaveSystemManager::SaveWeapons(APawn* Pawn)
+{
+    if (!Pawn) return;
+
+    AMyPlayerState* PS = Cast<AMyPlayerState>(Pawn->GetPlayerState());
+    if (!PS) return;
+
+    USaveSystem* SaveObj = nullptr;
+    FString SaveSlotName = TEXT("PlayerSave");
+    int32 SaveIndex = 0;
+
+    if (UGameplayStatics::DoesSaveGameExist(SaveSlotName, SaveIndex))
+    {
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, SaveIndex));
+    }
+    else
+    {
+        SaveObj = Cast<USaveSystem>(UGameplayStatics::CreateSaveGameObject(USaveSystem::StaticClass()));
+    }
+
+    if (!SaveObj) return; 
+
+    SaveObj->WeaponRowName = PS->UnlockStatus.UnlockedWeapons.Array();
+    UGameplayStatics::SaveGameToSlot(SaveObj, SaveSlotName, SaveIndex);
+}
+
 void USaveSystemManager::LoadPawnState(APawn* Pawn)
 {
     if (!Pawn) return;
@@ -102,6 +159,13 @@ void USaveSystemManager::LoadPawnState(APawn* Pawn)
         for (const FName& WeaponName : SaveObj->WeaponRowName)
         {
             PS->UnlockStatus.UnlockedWeapons.Add(WeaponName);
+			PS->UnlockWeapon(WeaponName); 
+        }
+        for (const FName& PartName : SaveObj->UnlockedParts)
+        {
+            // PlayerState에 해금 정보 등록
+            PS->UnlockStatus.UnlockedParts.Add(PartName);
+			PS->UnlockPart(PartName);
         }
     }
     
