@@ -74,16 +74,6 @@ void UPlayerStatsComponent::ApplyParts()
 		const FPartData* Part = Inv->GetPartData(Slot);
 		if (!Part)
 		{
-			if (GEngine)
-			{
-				FString SlotStr =
-					(Slot == EPartSlot::Core)  ? TEXT("Core") :
-					(Slot == EPartSlot::Upper) ? TEXT("Upper") :
-												 TEXT("Lower");
-				/*
-				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Silver,
-					FString::Printf(TEXT("[ApplyParts] Slot %s: NO PART"), *SlotStr));*/
-			}
 			continue;
 		}
 
@@ -92,22 +82,7 @@ void UPlayerStatsComponent::ApplyParts()
 			(Slot == EPartSlot::Core)  ? TEXT("Core") :
 			(Slot == EPartSlot::Upper) ? TEXT("Upper") :
 										 TEXT("Lower");
-
-		// 파츠 능력치 로그
-		if (GEngine)
-		{
-			FString BonusMsg = FString::Printf(
-				TEXT("[ApplyParts] Slot=%s | HP=%.1f SH=%.1f Move=%.1f BoostUse=%.1f BoostRegen=%.1f Weight=%.1f"),
-				*SlotStr,
-				Part->HealthBonus,
-				Part->ShieldBonus,
-				Part->MoveSpeedBonus,
-				Part->BoostUseBonus,
-				Part->BoostRegenBonus,
-				Part->WeightBonus
-			);
-			/*GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, BonusMsg);*/
-		}
+		
 
 		// 스탯 적용
 		FinalStats.MaxHealth  += Part->HealthBonus;
@@ -118,23 +93,7 @@ void UPlayerStatsComponent::ApplyParts()
 
 	}
 
-	//-------------------------------------------------------
-	// 최종 스탯 로그
-	//-------------------------------------------------------
-	if (GEngine)
-	{
-		FString FinalMsg = FString::Printf(
-			TEXT("[FinalStats READY] HP=%.1f  SH=%.1f  Move=%.1f  BoostUse=%.2f  BoostRegen=%.2f  Weight=%.1f"),
-			FinalStats.MaxHealth,
-			FinalStats.MaxShield,
-			FinalStats.MoveSpeed,
-			FinalStats.BoostUse,
-			FinalStats.BoostRegen,
-			FinalStats.MaxFuel
-		);
 
-		/*GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::Yellow, FinalMsg);*/
-	}
 
 	//-------------------------------------------------------
 	// 실제 캐릭터에 반영
@@ -153,7 +112,7 @@ void UPlayerStatsComponent::ApplyParts()
 	if (OwnerChar->Fuel)
 	{
 		OwnerChar->Fuel->MaxFuel = FinalStats.MaxFuel;
-		OwnerChar->Fuel->BoostCost = FinalStats.BoostUse;
+		OwnerChar->Fuel->BoostCost *= FinalStats.BoostUse;
 		OwnerChar->Fuel->RechargeRate = FinalStats.BoostRegen;
 	}
 }
@@ -162,27 +121,4 @@ void UPlayerStatsComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
-	if (GEngine)
-	{
-		FString DebugMsg = FString::Printf(TEXT(
-			"[Stats] HP=%.1f | SH=%.1f | Move=%.1f | BoostUse=%.2f | BoostRegen=%.2f | Weight=%.1f"),
-			FinalStats.MaxHealth,
-			FinalStats.MaxShield,
-			FinalStats.MoveSpeed,
-			FinalStats.BoostUse,
-			FinalStats.BoostRegen,
-			FinalStats.MaxFuel
-		);
-/*
-		GEngine->AddOnScreenDebugMessage(
-			9991,
-			0.f,
-			FColor::Cyan,
-			DebugMsg
-		);
-		*/
-	}
-#endif
 }

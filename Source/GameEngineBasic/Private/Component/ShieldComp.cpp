@@ -49,8 +49,9 @@ void UShieldComp::BeginPlay()
 void UShieldComp::ActivateShield()
 {
 	if (!ShieldCollision) return;
+	if (!bCanShield) return;
 	StartShieldCoolDown();
-
+	
 	if (CurrentShield <= 0.f)
 	{
 		CurrentShield = MaxShield;

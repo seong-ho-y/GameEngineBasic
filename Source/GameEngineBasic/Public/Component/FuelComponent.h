@@ -30,13 +30,13 @@ public:
     float CurrentFuel = 100.f;
 
     UPROPERTY(EditAnywhere, Category = "Fuel|Rates")
-    float FlyingConsumeRate = 12.f;
+    float FlyingConsumeRate = 15.f;
 
     UPROPERTY(EditAnywhere, Category = "Fuel|Rates")
-    float RechargeRate = 10.f;
+    float RechargeRate = 30.f;
 
     UPROPERTY(EditAnywhere, Category = "Fuel|Boost")
-    float BoostCost = 20.f;
+    float BoostCost = 30.f;
 
     UFUNCTION(BlueprintCallable, Category = "Flight|Fuel")
     float GetFuelPercent() const {
