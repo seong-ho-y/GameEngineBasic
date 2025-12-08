@@ -20,6 +20,7 @@ void UFuelComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     //GEngine->AddOnScreenDebugMessage(35, 5.f, FColor::Silver, FString::Printf(TEXT("Remain Energy : %f"),CurrentFuel));
     Recharge(DeltaTime);
+
 }
 
 bool UFuelComponent::HasFuel(float Amount) const
@@ -69,9 +70,8 @@ void UFuelComponent::ConsumeDash(float Amount)
 void UFuelComponent::Recharge(float DeltaTime)
 {
 	auto Character = Cast<ASpaceCharacter>(GetOwner());
-    if (Character->bIsSprinting)
-        return;
-
+    if (Character->bIsSprinting)  return;
+    if (Character->bIsFlyingMode) return;
     float OldFuel = CurrentFuel;
     CurrentFuel = FMath::Clamp(CurrentFuel + RechargeRate * DeltaTime, 0.f, MaxFuel);
     if (CurrentFuel != OldFuel)

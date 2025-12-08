@@ -430,7 +430,7 @@ void ASpaceCharacter::StartDash()
 	if (GetCharacterMovement()->IsFalling() || bIsFlyingMode)
 		return;
 
-	GetFuelComponent()->ConsumeDash(10);
+	GetFuelComponent()->ConsumeDash(Fuel->BoostCost);
 	StartDashEffect();
 
 	bIsDashing = true;
@@ -852,7 +852,7 @@ void ASpaceCharacter::OnExecutionEnd(AActor* Target)
 	bIsCameraTransitioning = true;
 
 	//체력 회복 & 탄약 회복
-	HealthComp->CurrentHealth = FMath::Max(HealthComp->CurrentHealth+=50, HealthComp->MaxHealth);
+	HealthComp->CurrentHealth = FMath::Min(HealthComp->CurrentHealth+=50, HealthComp->MaxHealth);
 	Shooter->CurrentAmmo = Shooter->FullAmmo;
 	
 	EnableInput(Cast<APlayerController>(Controller));
