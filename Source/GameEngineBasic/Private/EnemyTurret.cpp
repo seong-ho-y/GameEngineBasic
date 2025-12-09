@@ -77,17 +77,7 @@ void AEnemyTurret::OnKnock()
 		TurretLaserComp->OnStunStateChanged(true);
 	}
 	
-
-	// 헤드 흔들기 (충격 받은 표현)
-	if (TurretAnim)
-	{
-		FRotator HitRot(
-			FMath::RandRange(-10.f, 10.f),
-			FMath::RandRange(-25.f, 25.f),
-			0.f
-		);
-		TurretAnim->HeadAimRotation += HitRot;
-	}
+	
 
 	// 0.3초 후 회전 및 레이저 재활성
 	GetWorldTimerManager().SetTimer(TimerHandle_Stun, this, 
@@ -131,26 +121,7 @@ void AEnemyTurret::OnDie(AActor* DeadActor)
 		if (UBrainComponent* Brain = AICon->GetBrainComponent())
 			Brain->StopLogic(TEXT("Turret Dead"));
 	}
-
-	// 메쉬 물리 적용해서 쓰러지기
-	USkeletalMeshComponent* _Mesh = GetMesh();
-	if (_Mesh)
-	{
-		_Mesh->SetSimulatePhysics(true);
-		_Mesh->SetEnableGravity(true);
-
-		_Mesh->bPauseAnims = true;
-		_Mesh->bNoSkeletonUpdate = true;
-		
-		_Mesh->AddAngularImpulseInDegrees(
-			FVector(
-				FMath::RandRange(-400, 400),
-				FMath::RandRange(-400, 400),
-				FMath::RandRange(-400, 400)
-			)
-		);
-	}
 	
 
-	SetLifeSpan(6.f);
+	SetLifeSpan(3.f);
 }

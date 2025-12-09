@@ -424,7 +424,6 @@ void AEnemyHuman::OnKnock()
 
 void AEnemyHuman::OnDie(AActor* DeadActor)
 {
-	GEngine->AddOnScreenDebugMessage(234, 1.f, FColor::Orange, TEXT("Enemy Die"));
 
 	if (bIsDead) return;
 	bIsDead = true;
@@ -451,9 +450,39 @@ void AEnemyHuman::OnDie(AActor* DeadActor)
 	{
 		Anim->Montage_Play(DeathMontage, 1.f);
 	}
+	
+	if (bIsBoss)
+	{
+		// ✅ 1) 보스 처치 UI 생성
+		if (BossDefeatedWidgetClass)
+		{
+			UUserWidget* BossUI = CreateWidget<UUserWidget>(
+				GetWorld(),
+				BossDefeatedWidgetClass
+			);
 
+			if (BossUI)
+			{
+				BossUI->AddToViewport(100); // 최상단
+			}
+		}
+
+		// ✅ 2) 2.5초 후 타이틀로 복귀
+		FTimerHandle TimerHandle_ReturnToTitle;
+		GetWorldTimerManager().SetTimer(
+			TimerHandle_ReturnToTitle,
+			[this]()
+			{
+				UGameplayStatics::OpenLevel(this, FName("TitleScreen"));
+			},
+			2.5f,   // ✅ Souls류 연출 적당한 대기 시간
+			false
+		);
+	}
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetLifeSpan(8.f);
+
+	
 }
 
 void AEnemyHuman::SetLowerBodyState(ELowerBodyState NewState)

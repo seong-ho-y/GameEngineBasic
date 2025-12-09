@@ -17,6 +17,7 @@ ASniperProjectile::ASniperProjectile()
 void ASniperProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+	DamageAmount = 40.f;
 
 	if (CollisionComp)
 	{
@@ -45,7 +46,7 @@ void ASniperProjectile::HandleSniperHit(UPrimitiveComponent* HitComp, AActor* Ot
 
 	// 2) 원래 Projectile 데미지/Destroy/이펙트 실행
 	// -> 부모 OnHit_Implementation 직접 호출
-	Super::OnHit_Implementation(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
+	OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
 	// 디버그 메세지
 	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LaunchCharacter"));
