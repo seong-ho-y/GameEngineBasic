@@ -33,4 +33,5 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sniper|Knockback")
 	float KnockbackUpStrength = 200.f;
 	
+	
 };

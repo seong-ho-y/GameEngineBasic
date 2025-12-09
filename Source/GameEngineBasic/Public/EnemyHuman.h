@@ -1,4 +1,3 @@
-// EnemyHuman.h
 
 #pragma once
 
@@ -10,7 +9,9 @@
 #include "EnemyAnimInstance.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Blueprint/UserWidget.h"
 #include "EnemyHuman.generated.h"
+
 
 class UHealthComp;
 class UShooterComp;
@@ -39,6 +40,8 @@ protected:
 	virtual float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent,
 		AController* EventInstigator, AActor* DamageCauser) override;
 
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UUserWidget> BossDefeatedWidgetClass;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -64,6 +67,9 @@ protected:
 
 	UFUNCTION()
 	virtual void OnDie(AActor* DeadActor);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Enemy")
+	bool bIsBoss = false;
 
 	UFUNCTION()
 	virtual void OnKnock();
