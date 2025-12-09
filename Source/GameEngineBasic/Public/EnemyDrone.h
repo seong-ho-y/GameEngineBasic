@@ -19,10 +19,16 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UDroneMovementComponent* DroneMoveComp;
 
-
+	virtual void OnKnock() override;
+	virtual void OnDie(AActor* DeadActor) override;
 	
 protected:
+	
 
+	UPROPERTY(EditAnywhere, Category="Knockback")
+	float KnockbackStrength = 800.f;
+
+	FTimerHandle TimerHandle_KnockStun;
 
 	/* ============ Hover System ============ */
 

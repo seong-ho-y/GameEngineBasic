@@ -1,4 +1,8 @@
 #include "EnemyDrone.h"
+
+#include "AIController.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -90,4 +94,79 @@ void AEnemyDrone::EndDodge()
 AActor* AEnemyDrone::GetPlayerPawn() const
 {
 	return UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+}
+
+void AEnemyDrone::OnKnock()
+{
+	if (bIsDead) return;
+	
+
+	// ✔ 넉백 방향 (플레이어 반대 방향)
+	AActor* Player = GetPlayerPawn();
+	if (Player)
+	{
+		FVector Dir = (GetActorLocation() - Player->GetActorLocation()).GetSafeNormal2D();
+		FVector KnockVelocity = Dir * KnockbackStrength;
+
+		// ✔ DroneMovementComponent가 직접 Velocity 세팅
+		if (DroneMoveComp)
+		{
+			DroneMoveComp->Velocity = KnockVelocity;
+		}
+	}
+
+	// ✔ 짧은 Stun 느낌을 위해 0.2초간 움직임 제한도 가능
+	bDodging = true;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle_KnockStun,
+		FTimerDelegate::CreateLambda([this]()
+		{
+			bDodging = false;
+		}),
+		0.2f,
+		false
+	);
+}
+
+
+void AEnemyDrone::OnDie(AActor* DeadActor)
+{
+	if (bIsDead) return;
+	bIsDead = true;
+
+	// ✔ 이동 중단
+	if (DroneMoveComp)
+	{
+		DroneMoveComp->Velocity = FVector::ZeroVector;
+	}
+
+	// ✔ AI 중지
+	if (AAIController* AICon = Cast<AAIController>(GetController()))
+	{
+		AICon->StopMovement();
+		if (UBrainComponent* Brain = AICon->GetBrainComponent())
+			Brain->StopLogic(TEXT("Drone Dead"));
+	}
+
+	// ✔ 충돌 끈다 (공중에서 떨어질 때 안 걸리게)
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	// ✔ 물리 켜서 "힘 빠져 추락" 연출
+	USkeletalMeshComponent* _Mesh = GetMesh();
+	if (_Mesh)
+	{
+		_Mesh->SetSimulatePhysics(true);
+		_Mesh->SetEnableGravity(true);
+
+		// 자연스러운 회전
+		_Mesh->AddAngularImpulseInDegrees(FVector(
+			FMath::RandRange(-400, 400),
+			FMath::RandRange(-400, 400),
+			FMath::RandRange(-400, 400)
+		));
+	}
+	
+	
+
+	SetLifeSpan(4.f);
 }
